@@ -32,6 +32,22 @@ test("parses a valid roster and shows a real preview", async ({ page }) => {
   await expectNoCriticalViolations(page);
 });
 
+test("parses a file dropped onto the upload zone", async ({ page }) => {
+  const dataTransfer = await page.evaluateHandle((content) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([content], "dropped.csv", { type: "text/csv" }));
+    return transfer;
+  }, VALID_ROSTER);
+
+  const zone = page.getByTestId("roster-dropzone");
+  await zone.dispatchEvent("dragover", { dataTransfer });
+  await zone.dispatchEvent("drop", { dataTransfer });
+
+  await expect(page.getByRole("heading", { name: "Roster Parsed Successfully" })).toBeVisible();
+  await expect(page.getByText("dropped.csv")).toBeVisible();
+  await expect(page.getByRole("table", { name: "Roster preview" })).toBeVisible();
+});
+
 test("rejects a 0-byte file", async ({ page }) => {
   await setFile(page, "empty.csv", "text/csv", Buffer.alloc(0));
 

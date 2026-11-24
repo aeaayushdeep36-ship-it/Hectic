@@ -15,6 +15,15 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+describe("server defaults", () => {
+  it("uses the offline mock when no provider environment variable is set", () => {
+    vi.stubEnv("LLM_PROVIDER", "");
+    const provider = getProvider();
+    expect(provider.id).toBe("mock");
+    expect(provider.modelId).toBe("mock-v1");
+  });
+});
+
 function fakeFetch(completion: Partial<Completion> = {}) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
   const fn = async (url: string, init: RequestInit) => {

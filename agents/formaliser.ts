@@ -25,6 +25,20 @@ export interface AgentOptions {
   readonly retry?: RetryOptions;
 }
 
+const KIND_ALIASES: Readonly<Record<string, string>> = {
+  "willingness to pay": "willingness_to_pay",
+  "willingness-to-pay": "willingness_to_pay",
+  willingness_to_pay: "willingness_to_pay",
+  role_ownership: "role_ownership",
+  "role ownership": "role_ownership",
+};
+
+function normaliseKind(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const key = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return KIND_ALIASES[key] ?? key;
+}
+
 export interface FormaliseResult {
   readonly proposal: ClaimProposal;
   readonly injection: boolean;
@@ -71,7 +85,11 @@ export async function formalise(
         ? {
             ...record,
             rawText: safeText,
-            claimType: record.claimType ?? record.claim_type,
+            kind: normaliseKind(record.kind),
+            claimType:
+              typeof (record.claimType ?? record.claim_type) === "string"
+                ? String(record.claimType ?? record.claim_type).trim().toLowerCase()
+                : record.claimType ?? record.claim_type,
             ambiguityFlags: record.ambiguityFlags ?? record.ambiguity_flags,
             ...(typeof record.rationale === "string"
               ? { rationale: record.rationale.slice(0, 400) }
@@ -94,20 +112,27 @@ export async function formalise(
   }
 
   let fallbackReason: string | null = null;
-  try {
-    const completion = await completeWithRetry(provider, system, user, options.retry);
-    if (!completion.ok) {
-      fallbackReason = `PROVIDER_${completion.errorCode ?? "ERROR"}`;
-    } else {
+  // Live providers occasionally emit one unusable body (empty object, prose or
+  // a truncated object). Re-ask once inside the same bounded retry policy; the
+  // Zod schema still decides what is acceptable, and the template remains the
+  // fallback if the second body is unusable too.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const completion = await completeWithRetry(provider, system, user, options.retry);
+      if (!completion.ok) {
+        fallbackReason = `PROVIDER_${completion.errorCode ?? "ERROR"}`;
+        break;
+      }
       const proposal = tryParse(completion.text);
       if (proposal) {
         putCached(key, completion.text);
         return { proposal, injection: checked.injected, flags: checked.flags, usedProvider: true, fallbackReason: null };
       }
       fallbackReason = "SCHEMA_INVALID";
+    } catch (error) {
+      fallbackReason = error instanceof Error ? error.message.slice(0, 60) : "PROVIDER_THREW";
+      break;
     }
-  } catch (error) {
-    fallbackReason = error instanceof Error ? error.message.slice(0, 60) : "PROVIDER_THREW";
   }
 
   return {

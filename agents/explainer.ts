@@ -52,7 +52,18 @@ export async function explainFinding(
     const candidate = Array.isArray(value) ? value[0] : value;
     if (!candidate || typeof candidate !== "object") return null;
     const record = candidate as Record<string, unknown>;
-    const text = record.text ?? record.explanation ?? record.rephrased;
+    const nested =
+      record.result && typeof record.result === "object"
+        ? (record.result as Record<string, unknown>)
+        : {};
+    const text =
+      record.text ??
+      record.explanation ??
+      record.rephrased ??
+      record.answer ??
+      record.verdict ??
+      nested.text ??
+      nested.explanation;
     return typeof text === "string" ? text : null;
   };
 
@@ -68,21 +79,31 @@ export async function explainFinding(
     }
   }
 
-  try {
-    const completion = await completeWithRetry(provider, SYSTEM_PROMPT, user, options.retry);
-    if (!completion.ok) {
-      return { text: fallback, usedProvider: false, fallbackReason: `PROVIDER_${completion.errorCode ?? "ERROR"}` };
+  // A single malformed body is common on free-tier gateways. Re-ask once, then
+  // return the deterministic verdict; no model text is ever trusted blindly.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const completion = await completeWithRetry(provider, SYSTEM_PROMPT, user, options.retry);
+      if (!completion.ok) {
+        return { text: fallback, usedProvider: false, fallbackReason: `PROVIDER_${completion.errorCode ?? "ERROR"}` };
+      }
+      const text = readText(parseModelJson(completion.text));
+      if (!text) {
+        if (attempt === 1) {
+          return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
+        }
+        continue;
+      }
+      if (!accept(text)) {
+        return { text: fallback, usedProvider: false, fallbackReason: "NUMERIC_GUARD" };
+      }
+      putCached(key, completion.text);
+      return { text, usedProvider: true, fallbackReason: null };
+    } catch {
+      if (attempt === 1) {
+        return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
+      }
     }
-    const text = readText(parseModelJson(completion.text));
-    if (!text) {
-      return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
-    }
-    if (!accept(text)) {
-      return { text: fallback, usedProvider: false, fallbackReason: "NUMERIC_GUARD" };
-    }
-    putCached(key, completion.text);
-    return { text, usedProvider: true, fallbackReason: null };
-  } catch {
-    return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
   }
+  return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
 }

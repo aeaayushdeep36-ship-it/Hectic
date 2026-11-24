@@ -1,9 +1,9 @@
 /**
  * E2 — bounded retry with exponential backoff and jitter.
  *
- * Only transient failures are retried: HTTP 429, HTTP 5xx, timeouts and a
- * provider being unreachable. A malformed JSON response is handled by the
- * agent's schema fallback, not by burning the free-tier quota on a retry.
+ * Only transient failures are retried here: HTTP 429, HTTP 5xx, timeouts and a
+ * provider being unreachable. Agents may make exactly one bounded schema-repair
+ * re-ask for an unusable body; the deterministic template is the final fallback.
  */
 import type { Completion, Provider } from "./index";
 

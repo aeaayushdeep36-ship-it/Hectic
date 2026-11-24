@@ -19,10 +19,14 @@ import type { Claim, EvidenceRow } from "../lib/types";
 import {
   ChaosProvider,
   MockProvider,
+  cacheKey,
+  cacheStats,
   clearCache,
   completeWithRetry,
+  getCached,
   mockProposal,
   mockTag,
+  putCached,
   wrapUserContent,
   type Completion,
   type Provider,
@@ -73,9 +77,31 @@ describe("C1 — person names never reach a provider", () => {
     expect(result.flags).toContain("NAME");
   });
 
-  it("leaves ordinary role prose and acronyms alone", () => {
+  it("redacts a single-token name in a naming context but keeps role prose", () => {
+    expect(guard("Priya said X").redacted).toBe("[NAME] said X");
+    expect(guard("called Priya about the pilot").redacted).toBe("called [NAME] about the pilot");
     expect(guard("Most managers said X").redacted).toBe("Most managers said X");
     expect(guard("GDPR and SMB buyers said X").redacted).toBe("GDPR and SMB buyers said X");
+  });
+
+  it("redacts lowercase names supplied through an explicit field", () => {
+    expect(guard("name: adi priyo described the gap").redacted).toBe(
+      "name: [NAME] described the gap",
+    );
+    expect(guard("contact = juan pérez mentioned budget").redacted).toContain("[NAME]");
+  });
+
+  it("redacts emails, national/international phones, IBANs and URLs", () => {
+    const result = guard(
+      "Reach priya@example.com on 020 7946 0958 or +44 20 7946 0958; " +
+        "IBAN BE68 5390 0754 7034; site https://example.com/x",
+    );
+    expect(result.redacted).toContain("[EMAIL]");
+    expect(result.redacted).toContain("[PHONE]");
+    expect(result.redacted).toContain("[IBAN]");
+    expect(result.redacted).toContain("[URL]");
+    expect(result.redacted).not.toMatch(/priya@example\.com|020 7946 0958|\+44 20 7946 0958|BE68 5390 0754 7034|https:\/\//iu);
+    expect(result.flags).toEqual(expect.arrayContaining(["EMAIL", "PHONE", "IBAN", "URL"]));
   });
 
   it("redacts names with particles and non-Latin scripts", () => {
@@ -109,6 +135,26 @@ describe("E2 — retry with exponential backoff and jitter", () => {
     expect(provider.callCount).toBe(3);
   });
 
+  it("uses 1s, 2s and 4s backoff for three consecutive 429s", async () => {
+    const waits: number[] = [];
+    const provider = new ScriptedProvider([
+      fail("HTTP_429"),
+      fail("HTTP_429"),
+      fail("HTTP_429"),
+      ok("done"),
+    ]);
+    const result = await completeWithRetry(provider, "sys", "usr", {
+      maxRetries: 3,
+      jitter: 0,
+      random: () => 0.5,
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(waits).toEqual([1000, 2000, 4000]);
+  });
+
   it("honours a gateway Retry-After hint on 429", async () => {
     const waits: number[] = [];
     const provider = new ScriptedProvider([
@@ -137,14 +183,33 @@ describe("E2 — retry with exponential backoff and jitter", () => {
     expect(provider.callCount).toBe(3);
   });
 
-  it("does not retry a malformed response — that is a schema fallback", async () => {
+  it("re-asks once after a malformed response, then falls back", async () => {
     const provider = new ScriptedProvider([ok("not json")]);
     const result = await formalise("Nurses in clinics would pay €20 per month", provider, {
       retry: fastRetry,
     });
     expect(result.usedProvider).toBe(false);
     expect(result.fallbackReason).toBe("SCHEMA_INVALID");
-    expect(provider.callCount).toBe(1);
+    expect(provider.callCount).toBe(2);
+  });
+
+  it("accepts a valid proposal returned by the schema-repair re-ask", async () => {
+    const raw = "Nurses in clinics would pay €20 per month";
+    const valid = JSON.stringify({
+      rawText: raw,
+      population: "Nurses in clinics",
+      predicate: "would pay €20 per month",
+      kind: "willingness to pay",
+      claimType: "prevalence",
+      rationale: "The sentence prices a monthly commitment.",
+      ambiguityFlags: [],
+    });
+    const provider = new ScriptedProvider([ok("not json"), ok(valid)]);
+    const result = await formalise(raw, provider, { retry: fastRetry });
+    expect(result.usedProvider).toBe(true);
+    expect(result.fallbackReason).toBeNull();
+    expect(result.proposal.kind).toBe("willingness_to_pay");
+    expect(provider.callCount).toBe(2);
   });
 });
 
@@ -170,6 +235,51 @@ describe("E1 / E3 — batched tagging and response cache", () => {
     expect(provider.callCount).toBe(afterFirst);
     expect(first.tags).toEqual(second.tags);
   });
+
+  it("re-asks once when a live provider returns an empty batch", async () => {
+    const { rows, claims } = load("clean");
+    const valid = JSON.stringify([
+      { evidenceId: rows[0]!.id, claimId: claims[0]!.id, bearsOn: false, polarity: "ambiguous" },
+    ]);
+    const provider = new ScriptedProvider([ok("[]"), ok(valid)]);
+    const result = await tagRelevance(rows.slice(0, 1), claims.slice(0, 1), provider, {
+      retry: fastRetry,
+    });
+    expect(result.fallbackReasons).toEqual([]);
+    expect(result.tags).toHaveLength(1);
+    expect(result.tags[0]?.evidenceId).toBe(rows[0]!.id);
+    expect(provider.callCount).toBe(2);
+  });
+
+  it("falls back after two empty batches instead of inventing tags", async () => {
+    const { rows, claims } = load("clean");
+    const provider = new ScriptedProvider([ok("[]"), ok("[]")]);
+    const result = await tagRelevance(rows.slice(0, 1), claims.slice(0, 1), provider, {
+      retry: fastRetry,
+    });
+    expect(result.fallbackReasons).toContain(`${claims[0]!.id}:SCHEMA_INVALID`);
+    expect(result.tags[0]?.polarity).toBe("ambiguous");
+    expect(provider.callCount).toBe(2);
+  });
+
+  it("never exceeds five provider calls for 20 rows even if every batch is empty", async () => {
+    const { rows, claims } = load("adversarial");
+    const provider = new ScriptedProvider([ok("[]")]);
+    const result = await tagRelevance(rows, claims, provider, { retry: fastRetry });
+    expect(provider.callCount).toBe(5);
+    expect(result.providerCalls).toBe(5);
+    expect(result.tags).toHaveLength(100);
+    expect(result.fallbackReasons).toHaveLength(5);
+  });
+
+  it("evicts the least recently used entry when the cache is full", () => {
+    clearCache();
+    const keys = Array.from({ length: 257 }, (_, index) => cacheKey(["lru-eviction", index]));
+    for (const key of keys) putCached(key, "value");
+    expect(cacheStats().size).toBe(256);
+    expect(getCached(keys[0]!)).toBeUndefined();
+    expect(getCached(keys.at(-1)!)).toBe("value");
+  });
 });
 
 describe("E4 — the offline mock behaves like a schema-constrained model", () => {
@@ -191,6 +301,31 @@ describe("E4 — the offline mock behaves like a schema-constrained model", () =
     const explained = await explainFinding(claims[0]!, finding, provider);
     expect(explained.usedProvider).toBe(true);
     expect(explained.text.length).toBeGreaterThan(20);
+  });
+
+  it("accepts an answer-field alias from a live provider", async () => {
+    const { rows, claims } = load("clean");
+    const finding = buildFinding(claims[0]!, buildCoverage(rows, claims[0]!));
+    const provider = new ScriptedProvider([
+      ok(JSON.stringify({ answer: "Evidence type is the constraint; get one organisation to the next evidence type." })),
+    ]);
+    const result = await explainFinding(claims[0]!, finding, provider);
+    expect(result.usedProvider).toBe(true);
+    expect(result.fallbackReason).toBeNull();
+    expect(result.text).toContain("Evidence type is the constraint");
+  });
+
+  it("re-asks once after malformed explanation JSON", async () => {
+    const { rows, claims } = load("clean");
+    const finding = buildFinding(claims[0]!, buildCoverage(rows, claims[0]!));
+    const provider = new ScriptedProvider([
+      ok("not json"),
+      ok(JSON.stringify({ text: "The verdict turns on evidence type, not on the number of interviews." })),
+    ]);
+    const result = await explainFinding(claims[0]!, finding, provider);
+    expect(result.usedProvider).toBe(true);
+    expect(result.fallbackReason).toBeNull();
+    expect(provider.callCount).toBe(2);
   });
 
   it("produces the golden verdict hash on the offline path", () => {
@@ -248,6 +383,15 @@ describe("Chaos provider — deterministic injected failures", () => {
       await b.complete("sys", "usr");
     }
     expect(a.injections).toEqual(b.injections);
+  });
+});
+
+describe("Build gate", () => {
+  it("runs the golden rehearsal before next build", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    expect(pkg.scripts.build).toBe("npm run demo:rehearse && next build");
   });
 });
 

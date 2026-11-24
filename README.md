@@ -65,8 +65,10 @@ npm run check        # secret scan, lint, typecheck, full unit suite, engine pur
 npm run eval:gate    # agent fixtures; fails CI on schema-invalid output or >10% fallback
 npm run eval:live    # 10 repetitions per configured real model + chaos; writes docs/eval-live.md
 npm run demo:rehearse # golden fixture against mock + injected chaos; real providers if configured
-npm run build        # production build
-npm run test:e2e     # 4 Playwright specs with axe; Playwright starts the server temporarily
+npm run build        # rehearsal is a hard prerequisite, then production build
+npm run test:e2e     # 4 spec files / 12 Playwright tests with axe; temporary webServer
+npm run a11y:lighthouse # numeric Lighthouse accessibility gate (>95)
+npm run measure:time-saved # reproducible 20-row browser timing
 npm run audit -- --roster fixtures/underpowered/roster.csv --claims fixtures/underpowered/claims.json
 ```
 
@@ -74,11 +76,12 @@ Hosted deployment is deliberately out of scope; the local path is the full produ
 
 ### Using Gemini + Groq (two real models)
 
-The gitignored `.env.local` is ready with `GEMINI_MODEL=gemini-flash-lite-latest` and
-`GROQ_MODEL=qwen/qwen3.8-27b`. Paste the keys directly after `GEMINI_API_KEY=`
-and `GROQ_API_KEY=`; change the `*_MODEL` lines only to pin a different free
-model. `LLM_PROVIDER=gemini` makes Gemini the app default; the offline mock
-remains the safe default in `.env.example` and in the Run panel.
+Copy `.env.example` to the gitignored `.env.local`, then paste keys after
+`GEMINI_API_KEY=` and `GROQ_API_KEY=`. The shipped defaults are
+`GEMINI_MODEL=gemini-flash-lite-latest` and `GROQ_MODEL=qwen/qwen3.8-27b`;
+change the `*_MODEL` lines only to pin a different free model.
+`LLM_PROVIDER=gemini` makes Gemini the app default. With no `.env.local` at all,
+the offline mock is the safe default and no command asks for a credential.
 
 The requested `gemini-4-hydrogen` model was probed but its free tier allows only
 20 requests/day; this gate needs 10 repetitions × 4 agent calls = 40 calls, so
@@ -118,10 +121,11 @@ implemented. The separate two-model live gate is recorded in `docs/eval-live.md`
 `npm run check` runs the secret scan, lint, typecheck, the full unit suite and the engine purity
 guard. `npm run build` and `npm run test:e2e` cover the production UI. CI also runs
 `npm run eval:gate`, `npm run eval:live` (skips and preserves the recorded report
-when no real key is configured) and `npm run demo:rehearse`. The authoritative
-two-model repetition result is recorded in
-[docs/eval-live.md](docs/eval-live.md); do not treat the gate as passed while that file says
-`INCOMPLETE`.
+when no real key is configured), `npm run a11y:lighthouse` and
+`npm run demo:rehearse`. The authoritative two-model repetition result is recorded
+in [docs/eval-live.md](docs/eval-live.md); it currently records **PASS** with ten
+runs each on Gemini and Groq plus the chaos control. The credential-free
+`npm ci` path is recorded in [docs/fresh-install.md](docs/fresh-install.md).
 
 ## Submission artefacts
 
@@ -129,6 +133,6 @@ two-model repetition result is recorded in
 - [Responsible AI](RESPONSIBLE_AI.md)
 - [Time-Saved Report](TIME_SAVED_REPORT.md)
 - [Human Judgment](HUMAN_JUDGMENT.md)
-- [Agent evaluation gate](docs/eval-gate.md), [live repetitions](docs/eval-live.md) and [mock/template notes](docs/eval-results.md)
+- [Agent evaluation gate](docs/eval-gate.md), [live repetitions](docs/eval-live.md), [mock/template notes](docs/eval-results.md), [fresh install](docs/fresh-install.md), [Lighthouse a11y](docs/lighthouse-a11y.md) and [20-row measurement](docs/time-saved-measurement.md)
 - [Architecture diagram](docs/architecture.svg) (source) and [PNG](docs/architecture.png)
 - 3-minute demo video: `docs/demo.mp4`

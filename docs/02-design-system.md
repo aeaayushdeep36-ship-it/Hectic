@@ -21,38 +21,38 @@ Three rules follow from that:
 ```css
 :root {
   /* Surface */
-  --paper:        #FBFAF7;   /* page background, warm white */
+  --paper:        #F8FAFC;   /* cool off-white page */
   --surface:      #FFFFFF;   /* cards, tables */
-  --surface-sunk: #F3F1EB;   /* table headers, code blocks */
+  --surface-sunk: #F1F5F9;   /* table headers, code blocks */
 
   /* Ink */
-  --ink:          #14171A;   /* primary text */
-  --ink-muted:    #5F5E59;   /* secondary text, labels */
-  --ink-faint:    #8C8A83;   /* metadata, disabled */
+  --ink:          #0F172A;   /* deep slate primary text */
+  --ink-muted:    #475569;   /* secondary text, labels */
+  --ink-faint:    #64748B;   /* metadata, disabled */
 
   /* Structure */
-  --border:       #E2DFD8;
-  --border-strong:#C9C5BB;
+  --border:       #E2E8F0;
+  --border-strong:#CBD5E1;
 
   /* Signal — the gap. Used sparingly. */
-  --signal:       #9A3412;   /* burnt orange, 7.0:1 on paper */
-  --signal-bg:    #FDF1E9;
-  --signal-border:#F0C9B4;
+  --signal:       #B91C1C;   /* soft red, not burnt orange */
+  --signal-bg:    #FEF2F2;
+  --signal-border:#FECACA;
 
   /* Confirmed */
-  --confirm:      #14532D;   /* deep green, 8.9:1 on paper */
-  --confirm-bg:   #EEF6F0;
-  --confirm-border:#BFD9C7;
+  --confirm:      #047857;   /* emerald */
+  --confirm-bg:   #ECFDF5;
+  --confirm-border:#A7F3D0;
 
   /* Neutral finding */
   --neutral:      #475569;
-  --neutral-bg:   #F1F3F6;
+  --neutral-bg:   #F1F5F9;
 }
 ```
 
-**Why warm off-white rather than pure white:** pure `#FFFFFF` on a projector reads as a blank slide. `#FBFAF7` reads as paper and keeps the surface cards distinguishable without shadows.
+**Why cool off-white rather than pure white:** pure `#FFFFFF` on a projector reads as a blank slide. `#F8FAFC` keeps the white cards distinguishable while staying neutral beside the deep slate ink.
 
-**Why burnt orange for gaps, not red:** red says *error, you broke something*. Orange says *attention, unfinished*. The product is not punishing the founder; it is pointing at an empty cell.
+**Why soft red for gaps, not burnt orange:** the gap is a finding, not a punishment. A pale red cell with a dashed border and hatch says *unfinished evidence* without implying the founder broke anything; emerald is reserved for confirmed coverage.
 
 ### 2.1 Heatmap scale
 
@@ -64,7 +64,7 @@ Density, 0 → many. Must be legible in greyscale and under deuteranopia.
 | 1–2 | `#E8EFE9` | 1px solid `#C7D8CB` | — |
 | 3–5 | `#C3D9C8` | 1px solid `#A6C4AD` | — |
 | 6–10 | `#8FB99A` | 1px solid `#6FA07D` | — |
-| 11+ | `#4E8A62` | 1px solid `#3C6E4E` | text switches to `#FFFFFF` |
+| 11+ | `#047857` | 1px solid `#065F46` | text switches to `#FFFFFF` |
 
 The zero cell carries a **dash, a hatch, and a dashed border** — three redundant channels, so it survives a black-and-white printout of the deck.
 
@@ -87,7 +87,7 @@ The zero cell carries a **dash, a hatch, and a dashed border** — three redunda
 --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
 ```
 
-**Self-host both.** No Google Fonts CDN — it's a network dependency in a demo, and a privacy leak in a product that claims local-first. Subset to Latin.
+**Self-host Inter.** `app/layout.tsx` imports `@fontsource/inter` weights 400–700, so no Google Fonts CDN is contacted. Numeric cells use the platform mono stack; no second webfont is shipped.
 
 **Rule:** any string that a user might compare against another string vertically is mono. Counts, dates, percentages, claim IDs, org refs. Prose is Inter.
 
@@ -100,13 +100,13 @@ The zero cell carries a **dash, a hatch, and a dashed border** — three redunda
 --space-4: 16px; --space-6: 24px; --space-8: 32px;
 --space-12: 48px; --space-16: 64px;
 
---radius-sm: 4px;
---radius-md: 6px;
-/* no --radius-lg, no pills */
+--radius-sm: 8px;
+--radius-md: 16px;
+--radius-cell: 10px;
 ```
 
-- Cards: `--radius-md`, 1px `--border`, `--surface`.
-- No `box-shadow` anywhere except a single focus ring.
+- Cards: `--radius-md`, 1px `--border`, `--surface`, one shallow shadow on hover.
+- Heatmap cells: `--radius-cell`, so the grid reads as a rounded SaaS surface.
 - Focus: `outline: 2px solid var(--ink); outline-offset: 2px;` — visible on paper, works in high contrast.
 
 ---

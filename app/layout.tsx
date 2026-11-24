@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
 import { HydrationMarker } from "../components/HydrationMarker";
 import { QueryProvider } from "../components/QueryProvider";
 import { Sidebar } from "../components/Sidebar";

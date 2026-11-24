@@ -56,6 +56,9 @@ const SYSTEM_PROMPT =
   "rename them. Use bearsOn: false unless the notes would change a " +
   "reasonable person's estimate of the claim.";
 
+/** E1 budget: one call per claim for 20 rows, with room for one schema repair. */
+const MAX_PROVIDER_CALLS = 5;
+
 export async function tagRelevance(
   rows: readonly EvidenceRow[],
   claims: readonly Claim[],
@@ -65,6 +68,8 @@ export async function tagRelevance(
   const tags: RelevanceTag[] = [];
   const fallbackReasons: string[] = [];
   const before = provider.callCount ?? 0;
+  const callsUsed = () => (provider.callCount ?? 0) - before;
+  const budget = Math.max(claims.length, MAX_PROVIDER_CALLS);
   let cacheHits = 0;
   let flagged = 0;
 
@@ -104,23 +109,39 @@ export async function tagRelevance(
           schema: { bearsOn: "boolean", polarity: "supports | contradicts | ambiguous" },
         }),
       );
-      try {
-        const completion = await completeWithRetry(provider, SYSTEM_PROMPT, user, options.retry);
-        if (!completion.ok) {
-          fallbackReasons.push(`${claim.id}:PROVIDER_${completion.errorCode ?? "ERROR"}`);
-        } else {
-          batch = parseBatch(completion.text, claim.id, redactedRows.map((row) => row.evidenceId));
-          if (batch === null) {
-            fallbackReasons.push(`${claim.id}:SCHEMA_INVALID`);
-          } else {
-            putCached(key, completion.text);
-          }
+      let batchFailure: string | null = null;
+      const expectedIds = redactedRows.map((row) => row.evidenceId);
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const remaining = budget - callsUsed();
+        if (remaining <= 0) {
+          batchFailure = `${claim.id}:CALL_BUDGET_EXHAUSTED`;
+          break;
         }
-      } catch (error) {
-        fallbackReasons.push(
-          `${claim.id}:${error instanceof Error ? error.message.slice(0, 60) : "PROVIDER_THREW"}`,
-        );
+        try {
+          // Transport retries must never spend more than the remaining E1
+          // budget, otherwise a burst of 429s would turn 5 calls into 20.
+          const retry = {
+            ...options.retry,
+            maxRetries: Math.min(options.retry?.maxRetries ?? 3, remaining - 1),
+          };
+          const completion = await completeWithRetry(provider, SYSTEM_PROMPT, user, retry);
+          if (!completion.ok) {
+            batchFailure = `${claim.id}:PROVIDER_${completion.errorCode ?? "ERROR"}`;
+            break;
+          }
+          batch = parseBatch(completion.text, claim.id, expectedIds);
+          if (batch !== null) {
+            putCached(key, completion.text);
+            batchFailure = null;
+            break;
+          }
+          batchFailure = `${claim.id}:SCHEMA_INVALID`;
+        } catch (error) {
+          batchFailure = `${claim.id}:${error instanceof Error ? error.message.slice(0, 60) : "PROVIDER_THREW"}`;
+          break;
+        }
       }
+      if (batch === null && batchFailure) fallbackReasons.push(batchFailure);
     }
 
     for (const row of rows) {

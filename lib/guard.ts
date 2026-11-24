@@ -2,11 +2,11 @@
  * G1 — input guard. Runs before storage and before any provider call.
  *
  * Person names are a GDPR risk here: interviewees never consented to AI
- * processing. The detector is deliberately conservative. It redacts a pair of
- * capitalised tokens (with optional title or particles), and it never guesses
- * from a single capitalised word — that would turn "Most managers" into PII.
- * The known residual gap (single-token names, non-Latin scripts without a
- * second token) is disclosed in RESPONSIBLE_AI.md.
+ * processing. The detector aliases a pair of capitalised tokens (with optional
+ * title or particles), plus single names that appear in a naming context such
+ * as "Priya said X" or "name: adi". It refuses to alias role prose such as
+ * "Most managers said X" or acronyms such as GDPR. Emails, phones, IBANs and
+ * URLs are redacted before names are scanned.
  */
 
 export interface GuardResult {
@@ -16,10 +16,21 @@ export interface GuardResult {
 }
 
 const PATTERNS: ReadonlyArray<{ name: string; re: RegExp }> = [
-  { name: "EMAIL", re: /[\w.+-]+@[\w-]+\.[\w.]{2,}/g },
-  { name: "PHONE", re: /(\+\d[\d\s().-]{7,}\d)/g },
-  { name: "IBAN", re: /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g },
-  { name: "URL", re: /https?:\/\/\S+/g },
+  { name: "EMAIL", re: /[\w.+-]+@[\w-]+\.[\w.]{2,}/giu },
+  {
+    name: "IBAN",
+    // Case-insensitive and space-tolerant: BE68 5390 0754 7034 and
+    // be68539007547034 are both covered. Run before PHONE so its digit groups
+    // cannot be mistaken for a telephone number.
+    re: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){10,30}\b/giu,
+  },
+  {
+    name: "PHONE",
+    // International or national numbers with separated groups. The lookbehind
+    // prevents a match inside an alphanumeric code (for example an IBAN).
+    re: /(?<![\p{L}\d])(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)[\s.-]?|\d{2,4}[\s.-])\d{3,4}[\s.-]\d{3,4}/giu,
+  },
+  { name: "URL", re: /https?:\/\/\S+/giu },
 ];
 
 const INJECTION = [
@@ -56,9 +67,8 @@ const NAME_STOPWORDS = new Set([
   "spanish", "indian", "linkedin", "linked", "conference", "pricing",
   "price", "payment", "follow", "follow-up", "recurring", "problem",
   "product", "pilot", "letter", "intent", "commitment", "investment",
-  "rework", "market", "startup", "startups", "saturation", "wilson",
-  "pattyn", "dillen", "goetz", "guest", "bunce", "johnson", "hennink",
-  "kaiser", "segment", "segments", "retail", "healthcare", "unconfirmed",
+  "rework", "market", "startup", "startups", "saturation", "segment",
+  "segments", "retail", "healthcare", "unconfirmed",
   "unsupported", "supported", "insufficient", "imprecise", "ambiguous",
   "support", "precision", "binding", "export", "draft", "verified",
 ]);
@@ -76,6 +86,25 @@ interface Token {
   readonly end: number;
 }
 
+interface Span {
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * Single-token names are only aliased when the surrounding prose says the word
+ * is a person. Role nouns stay in the stop-list, so "Most managers said X" and
+ * "GDPR and SMB buyers said X" remain untouched while "Priya said X" and
+ * "name: adi" are aliased.
+ */
+const NAME_CONTEXT_PATTERNS: readonly RegExp[] = [
+  /\b(?<name>[A-Z][\p{L}'’-]+)(?=\s+(?:said|says|told|asked|mentioned|described|reported|explained|confirmed|agreed|added|observed))\b/gu,
+  /\b(?:called|named|from|with|by|for|met|interviewed|contacted)\s+(?<name>[A-Z][\p{L}'’-]+)(?!\s+\p{Ll})/gu,
+  /\b(?:name|contact|person|participant|interviewee|attendee)\s*[:=]\s*(?<name>[\p{L}][\p{L}'’-]+(?:\s+[\p{L}][\p{L}'’-]+){0,1})\b/giu,
+  /\b(?:called|named)\s+(?<name>[\p{L}][\p{L}'’-]+)\b/giu,
+  /\b(?<name>[\p{L}][\p{L}'’-]+)\s+(?:said|says|told|asked|mentioned|described|reported|explained|confirmed|agreed|added|observed)\b/giu,
+];
+
 function tokensOf(text: string): Token[] {
   const tokens: Token[] = [];
   for (const match of text.matchAll(/[\p{L}][\p{L}'’-]*/gu)) {
@@ -88,23 +117,25 @@ function tokensOf(text: string): Token[] {
   return tokens;
 }
 
-function isNameToken(token: Token | undefined): token is Token {
-  if (!token || token.text.length < 2) return false;
-  if (NAME_STOPWORDS.has(token.text.toLowerCase())) return false;
-  if (!/^\p{Lu}/u.test(token.text)) return false;
+function isNameWord(word: string): boolean {
+  const clean = word.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, "");
+  if (clean.length < 2) return false;
+  if (NAME_STOPWORDS.has(clean.toLowerCase())) return false;
   // Acronyms such as SMB, GDPR and L6 are not personal names.
-  if (token.text === token.text.toUpperCase()) return false;
+  if (clean === clean.toUpperCase()) return false;
+  return true;
+}
+
+function isNameToken(token: Token | undefined): token is Token {
+  if (!token || !isNameWord(token.text)) return false;
+  if (!/^\p{Lu}/u.test(token.text)) return false;
   return /[\p{Ll}]/u.test(token.text.slice(1));
 }
 
-/**
- * Finds spans that are very likely to be person names. Requires two adjacent
- * capitalised tokens, or a title followed by one. Single capitalised words and
- * sentence starters are deliberately left alone.
- */
-function nameSpans(text: string): Token[] {
+/** Two adjacent capitalised tokens, or a title followed by one. */
+function namePairSpans(text: string): Span[] {
   const tokens = tokensOf(text);
-  const spans: Token[] = [];
+  const spans: Span[] = [];
 
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index]!;
@@ -125,7 +156,7 @@ function nameSpans(text: string): Token[] {
         } else {
           index += 1;
         }
-        spans.push({ text: text.slice(token.start, end.end), start: token.start, end: end.end });
+        spans.push({ start: token.start, end: end.end });
         continue;
       }
     }
@@ -137,7 +168,7 @@ function nameSpans(text: string): Token[] {
     }
     const next = tokens[cursor];
     if (isNameToken(next)) {
-      spans.push({ text: text.slice(token.start, next.end), start: token.start, end: next.end });
+      spans.push({ start: token.start, end: next.end });
       index = cursor;
     }
   }
@@ -145,8 +176,40 @@ function nameSpans(text: string): Token[] {
   return spans;
 }
 
+function nameContextSpans(text: string): Span[] {
+  const spans: Span[] = [];
+  for (const pattern of NAME_CONTEXT_PATTERNS) {
+    pattern.lastIndex = 0;
+    for (const match of text.matchAll(pattern)) {
+      const name = match.groups?.name;
+      if (!name) continue;
+      const words = name.split(/\s+/u);
+      if (!words.some(isNameWord) || words.every((word) => NAME_STOPWORDS.has(word.toLowerCase()))) {
+        continue;
+      }
+      const start = (match.index ?? 0) + match[0].indexOf(name);
+      spans.push({ start, end: start + name.length });
+    }
+  }
+  return spans;
+}
+
+function mergeSpans(spans: readonly Span[]): Span[] {
+  const sorted = [...spans].sort((a, b) => a.start - b.start || b.end - a.end);
+  const merged: Span[] = [];
+  for (const span of sorted) {
+    const last = merged.at(-1);
+    if (!last || span.start > last.end) {
+      merged.push(span);
+      continue;
+    }
+    merged[merged.length - 1] = { start: last.start, end: Math.max(last.end, span.end) };
+  }
+  return merged;
+}
+
 function redactNames(text: string): { redacted: string; found: boolean } {
-  const spans = nameSpans(text);
+  const spans = mergeSpans([...namePairSpans(text), ...nameContextSpans(text)]);
   if (spans.length === 0) return { redacted: text, found: false };
   let redacted = text;
   for (const span of [...spans].reverse()) {
@@ -160,8 +223,10 @@ export function guard(input: string): GuardResult {
   const flags: string[] = [];
 
   for (const pattern of PATTERNS) {
-    if (pattern.re.test(redacted)) {
-      redacted = redacted.replace(pattern.re, `[${pattern.name}]`);
+    pattern.re.lastIndex = 0;
+    const next = redacted.replace(pattern.re, `[${pattern.name}]`);
+    if (next !== redacted) {
+      redacted = next;
       flags.push(pattern.name);
     }
   }

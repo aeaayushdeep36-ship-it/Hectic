@@ -7,13 +7,15 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run demo:rehearse && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "a11y:lighthouse": "node scripts/lighthouse-a11y.mjs",
+    "measure:time-saved": "node scripts/time-saved.mjs",
     "engine:boundary": "node scripts/engine-boundary.mjs",
     "secrets:check": "node scripts/secret-scan.mjs",
     "check": "npm run secrets:check && npm run lint && npm run typecheck && npm test && npm run engine:boundary",
@@ -29,6 +31,7 @@
     "db:reset": "node scripts/db-clean.mjs && tsx db/seed.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@tanstack/react-query": "^5.108.4",
     "better-sqlite3": "13.2.0",
     "clsx": "^2.1.1",
@@ -57,6 +60,7 @@
     "drizzle-kit": "0.31.11",
     "eslint": "9.39.5",
     "fast-check": "4.11.0",
+    "lighthouse": "^12.8.2",
     "tailwindcss": "4.3.5",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

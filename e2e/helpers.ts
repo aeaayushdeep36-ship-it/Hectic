@@ -25,15 +25,20 @@ export async function waitForHydration(page: Page): Promise<void> {
   await page.locator('[data-hydrated="true"]').waitFor({ state: "attached" });
 }
 
-/** Critical accessibility violations only; the design spec allows minor ones. */
+/** Blocks serious and critical WCAG A/AA violations, matching the Lighthouse gate. */
 export async function expectNoCriticalViolations(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
-  const critical = results.violations.filter((violation) => violation.impact === "critical");
+  const blocking = results.violations.filter(
+    (violation) => violation.impact === "critical" || violation.impact === "serious",
+  );
   expect(
-    critical.map((violation) => `${violation.id}: ${violation.help}`),
-    "critical accessibility violations",
+    blocking.flatMap((violation) => [
+      `${violation.id}: ${violation.help}`,
+      ...violation.nodes.slice(0, 5).map((node) => `  ${node.target.join(" ")}`),
+    ]),
+    "serious or critical accessibility violations",
   ).toEqual([]);
 }
 

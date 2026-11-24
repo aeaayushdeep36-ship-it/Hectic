@@ -124,6 +124,7 @@ export default function WorkspaceDashboard() {
       </header>
 
       <div
+        data-testid="roster-dropzone"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -185,18 +186,27 @@ export default function WorkspaceDashboard() {
       ) : null}
 
       {isParsing ? (
-        <p role="status" className="text-center text-[var(--ink-muted)]">
+        <p
+          role="status"
+          className="flex items-center justify-center gap-2 text-center text-[var(--ink-muted)]"
+        >
+          <span className="spinner" aria-hidden="true" />
           Parsing data…
         </p>
       ) : null}
 
       {audit.isPending ? (
         <div role="status" className="card p-6" aria-live="polite">
-          <p className="label">Working</p>
-          <ol className="mono mt-3 space-y-1 text-[13px] text-[var(--ink-muted)]">
-            <li>1. Import and redact roster</li>
-            <li>2. Run deterministic audit</li>
-          </ol>
+          <div className="flex items-center gap-2">
+            <span className="spinner" aria-hidden="true" />
+            <p className="label">Working</p>
+          </div>
+          <div className="mt-3 space-y-2" aria-hidden="true">
+            <div className="skeleton h-4 w-3/4" />
+            <div className="skeleton h-4 w-5/6" />
+            <div className="skeleton h-4 w-1/2" />
+          </div>
+          <p className="sr-only">Importing and redacting roster, then running the deterministic audit.</p>
           <p className="mt-4 text-sm text-[var(--ink-muted)]">Do not close this tab.</p>
         </div>
       ) : null}
@@ -255,7 +265,12 @@ export default function WorkspaceDashboard() {
             ) : null}
           </div>
 
-          <div className="overflow-x-auto max-h-[400px]">
+          <div
+            className="overflow-x-auto max-h-[400px]"
+            role="region"
+            aria-label="Roster preview scroll area"
+            tabIndex={0}
+          >
             <table className="w-full text-left text-sm whitespace-nowrap" aria-label="Roster preview">
               <thead className="bg-[var(--paper)] text-[var(--ink-muted)] border-b border-[var(--border)] sticky top-0">
                 <tr>

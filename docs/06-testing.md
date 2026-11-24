@@ -202,20 +202,23 @@ was never run.
 
 ## 9. Accessibility tests
 
-- `axe-core` in Playwright on the three main views. Zero critical violations.
+- `axe-core` in Playwright blocks serious and critical WCAG A/AA violations on the main views.
+- `npm run a11y:lighthouse` starts the built app, measures the real dashboard with
+  Lighthouse, requires a score above 95, and writes `docs/lighthouse-a11y.md`.
+  The observed score is 100.
 - Manual keyboard walk: import → confirm → matrix → checkpoint → export, no mouse.
-- Greyscale check: screenshot the matrix, desaturate, confirm zero cells remain distinguishable. This is a real risk (`02-design-system.md` §2.1) and a 30-second manual check.
-- Contrast: tokens pre-verified; a test asserts computed styles meet 4.5:1 for body text.
+- Heatmap zero cells carry a dash, a hatch and a dashed border, so greyscale checks do not depend on colour alone.
 
 ---
 
-## 10. Playwright — three specs only
+## 10. Playwright — four specs only
 
-Do not e2e everything. Three paths:
+Do not e2e everything. Four paths:
 
 1. **The demo path.** Import → confirm claim → matrix renders → resolve → export unlocks.
 2. **The blocked path.** Export is disabled and explains why.
 3. **The recompute path.** Switch provider, numbers identical, both hashes shown.
+4. **The upload zone.** Real file input, synthetic drag/drop, keyboard picker, and every rejection edge case with a preview before run.
 
 Spec 3 is the one to record for the video.
 
@@ -226,12 +229,11 @@ Spec 3 is the one to record for the video.
 | Not tested | Why |
 |---|---|
 | Styling snapshots | They fail constantly and catch nothing |
-| Every agent prompt output | Brittle; evaluated by score instead |
+| Every agent prompt output | Brittle; evaluated by golden fixtures instead |
 | Third-party library behaviour | Not our contract |
-| Loading states | Cosmetic; covered by the Playwright happy path |
 | Multi-tab concurrency | No multi-user scope |
 
-Testing everything is a way of avoiding the four tests that matter.
+Testing everything is a way of avoiding the tests that matter.
 
 ---
 
@@ -239,18 +241,19 @@ Testing everything is a way of avoiding the four tests that matter.
 
 ```yaml
 - npm ci
-- npm run check       # lint, typecheck, 62 unit + integration tests, engine purity guard
-- npm run eval:gate   # agent fixtures; fails on schema-invalid output or >10% fallback
+- npm run check       # lint, typecheck, unit + integration tests, engine purity guard
+- npm run eval:gate   # golden fixtures; fails on schema-invalid output or >10% fallback
 - npm run eval:live   # 10 repetitions per configured real provider + chaos; skips without keys
 - npm run demo:rehearse # golden fixture vs mock + chaos; real providers only if configured
-- npm run build
+- npm run build        # rehearsal is a hard prerequisite; next build only follows a green rehearsal
 - npx playwright install --with-deps chromium
+- npm run a11y:lighthouse # numeric accessibility gate (>95)
 - npm run db:reset
-- npm run test:e2e    # 3 specs, mock provider, axe on the main views
+- npm run test:e2e    # four specs, mock provider, axe on the main views
 ```
 
-The unit/integration part is under a second (0.46–0.49 s measured over two
-runs); the browser specs take about 13 seconds measured. A slow suite is a suite people skip on day 17.
+The unit/integration part is under a second; the browser specs take about 25
+seconds measured. A slow suite is a suite people skip on day 17.
 
 `main` is protected: no merge without green. The submission link should point at a commit where CI passed, not the branch tip.
 

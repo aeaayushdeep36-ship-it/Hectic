@@ -48,7 +48,7 @@ or a verdict. This is not a policy statement; it is structural:
 | A1 widens the population (e.g. "practice managers" → "healthcare professionals") | Makes the sample look *more* adequate | Mandatory human confirmation; every field editable; ambiguity flags shown |
 | A2 finds relevance everywhere | Inflates counts | `bears_on: false` prompt discipline; visible tags; human override stored with `overridden_by_user` |
 | A3/A4 invent a number | Misleading artefact | Numeric guard falls back to deterministic template |
-| Person names in free text | PII reaches a provider | Conservative two-token detector redacts before storage and before egress; aliases still required; residual single-token names disclosed in §8 |
+| Person names in free text | PII reaches a provider | Guard redacts named fields, two-token names, naming-context single names, emails, phones, IBANs and URLs before storage and egress; aliases still required; residual risk disclosed in §9 |
 | Injection in notes or claim text | Tag pollution only | Pattern screen, JSON encoding, structural separation, and no numeric field to corrupt |
 
 ## 4. Who is affected
@@ -104,36 +104,43 @@ list of *known* biases, not as a claim of neutrality.
 | **Relevance inflation** — the model treats politeness, a single shared word, or silence as evidence | A2 tagging | Inflates `support` | One batched prompt per claim, `bearsOn: false` default, two distinct predicate terms in the deterministic fallback, visible and overridable tags with the producer recorded | Prompt injection can pollute tags; it cannot change a verdict, because the engine reads only the founder-confirmed roster |
 | **Authority bias** — confident prose makes a shaky verdict feel settled | A3 explanation, A4 statement | Overstates certainty | No single score is emitted; the verdict is always `level · support · precision · binding`; the statement prints limitations and the Wilson caveat on the artefact itself | Judges and founders may still read `SUPPORTED` as "validated" |
 | **Sampling bias** — Wilson intervals assume random sampling; founder recruitment is network/convenience | Engine presentation | Understates uncertainty | The interval is labelled a **best case** in the statement and in `docs/06-testing.md`; network share and channel count are diagnostics, never gates | A reader who ignores the label will under-estimate uncertainty |
-| **Language and name bias** — the name detector and role noun list are written for Latin-script, two-token names | G1 guard, A1 fallback | Mixed: false redaction of ordinary prose, or missed PII for other naming conventions | Conservative rules: require two capitalised tokens or a title, skip sentence-start role words and acronyms; every redaction is visible in the audit log | Single-token names and some non-Latin scripts are not caught — see §9 |
+| **Language and name bias** — name detection must work across naming conventions without destroying ordinary prose | G1 guard, A1 fallback | Mixed: false redaction of ordinary prose, or missed PII for unusual conventions | Guard combines named-field hints, explicit naming contexts, title/particle support and Unicode-aware name tokens; role prose, acronyms and sentence openers are preserved; every redaction is visible in the audit log | Founder-supplied aliases cannot be verified; see §9 |
 | **Model variance** — the same prompt can produce different prose across providers | A1–A3 | Presentation drift only | Schema validation, tolerant-but-validated JSON parsing, numeric guard on A3, and a provider-swap test asserting byte-identical finding hashes **and** identical fallback behaviour | Prose quality on hosted models is still human-review work; `docs/eval-gate.md` scores only the deterministic path, while `docs/eval-live.md` records real-provider repetitions and failures |
 
 The controls are structural where possible and human where not. No model is in a
 position to invent a number: the schemas contain no numeric verdict fields and
 `engine/` has no provider imports. `npm run engine:boundary` enforces the latter.
 
-## 9. Residual privacy risk — names
+## 9. GDPR redaction coverage and residual risk
 
-The guard added in remediation redacts **two-token person names** with optional
-titles and particles (for example `Priya Raman`, `Dr. Anne-Marie de Groot`,
-`José da Silva`, `Élodie Müller`) before a row is stored and before any provider
-call. E-mail, phone, IBAN, URL, spreadsheet formulas and injection strings were
-already covered.
+`lib/guard.ts` now applies strict redaction before storage and before any provider
+call. Automated regressions in `tests/remediation.test.ts` cover:
 
-Known residual gaps, stated plainly rather than fixed by over-matching:
+- two-token names with titles, hyphens and particles (`Priya Raman`,
+  `Dr. Anne-Marie de Groot`, `José da Silva`, `Élodie Müller`);
+- single-token names in naming contexts (`Priya said X`, `called Priya about
+  the pilot`) while preserving ordinary prose such as *"Most managers said X"*;
+- lowercase names supplied through explicit fields (`name: adi priyo described
+  the gap`, `contact = juan pérez mentioned budget`);
+- e-mail addresses, national and international phone numbers, IBANs and URLs,
+  alongside the existing formula and injection screens.
 
-1. A single-token name in a note (`Priya said X`) is not redacted. Redacting
-   single capitalised words would destroy ordinary prose such as *"Most
-   managers said X"* and every sentence opener.
-2. Names in scripts without capitalisation, or one-token naming conventions,
-   are not detected.
-3. Aliases in the `alias` column are founder-supplied; the tool cannot verify
-   that they are truly anonymous.
+The detector uses field hints, naming contexts and Unicode-aware name tokens
+rather than a blanket capitalised-word rule; that avoids turning ordinary role
+prose and sentence openers into false positives.
 
-Mitigations for the residual: the UI asks for aliases, notes are excluded from
-the printable export, processing is local unless a remote provider is explicitly
-configured, there is no telemetry, and the audit log records only redactions and
-flags. A founder who needs a strict guarantee should type no names at all. This
-is a GDPR **residual risk**, not a claim of compliance.
+Remaining residual risk is limited and disclosed rather than hidden:
+
+1. Aliases in the `alias` column are founder-supplied; Hectic cannot verify that
+   they are truly anonymous.
+2. A name written with no naming context, no title and no conventional capital
+   or particle pattern can still be missed.
+3. Redaction reduces but does not by itself establish GDPR compliance; lawful
+   basis, retention and data-subject rights remain the founder's obligations.
+
+Mitigations: the UI asks for aliases, raw notes are excluded from the printable
+export, processing is local unless a remote provider is explicitly configured,
+there is no telemetry, and the audit log records redactions and flags only.
 
 ## 10. Remote processing disclosure — Gemini, Groq and OpenRouter
 
