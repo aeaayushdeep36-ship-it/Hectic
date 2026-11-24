@@ -15,6 +15,7 @@ import {
   completeWithRetry,
   getCached,
   getProvider,
+  parseModelJson,
   putCached,
   wrapUserContent,
   type Provider,
@@ -140,8 +141,7 @@ function guardNotes(text: string) {
 
 function parseBatch(text: string, claimId: string, expectedIds: readonly string[]): RelevanceTag[] | null {
   try {
-    const parsed: unknown = JSON.parse(text);
-    const result = relevanceTagSchema.array().safeParse(parsed);
+    const result = relevanceTagSchema.array().safeParse(parseModelJson(text));
     if (!result.success) return null;
     const ids = result.data.map((tag) => tag.evidenceId);
     if (ids.length !== expectedIds.length) return null;

@@ -7,7 +7,7 @@
 import { heuristicTag, templateProposal } from "../lib/heuristics";
 import type { Claim, EvidenceRow } from "../lib/types";
 
-export type ProviderId = "mock" | "gemini" | "groq" | "ollama" | "chaos";
+export type ProviderId = "mock" | "gemini" | "groq" | "ollama" | "openrouter" | "chaos";
 
 export interface Completion {
   readonly text: string;
@@ -31,6 +31,8 @@ const ALLOWED: Readonly<Record<ProviderId, string>> = {
   gemini: "gemini-2.0-flash-lite",
   groq: "llama-3.1-8b-instant",
   ollama: "qwen2.5:7b",
+  // OpenRouter's free tier for an open-weight model. No card required.
+  openrouter: "google/gemma-4-31b-it:free",
   chaos: "chaos-v1",
 };
 
@@ -44,6 +46,43 @@ function parseEnvelope(user: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Tolerant JSON extraction for real gateways. An open-weight model may wrap its
+ * answer in a Markdown fence or a sentence of prose; neither is a schema
+ * violation until the parsed value fails Zod. No code is evaluated here.
+ */
+export function parseModelJson(text: string): unknown | null {
+  const trimmed = text.trim();
+  const candidates: string[] = [];
+  const fence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fence?.[1]) candidates.push(fence[1].trim());
+  candidates.push(trimmed);
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Try the next form.
+    }
+  }
+
+  // Last resort: the outermost JSON object or array, with surrounding prose
+  // discarded. A malformed or truncated body still returns null.
+  const first = trimmed.search(/[[{]/);
+  if (first >= 0) {
+    const isObject = trimmed[first] === "{";
+    const last = trimmed.lastIndexOf(isObject ? "}" : "]");
+    if (last > first) {
+      try {
+        return JSON.parse(trimmed.slice(first, last + 1));
+      } catch {
+        // Not valid JSON either.
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -105,6 +144,12 @@ export class MockProvider implements Provider {
   }
 }
 
+interface HttpOptions {
+  /** Open-weight gateways do not all support OpenAI's json_object mode. */
+  readonly jsonMode?: boolean;
+  readonly headers?: Readonly<Record<string, string>>;
+}
+
 class OpenAiCompatibleProvider implements Provider {
   callCount = 0;
 
@@ -113,6 +158,7 @@ class OpenAiCompatibleProvider implements Provider {
     readonly modelId: string,
     private readonly baseUrl: string,
     private readonly apiKey: string | null,
+    private readonly http: HttpOptions = {},
   ) {}
 
   async complete(system: string, user: string): Promise<Completion> {
@@ -123,11 +169,14 @@ class OpenAiCompatibleProvider implements Provider {
         method: "POST",
         headers: {
           "content-type": "application/json",
+          ...this.http.headers,
           ...(this.apiKey ? { authorization: `Bearer ${this.apiKey}` } : {}),
         },
         body: JSON.stringify({
           model: this.modelId,
-          response_format: { type: "json_object" },
+          // Gemma 4 on OpenRouter is open-weight: ask for JSON in the prompt
+          // and validate with Zod rather than relying on a gateway-specific mode.
+          ...(this.http.jsonMode === false ? {} : { response_format: { type: "json_object" } }),
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },
@@ -200,6 +249,21 @@ export function getProvider(
         ALLOWED.ollama,
         process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1",
         null,
+      );
+    case "openrouter":
+      // The key stays server-side. Only the provider id crosses the client boundary.
+      return new OpenAiCompatibleProvider(
+        "openrouter",
+        process.env.OPENROUTER_MODEL ?? ALLOWED.openrouter,
+        "https://openrouter.ai/api/v1",
+        process.env.OPENROUTER_API_KEY ?? null,
+        {
+          jsonMode: false,
+          headers: {
+            "HTTP-Referer": process.env.OPENROUTER_SITE_URL ?? "http://localhost:3000",
+            "X-Title": "Hectic evidence auditor",
+          },
+        },
       );
     default:
       return new MockProvider();

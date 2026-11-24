@@ -10,6 +10,7 @@ import {
   completeWithRetry,
   getCached,
   getProvider,
+  parseModelJson,
   putCached,
   wrapUserContent,
   type Provider,
@@ -50,8 +51,8 @@ export async function explainFinding(
   const cached = getCached(key);
   if (cached !== undefined) {
     try {
-      const body = JSON.parse(cached) as { text?: unknown };
-      if (typeof body.text === "string" && accept(body.text)) {
+      const body = parseModelJson(cached) as { text?: unknown } | null;
+      if (body && typeof body.text === "string" && accept(body.text)) {
         return { text: body.text, usedProvider: true, fallbackReason: null };
       }
     } catch {
@@ -64,8 +65,11 @@ export async function explainFinding(
     if (!completion.ok) {
       return { text: fallback, usedProvider: false, fallbackReason: `PROVIDER_${completion.errorCode ?? "ERROR"}` };
     }
-    const body = JSON.parse(completion.text) as { text?: unknown };
-    if (typeof body.text !== "string" || !accept(body.text)) {
+    const body = parseModelJson(completion.text) as { text?: unknown } | null;
+    if (!body || typeof body.text !== "string") {
+      return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
+    }
+    if (!accept(body.text)) {
       return { text: fallback, usedProvider: false, fallbackReason: "NUMERIC_GUARD" };
     }
     putCached(key, completion.text);

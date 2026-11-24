@@ -38,6 +38,12 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Findings" })).toBeVisible();
   await expectNoCriticalViolations(page);
 
+  // The provider picker exposes OpenRouter while keeping mock as the safe default.
+  const providerSelect = page.getByLabel("Provider");
+  await expect(providerSelect).toBeVisible();
+  await expect(providerSelect).toHaveValue("mock");
+  await expect(providerSelect.locator('option[value="openrouter"]')).toHaveText(/gemma 4 31B free/);
+
   // U1: the live stream shows named agent steps, not a bare spinner.
   await page.getByRole("button", { name: "Run agents with live status" }).click();
   await expect(page.getByRole("region", { name: "Agent progress" })).toBeVisible();

@@ -20,6 +20,15 @@ type StreamEvent =
     }
   | { type: "error"; message: string };
 
+/** Labels only — the real provider is constructed server-side from env keys. */
+const MODEL_BY_PROVIDER: Record<string, string> = {
+  mock: "mock-v1",
+  openrouter: "google/gemma-4-31b-it:free",
+  gemini: "gemini-2.0-flash-lite",
+  groq: "llama-3.1-8b-instant",
+  ollama: "qwen2.5:7b",
+};
+
 export function RunConsole({
   initialRun,
   workspaceSlug,
@@ -34,6 +43,7 @@ export function RunConsole({
   const [busy, setBusy] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [streamLog, setStreamLog] = useState<string[]>([]);
+  const [provider, setProvider] = useState("mock");
 
   const unresolved = run.findings.filter((finding) => finding.resolution === null && finding.finding !== "SUPPORTED");
 
@@ -50,7 +60,7 @@ export function RunConsole({
       const response = await fetch(`/api/workspaces/${workspaceSlug}/runs/stream`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ providerId: "mock" }),
+        body: JSON.stringify({ providerId: provider }),
       });
       if (!response.ok || !response.body) throw new Error(`STREAM_${response.status}`);
 
@@ -101,7 +111,7 @@ export function RunConsole({
       const response = await fetch(`/api/runs/${run.id}/recompute`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ providerId: "ollama", modelId: "qwen2.5:7b" }),
+        body: JSON.stringify({ providerId: provider, modelId: MODEL_BY_PROVIDER[provider] }),
       });
       const body = (await response.json()) as { identical?: boolean; run?: RunView };
       if (body.identical !== undefined && body.run) {
@@ -146,7 +156,23 @@ export function RunConsole({
             input {run.inputHash} · {run.costEur.toFixed(2)} EUR · {run.callCount} calls
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
+            Provider
+            <select
+              className="field mono"
+              aria-label="Provider"
+              value={provider}
+              onChange={(event) => setProvider(event.target.value)}
+              disabled={streaming || busy}
+            >
+              <option value="mock">mock · offline</option>
+              <option value="openrouter">openrouter · gemma 4 31B free</option>
+              <option value="gemini">gemini</option>
+              <option value="groq">groq</option>
+              <option value="ollama">ollama · local</option>
+            </select>
+          </label>
           <button type="button" className="btn" onClick={() => void doStream()} disabled={streaming || busy}>
             {streaming ? "Running agents…" : "Run agents with live status"}
           </button>

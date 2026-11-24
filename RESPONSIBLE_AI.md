@@ -23,8 +23,9 @@ their agents.
 | G1 `input-guard` | raw cells and notes | redacted text + injection flag | none (regex) |
 
 Runtimes are free-tier or open-weight only: Gemini Flash-Lite, Groq
-`llama-3.1-8b-instant`, Ollama `qwen2.5:7b`, and an in-repo deterministic mock.
-The mock is the default and needs no key. No secret is stored in the repository.
+`llama-3.1-8b-instant`, Ollama `qwen2.5:7b`, OpenRouter's free
+`google/gemma-4-31b-it:free`, and an in-repo deterministic mock. The mock is the
+default and needs no key. No secret is stored in the repository.
 
 ## 2. What the model cannot do
 
@@ -52,9 +53,11 @@ or a verdict. This is not a policy statement; it is structural:
 ## 4. Who is affected
 
 The founder's interviewees — people who never heard of this product and did not
-consent to AI processing. Mitigations: local-only operation, no account, no
-telemetry, aliases instead of names, redaction before any provider call, and
-notes excluded from the export entirely.
+consent to AI processing. Mitigations: offline operation by default, no account,
+no telemetry, aliases instead of names, redaction before any provider call, and
+notes excluded from the export entirely. If OpenRouter is configured, redacted
+notes leave the machine and OpenRouter becomes a processor; the founder makes
+that choice explicitly and the key is never committed.
 
 ## 5. What the tool must not be used for
 
@@ -100,7 +103,7 @@ list of *known* biases, not as a claim of neutrality.
 | **Authority bias** — confident prose makes a shaky verdict feel settled | A3 explanation, A4 statement | Overstates certainty | No single score is emitted; the verdict is always `level · support · precision · binding`; the statement prints limitations and the Wilson caveat on the artefact itself | Judges and founders may still read `SUPPORTED` as "validated" |
 | **Sampling bias** — Wilson intervals assume random sampling; founder recruitment is network/convenience | Engine presentation | Understates uncertainty | The interval is labelled a **best case** in the statement and in `docs/06-testing.md`; network share and channel count are diagnostics, never gates | A reader who ignores the label will under-estimate uncertainty |
 | **Language and name bias** — the name detector and role noun list are written for Latin-script, two-token names | G1 guard, A1 fallback | Mixed: false redaction of ordinary prose, or missed PII for other naming conventions | Conservative rules: require two capitalised tokens or a title, skip sentence-start role words and acronyms; every redaction is visible in the audit log | Single-token names and some non-Latin scripts are not caught — see §9 |
-| **Model variance** — the same prompt can produce different prose across providers | A1–A3 | Presentation drift only | Schema validation, numeric guard on A3, and a provider-swap test asserting byte-identical finding hashes **and** identical fallback behaviour | Prose quality on hosted models is unreviewed; `docs/eval-gate.md` scores only the deterministic path |
+| **Model variance** — the same prompt can produce different prose across providers | A1–A3 | Presentation drift only | Schema validation, tolerant-but-validated JSON parsing, numeric guard on A3, and a provider-swap test asserting byte-identical finding hashes **and** identical fallback behaviour | Prose quality on hosted models is still human-review work; `docs/eval-gate.md` scores only the deterministic path, while `docs/eval-live.md` records real-provider repetitions and failures |
 
 The controls are structural where possible and human where not. No model is in a
 position to invent a number: the schemas contain no numeric verdict fields and
@@ -125,8 +128,30 @@ Known residual gaps, stated plainly rather than fixed by over-matching:
    that they are truly anonymous.
 
 Mitigations for the residual: the UI asks for aliases, notes are excluded from
-the printable export, all processing is local, there is no telemetry, and the
-audit log records only redactions and flags. A founder who needs a strict
-guarantee should type no names at all. This is a GDPR **residual risk**, not a
-claim of compliance.
+the printable export, processing is local unless a remote provider is explicitly
+configured, there is no telemetry, and the audit log records only redactions and
+flags. A founder who needs a strict guarantee should type no names at all. This
+is a GDPR **residual risk**, not a claim of compliance.
+
+## 10. Remote processing disclosure — OpenRouter
+
+Selecting `openrouter` sends **redacted** notes and claim text to
+`https://openrouter.ai/api/v1` for the free `google/gemma-4-31b-it:free` model.
+The API key is read only from `OPENROUTER_API_KEY` in the server environment, is
+never sent to the browser, and is absent from the repository. No account or
+payment detail is held by Hectic.
+
+OpenRouter is a third-party processor for that request. The mitigation chain is
+unchanged: the input guard strips email, phone, IBAN, URLs, formulas, likely
+person names and injection strings before egress; the response is schema-checked
+with Zod; A3 re-checks every generated digit; and the verdict itself is computed
+locally by `engine/` before any call. Free-tier rate limits are handled by one
+batch per claim, retry with jittered backoff, and an LRU cache. If the service is
+unavailable or over quota, the deterministic template fallback runs and the
+reason is logged — the audit still completes.
+
+`npm run eval:live` is the repeatability harness for this runtime: it exercises
+each configured provider ten times by default, records every fallback and
+schema failure in `docs/eval-live.md`, and refuses to claim the iterative gate
+until at least two real models have been run.
 

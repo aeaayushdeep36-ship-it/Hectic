@@ -29,7 +29,7 @@ The verdict has three parts — evidence type, support, and precision — and is
 
 Node 22+ · Next.js (App Router) · TypeScript strict · Tailwind · SQLite via better-sqlite3 + Drizzle · Zod · Papa Parse (CSV) · Vitest + fast-check + Playwright + axe-core · ESLint. A [`.npmrc`](.npmrc) skips install scripts because every native dependency ships a prebuilt binary; `npm ci` needs no C++ toolchain.
 
-LLM runtimes, all free-tier or open-weight: Gemini Flash-Lite · Groq · Ollama `qwen2.5:7b` · in-repo mock provider.
+LLM runtimes, all free-tier or open-weight: Gemini Flash-Lite · Groq · Ollama `qwen2.5:7b` · OpenRouter `google/gemma-4-31b-it:free` · in-repo mock provider.
 
 ## Documentation
 
@@ -61,8 +61,9 @@ database and no environment file. Open <http://localhost:3000>. Four synthetic
 demo workspaces are seeded from the hand-computed fixtures. Then:
 
 ```bash
-npm run check        # lint, typecheck, 55 unit/integration tests, engine purity guard
+npm run check        # lint, typecheck, 62 unit/integration tests, engine purity guard
 npm run eval:gate    # agent fixtures; fails CI on schema-invalid output or >10% fallback
+npm run eval:live    # 10 repetitions per configured real provider + chaos; writes docs/eval-live.md
 npm run demo:rehearse # golden fixture against mock + injected chaos; real providers if configured
 npm run build        # production build
 npm run test:e2e     # 3 Playwright specs with axe, needs the dev server (started automatically)
@@ -70,6 +71,20 @@ npm run audit -- --roster fixtures/underpowered/roster.csv --claims fixtures/und
 ```
 
 Hosted deployment is deliberately out of scope; the local path is the full product.
+
+### Using OpenRouter (Gemma 4 31B, free tier)
+
+Copy `.env.example` to `.env.local` and set `OPENROUTER_API_KEY=...`. The default
+model is `google/gemma-4-31b-it:free`; override it with `OPENROUTER_MODEL` only if
+you consciously want the paid variant. Then either select `openrouter` in the
+Run panel or set `LLM_PROVIDER=openrouter` and restart the dev server. The key is
+read server-side and never reaches the browser. Notes are redacted before egress,
+the verdict is still computed locally, and a 429 or quota error falls back to the
+deterministic template with the reason recorded in the audit log.
+
+Verify with `npm run demo:rehearse` (adds OpenRouter automatically once the key is
+present) and `npm run eval:live` (records every repetition and failure in
+`docs/eval-live.md`; it will not claim the two-model gate with only one key).
 
 ## What is implemented
 
@@ -93,9 +108,9 @@ implemented. Every fixture's expected verdict was written by hand from its
 | `wrong-population` | `L1 · 0`, binding `population` | match |
 | `ambiguous` | `L4 · 1`, `[0.21, 1.00]`, binding `support` | match |
 
-`npm run check` runs lint, typecheck, 55 tests and the engine purity guard.
-`npm run build` and `npm run test:e2e` are green. CI also runs `npm run eval:gate`
-and `npm run demo:rehearse`.
+`npm run check` runs lint, typecheck, 62 tests and the engine purity guard.
+`npm run build` and `npm run test:e2e` are green. CI also runs `npm run eval:gate`,
+`npm run eval:live` (skips real providers without keys) and `npm run demo:rehearse`.
 
 ## Submission artefacts
 
@@ -103,6 +118,6 @@ and `npm run demo:rehearse`.
 - [Responsible AI](RESPONSIBLE_AI.md)
 - [Time-Saved Report](TIME_SAVED_REPORT.md)
 - [Human Judgment](HUMAN_JUDGMENT.md)
-- [Agent evaluation gate](docs/eval-gate.md) and [mock/template notes](docs/eval-results.md)
+- [Agent evaluation gate](docs/eval-gate.md), [live repetitions](docs/eval-live.md) and [mock/template notes](docs/eval-results.md)
 - [Architecture diagram](docs/architecture.svg) (source) and [PNG](docs/architecture.png)
 - 3-minute demo video: `docs/demo.mp4`

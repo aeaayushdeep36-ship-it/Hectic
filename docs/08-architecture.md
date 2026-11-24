@@ -50,7 +50,7 @@ One process. One language. One database file.
 │                                       ┌────────▼─────────┐  │
 │                                       │ Provider adapter │  │
 │                                       │ gemini·groq·ollama│ │
-│                                       │ ·mock            │  │
+│                                       │ ·openrouter·mock │  │
 │                                       └──────────────────┘  │
 │                                                             │
 │  ┌───────────────────────────────────────────────────────┐  │
@@ -157,7 +157,7 @@ Reasons: removes a 300MB dependency, removes a class of font-rendering bugs, wor
 
 ```ts
 interface Provider {
-  readonly id: "gemini" | "groq" | "ollama" | "mock";
+  readonly id: "gemini" | "groq" | "ollama" | "openrouter" | "mock" | "chaos";
   readonly model: string;
   complete(req: {
     system: string;
@@ -176,6 +176,10 @@ Rules:
 - One repair attempt on schema failure, then a typed `AgentError`. No silent retries beyond that.
 - `mock` returns fixtures and is the default in CI — tests never hit a network.
 - `ollama` is the offline demo path. If the network dies during judging, the app still runs.
+- `openrouter` uses the free `google/gemma-4-31b-it:free` model. JSON mode is not
+  assumed; responses are parsed tolerantly and then validated with the same Zod
+  schemas. The key is server-only, and rate limits are absorbed by batching,
+  retry with jitter and the response cache.
 
 ---
 

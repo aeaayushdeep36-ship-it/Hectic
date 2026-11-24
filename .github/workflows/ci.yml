@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run eval:gate
+      - run: npm run eval:live
       - run: npm run demo:rehearse
       - run: npm run build
       - run: npx playwright install --with-deps chromium

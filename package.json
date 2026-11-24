@@ -19,6 +19,7 @@
     "audit": "tsx scripts/audit.ts",
     "eval:agents": "tsx scripts/eval-agents.ts",
     "eval:gate": "tsx scripts/eval-gate.ts",
+    "eval:live": "tsx scripts/eval-live.ts",
     "demo:rehearse": "tsx scripts/demo-rehearse.ts",
     "diagram:png": "node scripts/render-diagram.mjs",
     "demo:video": "node scripts/record-demo.mjs",

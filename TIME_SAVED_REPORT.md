@@ -34,12 +34,13 @@ The command that produced it is named in the last column.
 | Measured operation | Result | How it was measured |
 |---|---:|---|
 | Clean install | 31 s | `npm ci` in a fresh copy with no `node_modules`; no C++ toolchain required |
-| Unit and integration tests | 0.46–0.49 s | `npm test`: 55 tests in 6 files, all passing (two runs) |
+| Unit and integration tests | ~0.5 s | `npm test`: 62 tests in 7 files, all passing |
 | Full static check | 5.6–6.8 s | `npm run check`: lint, typecheck, tests, engine purity guard (two runs) |
 | Full demo path in a browser | 6.6–6.7 s | Playwright `demo-path.spec.ts`: import → confirm → analyse → resolve every finding → export → privacy assertions, plus live agent-status and reasoning-trace checks (two runs) |
 | All browser specs | 12.8–13.0 s | `npm run test:e2e`, one Chromium worker, axe on the main views (two runs) |
 | Golden-fixture rehearsal (mock + chaos) | <10 ms | `npm run demo:rehearse`: seed-injected 429/timeout/malformed JSON, verdict hash unchanged |
 | Cost per standard mock run | €0.00, 0 network calls | `createRun()` computes verdicts locally and stores `callCount: 0`; the live-stream path optionally logs 3 mock calls on the same fixture |
+| OpenRouter free-tier run | **Not measured** | No key was configured when this report was written; `npm run eval:live` is ready to record ten repetitions once one is set |
 
 The product path is short because the arithmetic is local and the model is
 optional. The audit itself is a table join over roster rows; the browser test
@@ -49,8 +50,11 @@ includes the whole human checkpoint and still finishes in single-digit seconds.
 `finding_hash` is byte-identical after changing provider, and the extended test
 asserts identical fallback behaviour when both providers fail. `npm run
 eval:gate` regenerates `docs/eval-gate.md` and fails CI on schema-invalid output
-or a fallback rate above 10%. `npm run eval:agents` generates the separate
-mock/template quality notes in `docs/eval-results.md`.
+or a fallback rate above 10%. `npm run eval:live` repeats every configured real
+provider ten times by default and writes failures to `docs/eval-live.md`; it
+prints INCOMPLETE rather than a pass with fewer than two real models.
+`npm run eval:agents` generates the separate mock/template quality notes in
+`docs/eval-results.md`.
 
 **Clone to running app:** `npm ci && npm run db:reset && npm run dev`. This exact
 sequence was rehearsed in a clean copy with no database and no environment file.

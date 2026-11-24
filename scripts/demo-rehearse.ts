@@ -59,6 +59,14 @@ if (process.env.GEMINI_API_KEY) {
 if (process.env.GROQ_API_KEY) {
   sources.push({ name: "groq", provider: getProvider("groq"), mandatory: false });
 }
+if (process.env.OPENROUTER_API_KEY) {
+  sources.push({
+    name: "openrouter",
+    provider: getProvider("openrouter"),
+    mandatory: false,
+    note: "free Gemma 4 31B",
+  });
+}
 if (process.env.OLLAMA_BASE_URL || process.env.HECTIC_REHEARSE_OLLAMA === "1") {
   sources.push({ name: "ollama", provider: getProvider("ollama"), mandatory: false });
 }
@@ -123,7 +131,7 @@ async function main() {
       `| ${source.name} | ${status} · ${result.reason} | ${result.latencyMs} ms | ${result.retries} | ${result.fallbacks} | ${result.injections} | ${source.note ?? ""} |`,
     );
   }
-  const skipped = ["gemini", "groq", "ollama"]
+  const skipped = ["gemini", "groq", "ollama", "openrouter"]
     .filter((name) => !sources.some((source) => source.name === name))
     .join(", ");
   if (skipped) console.log(`\nSkipped without local configuration: ${skipped}`);

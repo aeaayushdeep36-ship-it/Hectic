@@ -10,6 +10,7 @@ import {
   completeWithRetry,
   getCached,
   getProvider,
+  parseModelJson,
   putCached,
   wrapUserContent,
   type Provider,
@@ -58,7 +59,7 @@ export async function formalise(
 
   const tryParse = (text: string): ClaimProposal | null => {
     try {
-      const candidate = claimProposalSchema.safeParse(JSON.parse(text));
+      const candidate = claimProposalSchema.safeParse(parseModelJson(text));
       return candidate.success ? { ...candidate.data, rawText: safeText } : null;
     } catch {
       return null;

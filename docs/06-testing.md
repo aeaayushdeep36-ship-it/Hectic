@@ -239,8 +239,9 @@ Testing everything is a way of avoiding the four tests that matter.
 
 ```yaml
 - npm ci
-- npm run check       # lint, typecheck, 55 unit + integration tests, engine purity guard
+- npm run check       # lint, typecheck, 62 unit + integration tests, engine purity guard
 - npm run eval:gate   # agent fixtures; fails on schema-invalid output or >10% fallback
+- npm run eval:live   # 10 repetitions per configured real provider + chaos; skips without keys
 - npm run demo:rehearse # golden fixture vs mock + chaos; real providers only if configured
 - npm run build
 - npx playwright install --with-deps chromium
@@ -300,7 +301,8 @@ score hosted-model prompt quality, and neither does the gate.
 - the deterministic mock (mandatory), and
 - the chaos provider (mandatory) with seeded 429, timeout and malformed JSON
   injections, asserting that the finding hash is unchanged;
-- Gemini, Groq and Ollama **only** when a key or endpoint is configured locally.
+- Gemini, Groq, Ollama and OpenRouter (`google/gemma-4-31b-it:free`) **only**
+  when a key or endpoint is configured locally.
 
 It prints pass/fail, latency, retry count, fallback count and injection count per
 provider. No host is contacted without explicit configuration, so the command is
@@ -311,7 +313,18 @@ safe in CI. This is the executable answer to the judge's stress questions about
 
 No agent or prompt is "done" until it has been run at least 10 times across two
 or more real models plus the chaos provider, with every observed failure
-captured as a regression test. The harness above is the repeatable part; the
-real-model repetition requires locally configured keys and remains a manual
-gate for the submitter. Until it is performed, `docs/eval-gate.md` states what
-was actually measured rather than implying it was.
+captured as a regression test.
+
+`npm run eval:live` is that loop, made executable. It runs A1–A3 plus the local
+verdict hash `HECTIC_LIVE_RUNS` times (default 10) for every configured provider,
+plus the seeded chaos wrapper. Each schema-invalid answer, fallback, retry and
+hash divergence is written to `docs/eval-live.md`. The gate prints **PASS** only
+with at least two real models, ten repetitions each, zero schema-invalid output,
+a stable hash and a fallback rate at or below 10%; otherwise it prints
+**INCOMPLETE** instead of claiming the gate was met.
+
+With only `OPENROUTER_API_KEY` set, the harness produces ten OpenRouter
+repetitions and ten chaos repetitions but correctly reports INCOMPLETE: a second
+real key (Groq, Gemini) or a local Ollama endpoint is still needed. The
+deterministic `docs/eval-gate.md` states what was actually measured without
+keys, rather than implying the live gate was run.
