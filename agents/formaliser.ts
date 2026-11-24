@@ -2,55 +2,47 @@
  * A1 — claim formaliser. Language only. The proposal schema has no numeric
  * field, so a model cannot emit a level even if an injection asks it to.
  */
-import { z } from "zod";
 import { guard } from "../lib/guard";
+import { templateProposal } from "../lib/heuristics";
 import { claimProposalSchema } from "../lib/schemas";
-import { getProvider, wrapUserContent, type Provider } from "../providers";
+import {
+  cacheKey,
+  completeWithRetry,
+  getCached,
+  getProvider,
+  putCached,
+  wrapUserContent,
+  type Provider,
+  type RetryOptions,
+} from "../providers";
 import { PROMPT_VERSION, readSystemPrompt } from "./prompts";
 
-export type ClaimProposal = z.infer<typeof claimProposalSchema>;
+export type ClaimProposal = ReturnType<typeof templateProposal>;
+export { templateProposal };
 
-const PREVALENCE = /\b(most|majority|percent|%\b|rate|share|half|out of ten|of \d+)\b/i;
-const WTP = /\b(pay|price|per month|\/mo|€|£|\$|willing)\b/i;
-const FREQUENCY = /\b(every|daily|weekly|often|frequency|each week)\b/i;
+export interface AgentOptions {
+  readonly retry?: RetryOptions;
+}
 
-/** Deterministic fallback. Narrow by construction: it never widens a population. */
-export function templateProposal(rawText: string): ClaimProposal {
-  const flags: string[] = [];
-  const roleMatch = rawText.match(
-    /\b(managers?|founders?|engineers?|doctors?|dentists?|buyers?|users?|owners?|teachers?|nurses?|lawyers?)\b/i,
-  );
-  const population = roleMatch ? roleMatch[0] : "";
-  if (!population) flags.push("POPULATION_UNSTATED");
-  if (!/\b(in|at|from|across)\b/i.test(rawText)) flags.push("GEOGRAPHY_UNCLEAR");
-  if (PREVALENCE.test(rawText) && WTP.test(rawText)) flags.push("SPLIT_REQUIRED");
-
-  const kind = WTP.test(rawText)
-    ? "willingness_to_pay"
-    : FREQUENCY.test(rawText)
-      ? "frequency"
-      : "pain";
-
-  return claimProposalSchema.parse({
-    rawText,
-    population: population || "the people named in the claim",
-    predicate: rawText,
-    kind,
-    claimType: PREVALENCE.test(rawText) ? "prevalence" : "theme",
-    rationale: "Deterministic template. No model was available; every field remains editable.",
-    ambiguityFlags: [...new Set(flags)],
-  });
+export interface FormaliseResult {
+  readonly proposal: ClaimProposal;
+  readonly injection: boolean;
+  readonly flags: readonly string[];
+  readonly usedProvider: boolean;
+  readonly fallbackReason: string | null;
 }
 
 export async function formalise(
   rawText: string,
   provider: Provider = getProvider(),
-): Promise<{ proposal: ClaimProposal; injection: boolean; flags: string[] }> {
+  options: AgentOptions = {},
+): Promise<FormaliseResult> {
   const checked = guard(rawText);
+  const safeText = checked.redacted;
   const system = readSystemPrompt("claim-formaliser", PROMPT_VERSION);
   const user = wrapUserContent(
     JSON.stringify({
-      rawText: checked.redacted,
+      rawText: safeText,
       schema: {
         rawText: "string",
         population: "string",
@@ -62,23 +54,47 @@ export async function formalise(
       },
     }),
   );
+  const key = cacheKey(["A1", PROMPT_VERSION, provider.id, provider.modelId, safeText]);
 
-  let proposal: ClaimProposal | null = null;
-  try {
-    const completion = await provider.complete(system, user);
-    if (completion.ok) {
-      const candidate = claimProposalSchema.safeParse(JSON.parse(completion.text));
-      if (candidate.success) {
-        proposal = { ...candidate.data, rawText };
-      }
+  const tryParse = (text: string): ClaimProposal | null => {
+    try {
+      const candidate = claimProposalSchema.safeParse(JSON.parse(text));
+      return candidate.success ? { ...candidate.data, rawText: safeText } : null;
+    } catch {
+      return null;
     }
-  } catch {
-    // Provider failures degrade to the template; they never fail the run.
+  };
+
+  const cached = getCached(key);
+  if (cached !== undefined) {
+    const proposal = tryParse(cached);
+    if (proposal) {
+      return { proposal, injection: checked.injected, flags: checked.flags, usedProvider: true, fallbackReason: null };
+    }
+  }
+
+  let fallbackReason: string | null = null;
+  try {
+    const completion = await completeWithRetry(provider, system, user, options.retry);
+    if (!completion.ok) {
+      fallbackReason = `PROVIDER_${completion.errorCode ?? "ERROR"}`;
+    } else {
+      const proposal = tryParse(completion.text);
+      if (proposal) {
+        putCached(key, completion.text);
+        return { proposal, injection: checked.injected, flags: checked.flags, usedProvider: true, fallbackReason: null };
+      }
+      fallbackReason = "SCHEMA_INVALID";
+    }
+  } catch (error) {
+    fallbackReason = error instanceof Error ? error.message.slice(0, 60) : "PROVIDER_THREW";
   }
 
   return {
-    proposal: proposal ?? templateProposal(rawText),
+    proposal: templateProposal(safeText),
     injection: checked.injected,
-    flags: [...checked.flags],
+    flags: checked.flags,
+    usedProvider: false,
+    fallbackReason,
   };
 }

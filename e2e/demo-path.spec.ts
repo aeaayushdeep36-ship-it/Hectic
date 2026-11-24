@@ -38,6 +38,16 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Findings" })).toBeVisible();
   await expectNoCriticalViolations(page);
 
+  // U1: the live stream shows named agent steps, not a bare spinner.
+  await page.getByRole("button", { name: "Run agents with live status" }).click();
+  await expect(page.getByRole("region", { name: "Agent progress" })).toBeVisible();
+  await expect(page.getByText(/formalise — Formalising claim/).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/Finding hash sha256:/)).toBeVisible({ timeout: 15_000 });
+  await waitForHydration(page);
+
+  // U2: a single claim can be audited end-to-end from the reasoning trace.
+  await expect(page.getByText("Reasoning trace — population, tags, binding ⓘ").first()).toBeVisible();
+
   // Every non-supported claim has to carry a falsifier before export unlocks.
   const maxResolutions = await page.getByRole("button", { name: "Resolve this claim" }).count();
   let guard = 0;

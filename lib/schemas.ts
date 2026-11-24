@@ -50,6 +50,14 @@ export const claimProposalSchema = z.object({
   ambiguityFlags: z.array(z.string()).default([]),
 });
 
+/** A2's only writable fields. No count, level, score or verdict. */
+export const relevanceTagSchema = z.object({
+  evidenceId: z.string().min(1),
+  claimId: z.string().min(1),
+  bearsOn: z.boolean(),
+  polarity: z.enum(["supports", "contradicts", "ambiguous"]),
+});
+
 export const claimSchema = z.object({
   id: z.string().min(1),
   ordinal: z.number().int().nonnegative(),

@@ -1,0 +1,21 @@
+{
+  "agent": "statement",
+  "schema": "statementSections",
+  "maxFallbackRate": 0.1,
+  "cases": [
+    {
+      "id": "s1",
+      "input": {
+        "findings": [
+          { "claimText": "Buyers have a recurring follow-up problem.", "finding": "DOWNGRADE", "level": 2, "support": 5 }
+        ]
+      },
+      "accept": { "coverageContains": ["L2", "5 organisations"], "findingsContains": ["1 downgrade"] }
+    },
+    {
+      "id": "s2",
+      "input": { "findings": [] },
+      "accept": { "coverageContains": ["No claims were analysed"], "findingsContains": ["0 claim"] }
+    }
+  ]
+}

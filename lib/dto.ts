@@ -27,6 +27,23 @@ export interface ResolutionView {
   readonly resolvedAt: number;
 }
 
+export interface TraceTagView {
+  readonly evidenceId: string;
+  readonly alias: string;
+  readonly bearsOn: boolean;
+  readonly polarity: string | null;
+  readonly overriddenByUser: boolean;
+  readonly producer: string;
+}
+
+export interface TraceView {
+  readonly population: string;
+  readonly predicate: string;
+  readonly tags: readonly TraceTagView[];
+  readonly binding: Binding;
+  readonly diagnostics: unknown;
+}
+
 export interface FindingView {
   readonly claimId: string;
   readonly claimText: string;
@@ -44,6 +61,7 @@ export interface FindingView {
   readonly diagnostics: unknown;
   readonly resolution: ResolutionView | null;
   readonly thresholds: readonly ThresholdView[];
+  readonly trace: TraceView;
 }
 
 export interface RunView {

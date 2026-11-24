@@ -134,8 +134,20 @@ describe("A3 / A4 — presentation layers", () => {
   it("falls back to deterministic prose when a provider cannot rephrase", async () => {
     const { rows, claims } = loadFixture("underpowered");
     const finding = buildFinding(claims[0]!, buildCoverage(rows, claims[0]!));
-    const result = await explainFinding(claims[0]!, finding);
+    const result = await explainFinding(claims[0]!, finding, {
+      id: "mock",
+      modelId: "broken-v1",
+      complete: async () => ({
+        text: "not json",
+        promptTokens: null,
+        outputTokens: null,
+        latencyMs: 0,
+        ok: true,
+        errorCode: null,
+      }),
+    });
     expect(result.usedProvider).toBe(false);
+    expect(result.fallbackReason).toBe("SCHEMA_INVALID");
     expect(result.text).toContain("L2");
   });
 

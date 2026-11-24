@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { FindingView } from "../lib/dto";
+import { checkFalsifier } from "../lib/falsifier";
 
 const ACTIONS = [
   { value: "downgrade", consequence: "Restate the claim at the level the evidence supports." },
@@ -26,9 +27,8 @@ export function CheckpointDrawer({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const tooShort = falsifier.trim().length < 40;
-  const noCondition = !/\b(if|when|unless|should)\b/i.test(falsifier);
-  const valid = !tooShort && !noCondition && !busy;
+  const validation = checkFalsifier(falsifier);
+  const valid = validation.ok && !busy;
 
   async function submit() {
     setBusy(true);
@@ -104,12 +104,18 @@ export function CheckpointDrawer({
           value={falsifier}
           onChange={(event) => setFalsifier(event.target.value)}
           aria-describedby="falsifier-help"
-          aria-invalid={tooShort || noCondition}
+          aria-invalid={falsifier.trim().length > 0 && !validation.ok}
         />
         <p id="falsifier-help" className="mt-1 text-[12px] text-[var(--ink-muted)]">
-          Name the observation that would make you abandon this. At least 40 characters;
-          include if, when, unless or should. {falsifier.trim().length}/40.
+          Name a measurable observation that would kill the claim. At least 40 characters;
+          use if/when/unless/should and a number (for example, "if fewer than 3 of 5 managers
+          say X"). {falsifier.trim().length}/40.
         </p>
+        {falsifier.trim().length > 0 && !validation.ok ? (
+          <p className="mono mt-1 text-[12px] text-[var(--signal)]" role="status">
+            {validation.reason}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-4">

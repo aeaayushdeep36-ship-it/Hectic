@@ -12,7 +12,7 @@ Scoring is 1–5, and deliberately harsh. A 5 on *white space* means I could not
 
 **One line:** An agent that audits the *validity of a founder's customer-discovery evidence* — who was in the room, how many, in which cells — and refuses to issue an investor-grade evidence statement until the founder resolves every claim the sample cannot carry.
 
-**The gap.** Every discovery tool audits the transcript. FounderGate flags compliments and leading questions; Unpitched scores talk-time; CoLoop flags leading questions live. None of them ask the question that determines whether the interview was worth doing: *was this the right person, and are there enough of them?* The data says that is where the loss is — 58% of founders validate by "asking people I know," only 23% use structured methods with their actual market, and the average cost of the resulting rework is $4,200 plus 3.2 months. Meanwhile the published saturation thresholds (12 per homogeneous segment; 20–50 while still discovering who the customer is; 15–25 per segment for comparison; three independent mentions before it counts) are precise, checkable, and used by no product.
+**The gap.** Every discovery tool audits the transcript. FounderGate flags compliments and leading questions; Unpitched scores talk-time; CoLoop flags leading questions live. None of them ask the question that determines whether the interview was worth doing: *was this the right person, and are there enough of them?* The data says that is where the loss is — 58% of founders validate by "asking people I know," only 23% use structured methods with their actual market (SegmentOS, 500 founders, Q1 2026). Meanwhile the published saturation thresholds (12 per homogeneous segment; 20–50 while still discovering who the customer is; 15–25 per segment for comparison; three independent mentions before it counts) are precise, checkable, and used by no product.
 
 **Mechanism.** Claims × roster → a segment/role coverage matrix → a deterministic verdict per claim.
 
@@ -33,7 +33,7 @@ The demo moment is the **empty cell**: a heatmap where the row "practice manager
 
 **Frugality.** ~20 LLM calls per full run (6 claim formalisations + 11 interview labels + 1 summary). Gemini 3.5 Flash-Lite free tier is 500 RPD / 15 RPM; Groq free tier for the classifier; Ollama `qwen2.5:7b` as the offline demo fallback. Cost per run: €0.00. State that number on the slide.
 
-**Time saved.** The Discovery Evidence Statement is normally 6–8 hours of notes cleanup and slide-building for a fundraise → ~20 minutes. Secondary: prevents the 3.2-month / $4,200 rework cycle. Two numbers, both sourced.
+**Time saved (hypothesis, not measured).** Building an evidence pack by hand is *estimated* to take hours; no manual baseline was timed, so no number is claimed. The "$4,200 / 3.2-month rework" figure that appeared here was withdrawn: no primary source was found. See `TIME_SAVED_REPORT.md` for the protocol that would measure it.
 
 **Demo beat.** 11 interviews, all sourced from one founder's network → heatmap shows 9/11 in a single cell, 0 economic buyers → claim "€200/mo" flagged → founder types a falsifier → export unlocks and shows the recruiting brief for the missing cells.
 
@@ -161,7 +161,7 @@ The demo moment is the **empty cell**: a heatmap where the row "practice manager
 - Seed three demo workspaces. Record the 3-minute video in one take, no cuts, showing the full run including the checkpoint.
 - AI Disclosure Statement: models used, what each prompt does, that the tooling was AI-assisted, that the demo roster is synthetic and labelled.
 - Responsible AI: name the real failure mode — the tool could be used to *manufacture* the appearance of rigour (talk to 20 people, get a green heatmap, claim validation). Mitigation: the export always prints coverage *and* gaps, and `SUPPORTED` is capped below "validated."
-- Time-Saved Report: 6–8 hrs → 20 min for the evidence pack; 3.2 months of rework avoided. Show the arithmetic.
+- Time-Saved Report: publish the manual-audit protocol with blank result fields, and fill them only after a real timed baseline exists. Do not print an estimated delta.
 
 ### Cut list — decide now
 No auth. No database (JSON files). No transcript ingestion in v1 (roster CSV only — FounderGate owns transcripts; don't fight there). No integrations. No multi-user. No mobile.

@@ -17,7 +17,7 @@ import {
 } from "../server/store";
 
 const LONG_FALSIFIER =
-  "The three prepayments were all from founders who already knew the team, so the L6 claim does not generalise.";
+  "If fewer than 3 of 5 cold budget holders sign a prepayment letter, abandon the L6 willingness-to-pay claim.";
 
 beforeAll(() => {
   seedDatabase();

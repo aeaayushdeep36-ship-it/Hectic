@@ -26,7 +26,7 @@ The engine model itself was falsified before any of this was written. `research/
         ┌──────────────────────────┐
         │  Playwright · 3 specs    │  the demo path only
         ├──────────────────────────┤
-        │  Vitest · 34 tests       │  engine, agents, routes, DB, checkpoint
+        │  Vitest · 55 tests       │  engine, agents, routes, DB, checkpoint, remediation, pipeline
         └──────────────────────────┘
 ```
 
@@ -239,14 +239,79 @@ Testing everything is a way of avoiding the four tests that matter.
 
 ```yaml
 - npm ci
-- npm run check       # lint, typecheck, 34 unit + integration tests, engine purity guard
+- npm run check       # lint, typecheck, 55 unit + integration tests, engine purity guard
+- npm run eval:gate   # agent fixtures; fails on schema-invalid output or >10% fallback
+- npm run demo:rehearse # golden fixture vs mock + chaos; real providers only if configured
 - npm run build
 - npx playwright install --with-deps chromium
 - npm run db:reset
 - npm run test:e2e    # 3 specs, mock provider, axe on the main views
 ```
 
-The unit/integration part is under a second (0.649 s measured); the browser
-specs take about 13 seconds measured. A slow suite is a suite people skip on day 17.
+The unit/integration part is under a second (0.46–0.49 s measured over two
+runs); the browser specs take about 13 seconds measured. A slow suite is a suite people skip on day 17.
 
 `main` is protected: no merge without green. The submission link should point at a commit where CI passed, not the branch tip.
+
+---
+
+## 13. Remediation regression suite
+
+`tests/remediation.test.ts` and `tests/pipeline.test.ts` capture every failure
+found during the audit, so none can return silently:
+
+| Test | Requirement | Assertion |
+|---|---|---|
+| C1 name redaction | GDPR | `"Priya Raman said X"` → `[NAME] said X`; role prose and acronyms untouched |
+| E1 batching | Rate limits | 20 rows × 5 claims → `provider.callCount <= 5`, 100 tags |
+| E3 cache | Rate limits | An identical second run makes **0** provider calls |
+| E2 retry success | 429 handling | 429, 429, success → 3 calls, eventual success |
+| E2 retry exhaustion | 429 handling | Always 429 → template fallback with `PROVIDER_HTTP_429` logged |
+| E4 golden mock | Demo honesty | Mock routes to schema-valid outputs and the golden verdict hash |
+| E5 falsifier | Checkpoint | `"if I want"` fails; `"if fewer than 3 of 5 managers say X"` passes |
+| Chaos injection | Process | Seeded 429/timeout/malformed JSON is reproducible |
+| Extended determinism | Headline claim | Two different provider failures produce identical fallbacks and finding hash |
+| U1 pipeline | Live demo | Progress events in order; fallback reason logged without moving the hash |
+
+The adversarial roster is `fixtures/adversarial/roster.csv`: 20 rows with empty
+notes, duplicate names, non-Latin names, two injection strings, a formula cell
+and a 500+ character note. It is the fixture that would have exposed the old
+N×M call pattern before submission.
+
+## 14. Eval harness
+
+`evals/` holds one fixture per agent — `formaliser`, `relevance`, `explanation`,
+`statement` — each with an input, a declared expected schema and a set of
+acceptable outputs. `npm run eval:gate` (`scripts/eval-gate.ts`) runs them against
+the deterministic provider, validates each output with the same Zod schema the
+runtime uses, and fails the process when either condition holds:
+
+1. any response is **schema-invalid**, or
+2. the fallback rate exceeds the fixture threshold (10%).
+
+The result is written to `docs/eval-gate.md`. `npm run eval:agents` remains the
+separate, older mock/template quality note in `docs/eval-results.md`; it does not
+score hosted-model prompt quality, and neither does the gate.
+
+## 15. Demo rehearsal
+
+`npm run demo:rehearse` runs the golden `clean` fixture end-to-end against:
+
+- the deterministic mock (mandatory), and
+- the chaos provider (mandatory) with seeded 429, timeout and malformed JSON
+  injections, asserting that the finding hash is unchanged;
+- Gemini, Groq and Ollama **only** when a key or endpoint is configured locally.
+
+It prints pass/fail, latency, retry count, fallback count and injection count per
+provider. No host is contacted without explicit configuration, so the command is
+safe in CI. This is the executable answer to the judge's stress questions about
+429s, mock realism and provider variance.
+
+## 16. The iterative loop, made explicit
+
+No agent or prompt is "done" until it has been run at least 10 times across two
+or more real models plus the chaos provider, with every observed failure
+captured as a regression test. The harness above is the repeatable part; the
+real-model repetition requires locally configured keys and remains a manual
+gate for the submitter. Until it is performed, `docs/eval-gate.md` states what
+was actually measured rather than implying it was.

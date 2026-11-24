@@ -59,7 +59,9 @@ function fixture(name: string): { rows: EvidenceRow[]; claims: Claim[] } {
 }
 
 function widened(population: string, rawText: string): boolean {
-  if (population === "the people named in the claim") return false;
+  // E7: an explicit placeholder refuses to guess; it is narrower than any
+  // population the founder could have stated, so it cannot be a widening.
+  if (population.startsWith("UNSPECIFIED")) return false;
   return !rawText.toLowerCase().includes(population.toLowerCase());
 }
 

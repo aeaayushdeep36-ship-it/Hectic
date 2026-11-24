@@ -1,0 +1,72 @@
+[
+  {
+    "id": "adv-theme",
+    "ordinal": 1,
+    "rawText": "Practices and clinics have a recurring follow-up problem.",
+    "population": "Dental practices, Legal practices and Clinics",
+    "populationSpec": {},
+    "predicate": "recurring follow-up problem",
+    "kind": "pain",
+    "claimType": "theme",
+    "claimedLevel": 6,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  },
+  {
+    "id": "adv-wtp",
+    "ordinal": 2,
+    "rawText": "Most approached buyers would pay for the product.",
+    "population": "Dental practices, Legal practices and Clinics",
+    "populationSpec": {},
+    "predicate": "would pay for the product",
+    "kind": "willingness_to_pay",
+    "claimType": "prevalence",
+    "claimedLevel": 6,
+    "observed": { "k": 2, "n": 2 },
+    "precisionTolerance": 0.1,
+    "confirmed": true
+  },
+  {
+    "id": "adv-frequency",
+    "ordinal": 3,
+    "rawText": "The problem occurs every week for buyers.",
+    "population": "Dental practices, Legal practices and Clinics",
+    "populationSpec": {},
+    "predicate": "occurs every week",
+    "kind": "frequency",
+    "claimType": "theme",
+    "claimedLevel": 2,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  },
+  {
+    "id": "adv-role",
+    "ordinal": 4,
+    "rawText": "Practice managers own the purchasing decision.",
+    "population": "Dental practices and Legal practices",
+    "populationSpec": {},
+    "predicate": "own the purchasing decision",
+    "kind": "role_ownership",
+    "claimType": "theme",
+    "claimedLevel": 2,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  },
+  {
+    "id": "adv-displacement",
+    "ordinal": 5,
+    "rawText": "Existing spreadsheets are being replaced by the product.",
+    "population": "Dental practices, Legal practices and Clinics",
+    "populationSpec": {},
+    "predicate": "replacing spreadsheets",
+    "kind": "displacement",
+    "claimType": "theme",
+    "claimedLevel": 2,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  }
+]

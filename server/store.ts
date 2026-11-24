@@ -52,6 +52,7 @@ import {
 import { seedDatabase } from "../db/seed-data";
 import { contentHash } from "../lib/hash";
 import { guard } from "../lib/guard";
+import { checkFalsifier } from "../lib/falsifier";
 import { parseRoster } from "../lib/csv";
 
 export class UnresolvedFindingsError extends Error {
@@ -190,7 +191,9 @@ export function importEvidence(slug: string, csv: string): ImportEvidenceResult 
       .values({
         id,
         workspaceId: workspace.id,
-        alias: row.alias,
+        // Aliases are founder-supplied and may contain a real name. Redact at
+        // the boundary too, even though they are never sent to a provider.
+        alias: guard(row.alias).redacted,
         interviewedAt: Date.parse(row.date),
         role: row.role,
         orgRef: row.orgId,
@@ -289,6 +292,27 @@ function hydrateRun(run: typeof runs.$inferSelect): RunView {
     )
     .all();
   const claimById = new Map(claimRows.map((row) => [row.id, row]));
+  const tagRows = findingRows.length
+    ? db
+        .select({
+          evidenceId: evidenceClaimTags.evidenceId,
+          claimId: evidenceClaimTags.claimId,
+          alias: evidence.alias,
+          bearsOn: evidenceClaimTags.bearsOn,
+          polarity: evidenceClaimTags.polarity,
+          overriddenByUser: evidenceClaimTags.overriddenByUser,
+          producer: evidenceClaimTags.producer,
+        })
+        .from(evidenceClaimTags)
+        .innerJoin(evidence, eq(evidence.id, evidenceClaimTags.evidenceId))
+        .where(
+          inArray(
+            evidenceClaimTags.claimId,
+            findingRows.map((finding) => finding.claimId),
+          ),
+        )
+        .all()
+    : [];
 
   const findings: FindingView[] = findingRows.map((row) => {
     const claim = claimById.get(row.claimId);
@@ -320,6 +344,22 @@ function hydrateRun(run: typeof runs.$inferSelect): RunView {
           }
         : null,
       thresholds: thresholdDefinitions(row.claimId),
+      trace: {
+        population: claim?.population ?? "UNSPECIFIED",
+        predicate: claim?.predicate ?? row.claimId,
+        tags: tagRows
+          .filter((tag) => tag.claimId === row.claimId)
+          .map((tag) => ({
+            evidenceId: tag.evidenceId,
+            alias: tag.alias,
+            bearsOn: tag.bearsOn,
+            polarity: tag.polarity,
+            overriddenByUser: tag.overriddenByUser,
+            producer: tag.producer,
+          })),
+        binding: row.bindingCode as Binding,
+        diagnostics: JSON.parse(row.diagnosticsJson),
+      },
     };
   });
 
@@ -349,6 +389,17 @@ function hydrateRun(run: typeof runs.$inferSelect): RunView {
 export function getRun(runId: string): RunView | null {
   const run = db.select().from(runs).where(eq(runs.id, runId)).get();
   return run ? hydrateRun(run) : null;
+}
+
+/** The confirmed inputs an agent pipeline may read. Never includes raw notes. */
+export function workspaceInputs(slug: string) {
+  const workspace = loadWorkspace(slug);
+  if (!workspace) throw new Error(`Unknown workspace: ${slug}`);
+  return {
+    workspace,
+    rows: loadEvidence(workspace.id).domain,
+    claims: loadClaims(workspace.id).filter((claim) => claim.confirmed),
+  };
 }
 
 function compute(workspaceId: string) {
@@ -453,8 +504,9 @@ export function addResolution(
   note: string | null,
 ): RunView {
   const trimmed = falsifier.trim();
-  if (trimmed.length < 40) {
-    throw new Error("A falsifier must be at least 40 characters.");
+  const validated = checkFalsifier(trimmed);
+  if (!validated.ok) {
+    throw new Error(validated.reason ?? "FALSIFIER_NOT_OBSERVABLE");
   }
   const run = db.select().from(runs).where(eq(runs.id, runId)).get();
   if (!run) throw new Error(`Unknown run: ${runId}`);

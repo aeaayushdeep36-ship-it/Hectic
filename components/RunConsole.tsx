@@ -5,6 +5,21 @@ import type { RunView } from "../lib/dto";
 import { CheckpointDrawer } from "./CheckpointDrawer";
 import { FindingRow } from "./FindingRow";
 
+/** The wire format of the NDJSON stream. Kept local so no server code is bundled. */
+type StreamEvent =
+  | { type: "progress"; step: string; detail: string; completed: number; total: number }
+  | {
+      type: "done";
+      runId: string;
+      findingHash: string;
+      providerId: string;
+      callCount: number;
+      cacheHits: number;
+      fallbackReasons: readonly string[];
+      latencyMs: number;
+    }
+  | { type: "error"; message: string };
+
 export function RunConsole({
   initialRun,
   workspaceSlug,
@@ -17,6 +32,8 @@ export function RunConsole({
   const [recompute, setRecompute] = useState<{ identical: boolean; hash: string } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [streamLog, setStreamLog] = useState<string[]>([]);
 
   const unresolved = run.findings.filter((finding) => finding.resolution === null && finding.finding !== "SUPPORTED");
 
@@ -24,6 +41,58 @@ export function RunConsole({
     const response = await fetch(`/api/runs/${run.id}`, { cache: "no-store" });
     const body = (await response.json()) as { run: RunView };
     setRun(body.run);
+  }
+
+  async function doStream() {
+    setStreaming(true);
+    setStreamLog(["Connecting to the agent stream…"]);
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/runs/stream`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ providerId: "mock" }),
+      });
+      if (!response.ok || !response.body) throw new Error(`STREAM_${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const event = JSON.parse(line) as StreamEvent;
+          if (event.type === "progress") {
+            setStreamLog((current) => [
+              ...current,
+              `${event.step} — ${event.detail} (${event.completed}/${event.total})`,
+            ]);
+          } else if (event.type === "done") {
+            setStreamLog((current) => [
+              ...current,
+              `Done · ${event.providerId} · ${event.callCount} calls · ${event.cacheHits} cache hits · ${event.latencyMs} ms`,
+              `Finding hash ${event.findingHash}`,
+            ]);
+            const refreshed = await fetch(`/api/runs/${event.runId}`, { cache: "no-store" });
+            const body = (await refreshed.json()) as { run: RunView };
+            setRun(body.run);
+          } else {
+            setStreamLog((current) => [...current, `Error — ${event.message}`]);
+          }
+        }
+      }
+    } catch (error) {
+      setStreamLog((current) => [
+        ...current,
+        `Error — ${error instanceof Error ? error.message : "STREAM_FAILED"}`,
+      ]);
+    } finally {
+      setStreaming(false);
+    }
   }
 
   async function doRecompute() {
@@ -78,6 +147,9 @@ export function RunConsole({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn" onClick={() => void doStream()} disabled={streaming || busy}>
+            {streaming ? "Running agents…" : "Run agents with live status"}
+          </button>
           <button type="button" className="btn" onClick={doRecompute} disabled={busy}>
             {busy ? "Working…" : "Recompute with another provider"}
           </button>
@@ -98,6 +170,20 @@ export function RunConsole({
           </a>
         </div>
       </div>
+
+      {streamLog.length > 0 ? (
+        <section className="card mb-6 p-4" aria-live="polite" aria-label="Agent progress">
+          <p className="label mb-2">Live agent status</p>
+          <ol className="mono max-h-56 space-y-1 overflow-y-auto text-[12px] text-[var(--ink-muted)]">
+            {streamLog.map((line, index) => (
+              <li key={`${index}-${line}`}>{line}</li>
+            ))}
+          </ol>
+          <p className="mt-2 text-[12px] text-[var(--ink-faint)]">
+            Numbers are computed by the pure engine before these steps; no model produces a level, count or verdict.
+          </p>
+        </section>
+      ) : null}
 
       {recompute ? (
         <div className="card mb-6 border-[var(--confirm-border)] bg-[var(--confirm-bg)] p-4">

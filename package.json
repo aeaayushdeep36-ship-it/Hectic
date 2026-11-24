@@ -18,6 +18,8 @@
     "check": "npm run lint && npm run typecheck && npm test && npm run engine:boundary",
     "audit": "tsx scripts/audit.ts",
     "eval:agents": "tsx scripts/eval-agents.ts",
+    "eval:gate": "tsx scripts/eval-gate.ts",
+    "demo:rehearse": "tsx scripts/demo-rehearse.ts",
     "diagram:png": "node scripts/render-diagram.mjs",
     "demo:video": "node scripts/record-demo.mjs",
     "db:generate": "drizzle-kit generate",

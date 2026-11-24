@@ -10,14 +10,16 @@ a language model. It is written to be checked, not to reassure.
 
 ## 1. What the model does
 
-Four language steps, each with a versioned prompt in `agents/prompts/`:
+Three language steps plus two deterministic functions. A1's prompt is versioned
+in `agents/prompts/`; A2 and A3 use schema-bound inline prompts declared next to
+their agents.
 
 | Step | Input | Output | Model class |
 |---|---|---|---|
 | A1 `claim-formaliser` | one sentence of belief | population, predicate, kind, claim type, ambiguity flags | small |
-| A2 `relevance-tagger` | redacted notes + claim predicate | `bears_on` and polarity per interview/claim | smallest |
+| A2 `relevance-tagger` | redacted notes + claim predicate | one batch of `bearsOn` and polarity tags per claim | smallest |
 | A3 `constraint-explainer` | an already-computed verdict | two factual sentences | small |
-| A4 `statement-composer` | the locked ledger | method, coverage, findings, limitations prose | small |
+| A4 `statement-composer` | the locked ledger | method, coverage, findings, limitations prose | none (pure) |
 | G1 `input-guard` | raw cells and notes | redacted text + injection flag | none (regex) |
 
 Runtimes are free-tier or open-weight only: Gemini Flash-Lite, Groq
@@ -44,7 +46,7 @@ or a verdict. This is not a policy statement; it is structural:
 | A1 widens the population (e.g. "practice managers" → "healthcare professionals") | Makes the sample look *more* adequate | Mandatory human confirmation; every field editable; ambiguity flags shown |
 | A2 finds relevance everywhere | Inflates counts | `bears_on: false` prompt discipline; visible tags; human override stored with `overridden_by_user` |
 | A3/A4 invent a number | Misleading artefact | Numeric guard falls back to deterministic template |
-| Person names in free text | PII reaches a provider | Names are **not** detected; UI asks for aliases; documented limitation |
+| Person names in free text | PII reaches a provider | Conservative two-token detector redacts before storage and before egress; aliases still required; residual single-token names disclosed in §8 |
 | Injection in notes or claim text | Tag pollution only | Pattern screen, JSON encoding, structural separation, and no numeric field to corrupt |
 
 ## 4. Who is affected
@@ -82,3 +84,49 @@ Printed on the artefact itself, not buried here:
 
 The full falsification audit of the original scoring ladder is in
 `research/03-engine-findings.md`.
+
+---
+
+## 8. Bias assessment
+
+This section names the ways a language model could tilt an audit, the direction
+of the error, and the control that limits it. It is deliberately written as a
+list of *known* biases, not as a claim of neutrality.
+
+| Bias | How it shows up here | Direction of error | Mitigation | Residual risk |
+|---|---|---|---|---|
+| **Population widening** — small chat models expand a narrow role to a familiar category ("practice managers" → "healthcare professionals") | A1 formalisation | Makes the sample look **more** adequate than it is | The proposal is never accepted automatically; every field requires human confirmation; ambiguity flags are shown; the population is deliberately narrowed to a substring of the founder's own words | A founder who clicks through without reading can still accept a widened population |
+| **Relevance inflation** — the model treats politeness, a single shared word, or silence as evidence | A2 tagging | Inflates `support` | One batched prompt per claim, `bearsOn: false` default, two distinct predicate terms in the deterministic fallback, visible and overridable tags with the producer recorded | Prompt injection can pollute tags; it cannot change a verdict, because the engine reads only the founder-confirmed roster |
+| **Authority bias** — confident prose makes a shaky verdict feel settled | A3 explanation, A4 statement | Overstates certainty | No single score is emitted; the verdict is always `level · support · precision · binding`; the statement prints limitations and the Wilson caveat on the artefact itself | Judges and founders may still read `SUPPORTED` as "validated" |
+| **Sampling bias** — Wilson intervals assume random sampling; founder recruitment is network/convenience | Engine presentation | Understates uncertainty | The interval is labelled a **best case** in the statement and in `docs/06-testing.md`; network share and channel count are diagnostics, never gates | A reader who ignores the label will under-estimate uncertainty |
+| **Language and name bias** — the name detector and role noun list are written for Latin-script, two-token names | G1 guard, A1 fallback | Mixed: false redaction of ordinary prose, or missed PII for other naming conventions | Conservative rules: require two capitalised tokens or a title, skip sentence-start role words and acronyms; every redaction is visible in the audit log | Single-token names and some non-Latin scripts are not caught — see §9 |
+| **Model variance** — the same prompt can produce different prose across providers | A1–A3 | Presentation drift only | Schema validation, numeric guard on A3, and a provider-swap test asserting byte-identical finding hashes **and** identical fallback behaviour | Prose quality on hosted models is unreviewed; `docs/eval-gate.md` scores only the deterministic path |
+
+The controls are structural where possible and human where not. No model is in a
+position to invent a number: the schemas contain no numeric verdict fields and
+`engine/` has no provider imports. `npm run engine:boundary` enforces the latter.
+
+## 9. Residual privacy risk — names
+
+The guard added in remediation redacts **two-token person names** with optional
+titles and particles (for example `Priya Raman`, `Dr. Anne-Marie de Groot`,
+`José da Silva`, `Élodie Müller`) before a row is stored and before any provider
+call. E-mail, phone, IBAN, URL, spreadsheet formulas and injection strings were
+already covered.
+
+Known residual gaps, stated plainly rather than fixed by over-matching:
+
+1. A single-token name in a note (`Priya said X`) is not redacted. Redacting
+   single capitalised words would destroy ordinary prose such as *"Most
+   managers said X"* and every sentence opener.
+2. Names in scripts without capitalisation, or one-token naming conventions,
+   are not detected.
+3. Aliases in the `alias` column are founder-supplied; the tool cannot verify
+   that they are truly anonymous.
+
+Mitigations for the residual: the UI asks for aliases, notes are excluded from
+the printable export, all processing is local, there is no telemetry, and the
+audit log records only redactions and flags. A founder who needs a strict
+guarantee should type no names at all. This is a GDPR **residual risk**, not a
+claim of compliance.
+

@@ -17,7 +17,7 @@ That conclusion rests on a sample. Nobody — not the founder, not their acceler
 The sample is where the error lives:
 
 - **58%** of founders validate by asking people they know. Only **23%** use structured methods with their actual target market. (SegmentOS, 500 founders, Q1 2026)
-- The average cost of reworking a product after launch because of unvalidated assumptions is **$4,200 and 3.2 months**. 78% of founders who rebuilt cited wrong customer assumptions as the root cause.
+- A widely repeated "average rework cost" figure ($4,200 / 3.2 months) was **removed** from this document because no primary source could be traced. It is not used anywhere in the product, the README, or the Time-Saved Report.
 - **72%** of new products fail within 18 months of launch.
 - Single-informant buying-centre research is structurally unreliable: across 104 buying-centre decisions, multi-informant models significantly outperformed single-informant ones. One informant per account is "the cheapest way to be confidently wrong." (Wilson & Lilien, 1992)
 - Published saturation guidance is specific and ignored: ~12 interviews within a homogeneous segment (Guest, Bunce & Johnson, 2006); core range 9–17 (Hennink & Kaiser, 2022); 20–50 while still discovering who the customer is; 15–25 per segment when comparing segments.

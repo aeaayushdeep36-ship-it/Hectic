@@ -64,7 +64,7 @@ Occupied: transcript summarisation, quote extraction, Mom-Test compliance flaggi
 Unoccupied: **the validity of the evidence base itself.** The field's own literature says the failure mode is upstream of the transcript:
 
 - 67% of founders say they validated before building, but only **23% used structured methods with their actual target market**. The single most common method — used by **58%** — was *"asking people I know."* (SegmentOS, 500 founders, Q1 2026)
-- Average post-launch rework from unvalidated assumptions: **$4,200 and 3.2 months**. 78% of founders who rebuilt cited wrong customer assumptions as root cause.
+- ~~Average post-launch rework from unvalidated assumption: $4,200 and 3.2 months.~~ **Withdrawn during remediation**: the figure circulated in secondary roundups but no primary source was found. It is not used as evidence anywhere in the submission.
 - Saturation thresholds are published and specific: ~12 interviews within a homogeneous segment (Guest, Bunce & Johnson 2006); core range 9–17 (Hennink & Kaiser 2022); **20–50 conversations while you are still discovering who the customer is**; 15–25 *per segment* if comparing segments. "Three independent mentions before anything counts as a pattern."
 - Single-informant buying-centre research is structurally weak: across 104 buying-centre decisions, multi-informant models significantly outperformed single-informant ones (Wilson & Lilien 1992). One informant per account is "the cheapest way to be confidently wrong."
 - And the question investors actually open with is not "what did they say" but **"who did you talk to, and how many?"**

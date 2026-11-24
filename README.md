@@ -12,7 +12,7 @@ Built for the **AI Agents for Founders Challenge — HETIC 2026**.
 
 ## The problem in one paragraph
 
-58% of founders validate by "asking people I know." Only 23% use structured methods with their actual market. The average cost of the resulting rework is $4,200 and 3.2 months. Every discovery tool on the market audits the *transcript* — did you ask a leading question, did they compliment you. None of them audit the *sample* — was this the right person, and are there enough of them. That is the question that decides whether the interview was worth doing, and it is the first question an investor asks.
+In a survey of 500 founders, 58% validated by "asking people I know" and only 23% used structured methods with their actual target market (SegmentOS, Q1 2026). Every discovery tool on the market audits the *transcript* — did you ask a leading question, did they compliment you. None of them audit the *sample* — was this the right person, and are there enough of them. That is the question that decides whether the interview was worth doing, and it is the first question an investor asks.
 
 ## The mechanism
 
@@ -44,6 +44,7 @@ LLM runtimes, all free-tier or open-weight: Gemini Flash-Lite · Groq · Ollama 
 | [`docs/06-testing.md`](docs/06-testing.md) | Test pyramid, golden rosters, determinism test |
 | [`docs/07-agents.md`](docs/07-agents.md) | The four LLM steps and what they are forbidden to do |
 | [`docs/08-architecture.md`](docs/08-architecture.md) | System shape, data flow, state machine, deployment |
+| [`HUMAN_JUDGMENT.md`](HUMAN_JUDGMENT.md) | Standalone Devpost section: the four layers where a person decides |
 
 Background research is in [`research/`](research/): the competitive analysis that killed three earlier directions, and the falsification of the engine model that was here before this one.
 
@@ -60,7 +61,9 @@ database and no environment file. Open <http://localhost:3000>. Four synthetic
 demo workspaces are seeded from the hand-computed fixtures. Then:
 
 ```bash
-npm run check        # lint, typecheck, 34 unit/integration tests, engine purity guard
+npm run check        # lint, typecheck, 55 unit/integration tests, engine purity guard
+npm run eval:gate    # agent fixtures; fails CI on schema-invalid output or >10% fallback
+npm run demo:rehearse # golden fixture against mock + injected chaos; real providers if configured
 npm run build        # production build
 npm run test:e2e     # 3 Playwright specs with axe, needs the dev server (started automatically)
 npm run audit -- --roster fixtures/underpowered/roster.csv --claims fixtures/underpowered/claims.json
@@ -90,14 +93,16 @@ implemented. Every fixture's expected verdict was written by hand from its
 | `wrong-population` | `L1 · 0`, binding `population` | match |
 | `ambiguous` | `L4 · 1`, `[0.21, 1.00]`, binding `support` | match |
 
-`npm run check` runs lint, typecheck, 34 tests and the engine purity guard.
-`npm run build` and `npm run test:e2e` are green. CI runs all three.
+`npm run check` runs lint, typecheck, 55 tests and the engine purity guard.
+`npm run build` and `npm run test:e2e` are green. CI also runs `npm run eval:gate`
+and `npm run demo:rehearse`.
 
 ## Submission artefacts
 
 - [AI Disclosure Statement](AI_DISCLOSURE.md)
 - [Responsible AI](RESPONSIBLE_AI.md)
 - [Time-Saved Report](TIME_SAVED_REPORT.md)
-- [Agent evaluation results](docs/eval-results.md)
+- [Human Judgment](HUMAN_JUDGMENT.md)
+- [Agent evaluation gate](docs/eval-gate.md) and [mock/template notes](docs/eval-results.md)
 - [Architecture diagram](docs/architecture.svg) (source) and [PNG](docs/architecture.png)
 - 3-minute demo video: `docs/demo.mp4`

@@ -4,8 +4,10 @@
  *
  * No provider module is imported by engine/, app/ or any client component.
  */
+import { heuristicTag, templateProposal } from "../lib/heuristics";
+import type { Claim, EvidenceRow } from "../lib/types";
 
-export type ProviderId = "mock" | "gemini" | "groq" | "ollama";
+export type ProviderId = "mock" | "gemini" | "groq" | "ollama" | "chaos";
 
 export interface Completion {
   readonly text: string;
@@ -19,6 +21,8 @@ export interface Completion {
 export interface Provider {
   readonly id: ProviderId;
   readonly modelId: string;
+  /** Number of complete() attempts, including retries. Optional for fakes. */
+  readonly callCount?: number;
   complete(system: string, user: string): Promise<Completion>;
 }
 
@@ -27,18 +31,71 @@ const ALLOWED: Readonly<Record<ProviderId, string>> = {
   gemini: "gemini-2.0-flash-lite",
   groq: "llama-3.1-8b-instant",
   ollama: "qwen2.5:7b",
+  chaos: "chaos-v1",
 };
 
-/** Deterministic stand-in: extracts the first JSON object from the user turn. */
-class MockProvider implements Provider {
+function parseEnvelope(user: string): Record<string, unknown> | null {
+  const match = user.match(/^<evidence>([\s\S]*)<\/evidence>$/);
+  if (!match) return null;
+  try {
+    const inner: unknown = JSON.parse(match[1]!);
+    if (typeof inner === "string") return JSON.parse(inner) as Record<string, unknown>;
+    return inner as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * E4 — an offline stand-in that behaves like the schema-constrained model.
+ *
+ * It routes on the system prompt and returns the same deterministic output
+ * the golden fixtures expect: a formalisation object, an array of relevance
+ * tags, or a rephrased verdict with no new digits. Unknown prompts fall back
+ * to extracting the first JSON object, so the old stub behaviour is retained
+ * for prompts that have no golden contract.
+ */
+export class MockProvider implements Provider {
   readonly id = "mock" as const;
   readonly modelId = ALLOWED.mock;
+  callCount = 0;
 
-  async complete(_system: string, user: string): Promise<Completion> {
+  async complete(system: string, user: string): Promise<Completion> {
     const start = Date.now();
-    const match = user.match(/\{[\s\S]*\}/);
+    this.callCount += 1;
+    const payload = parseEnvelope(user);
+    let text: string | null = null;
+
+    if (payload && /decide relevance/i.test(system)) {
+      const predicate = String(payload.predicate ?? "");
+      const claimId = String(payload.claimId ?? "");
+      const rows = Array.isArray(payload.rows) ? payload.rows : [];
+      text = JSON.stringify(
+        rows.map((entry) => {
+          const row = entry as Partial<EvidenceRow> & { evidenceId?: string };
+          const evidenceId = String(row.evidenceId ?? row.id ?? "");
+          return heuristicTag(String(row.notes ?? ""), predicate, evidenceId, claimId);
+        }),
+      );
+    } else if (payload && /convert a founder's belief|claim formaliser/i.test(system)) {
+      text = JSON.stringify(templateProposal(String(payload.rawText ?? "")));
+    } else if (payload && /rephrase the given verdict/i.test(system)) {
+      // The verdict is already computed; the mock may only pass it through.
+      const verdictValue = payload.verdict;
+      const verdict =
+        typeof verdictValue === "string"
+          ? verdictValue
+          : String((verdictValue as { text?: string })?.text ?? "");
+      text = JSON.stringify({ text: verdict });
+    }
+
+    if (text === null) {
+      const match = user.match(/\{[\s\S]*\}/);
+      text = match?.[0] ?? "{}";
+    }
+
     return {
-      text: match?.[0] ?? "{}",
+      text,
       promptTokens: null,
       outputTokens: null,
       latencyMs: Date.now() - start,
@@ -49,6 +106,8 @@ class MockProvider implements Provider {
 }
 
 class OpenAiCompatibleProvider implements Provider {
+  callCount = 0;
+
   constructor(
     readonly id: ProviderId,
     readonly modelId: string,
@@ -58,6 +117,7 @@ class OpenAiCompatibleProvider implements Provider {
 
   async complete(system: string, user: string): Promise<Completion> {
     const start = Date.now();
+    this.callCount += 1;
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
@@ -99,14 +159,18 @@ class OpenAiCompatibleProvider implements Provider {
         ok: true,
         errorCode: null,
       };
-    } catch {
+    } catch (error) {
+      const name = error instanceof Error ? error.name : "";
       return {
         text: "{}",
         promptTokens: null,
         outputTokens: null,
         latencyMs: Date.now() - start,
         ok: false,
-        errorCode: "PROVIDER_UNAVAILABLE",
+        errorCode:
+          name === "TimeoutError" || name === "AbortError"
+            ? "TIMEOUT"
+            : "PROVIDER_UNAVAILABLE",
       };
     }
   }
@@ -146,3 +210,20 @@ export function getProvider(
 export function wrapUserContent(content: string): string {
   return `<evidence>${JSON.stringify(content)}</evidence>`;
 }
+
+export { getCached, putCached, clearCache, cacheStats, cacheKey } from "./cache";
+export { completeWithRetry, retryingProvider, isRetryable } from "./retry";
+export { ChaosProvider } from "./chaos";
+export type { ChaosOptions } from "./chaos";
+export type { RetryOptions } from "./retry";
+
+/** Convenience for the deterministic fallback helpers used by tests and evals. */
+export function mockTag(notes: string, predicate: string, evidenceId: string, claimId: string) {
+  return heuristicTag(notes, predicate, evidenceId, claimId);
+}
+
+export function mockProposal(rawText: string) {
+  return templateProposal(rawText);
+}
+
+export type { Claim, EvidenceRow };

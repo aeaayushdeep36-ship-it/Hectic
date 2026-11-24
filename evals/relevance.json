@@ -1,0 +1,32 @@
+{
+  "agent": "relevance",
+  "schema": "relevanceTagSchema",
+  "maxFallbackRate": 0.1,
+  "cases": [
+    {
+      "id": "r1",
+      "input": { "notes": "", "predicate": "recurring follow-up problem" },
+      "accept": { "bearsOn": [false] }
+    },
+    {
+      "id": "r2",
+      "input": { "notes": "Described a recurring follow-up problem every week", "predicate": "recurring follow-up problem" },
+      "accept": { "bearsOn": [true] }
+    },
+    {
+      "id": "r3",
+      "input": { "notes": "Loved the logo.", "predicate": "recurring follow-up problem" },
+      "accept": { "bearsOn": [false] }
+    },
+    {
+      "id": "r4",
+      "input": { "notes": "Priya Raman said the recurring follow-up problem came back", "predicate": "recurring follow-up problem" },
+      "accept": { "bearsOn": [true], "nameRedacted": true }
+    },
+    {
+      "id": "r5",
+      "input": { "notes": "No comment on pricing.", "predicate": "would pay for the product" },
+      "accept": { "bearsOn": [false] }
+    }
+  ]
+}

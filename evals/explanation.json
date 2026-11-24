@@ -1,0 +1,17 @@
+{
+  "agent": "explanation",
+  "schema": "textSections",
+  "maxFallbackRate": 0.1,
+  "cases": [
+    {
+      "id": "x1",
+      "input": { "claimText": "Buyers in these segments have a recurring follow-up problem.", "level": 6, "support": 3, "claimed": 6 },
+      "accept": { "mustContain": ["L6", "3 orgs"] }
+    },
+    {
+      "id": "x2",
+      "input": { "claimText": "Most approached buyers would pay for this.", "level": 2, "support": 5, "claimed": 6 },
+      "accept": { "mustContain": ["L2", "5 orgs"] }
+    }
+  ]
+}
