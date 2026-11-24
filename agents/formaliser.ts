@@ -59,8 +59,27 @@ export async function formalise(
 
   const tryParse = (text: string): ClaimProposal | null => {
     try {
-      const candidate = claimProposalSchema.safeParse(parseModelJson(text));
-      return candidate.success ? { ...candidate.data, rawText: safeText } : null;
+      const parsed = parseModelJson(text);
+      // The raw sentence is server-owned input, not something a model must echo.
+      // Some open models also emit snake_case aliases; normalise both here rather
+      // than turning a usable proposal into a schema fallback.
+      const record =
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : null;
+      const candidateValue = record
+        ? {
+            ...record,
+            rawText: safeText,
+            claimType: record.claimType ?? record.claim_type,
+            ambiguityFlags: record.ambiguityFlags ?? record.ambiguity_flags,
+            ...(typeof record.rationale === "string"
+              ? { rationale: record.rationale.slice(0, 400) }
+              : {}),
+          }
+        : parsed;
+      const candidate = claimProposalSchema.safeParse(candidateValue);
+      return candidate.success ? candidate.data : null;
     } catch {
       return null;
     }

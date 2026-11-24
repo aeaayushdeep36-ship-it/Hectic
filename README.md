@@ -29,7 +29,7 @@ The verdict has three parts — evidence type, support, and precision — and is
 
 Node 22+ · Next.js (App Router) · TypeScript strict · Tailwind · SQLite via better-sqlite3 + Drizzle · Zod · Papa Parse (CSV) · Vitest + fast-check + Playwright + axe-core · ESLint. A [`.npmrc`](.npmrc) skips install scripts because every native dependency ships a prebuilt binary; `npm ci` needs no C++ toolchain.
 
-LLM runtimes, all free-tier or open-weight: Gemini Flash-Lite · Groq · Ollama `qwen2.5:7b` · OpenRouter `google/gemma-4-31b-it:free` · in-repo mock provider.
+LLM runtimes, all free-tier or open-weight: Gemini `gemini-flash-lite-latest` · Groq `qwen/qwen3.8-27b` · Ollama `qwen2.5:7b` · optional OpenRouter `google/gemma-4-31b-it:free` · in-repo mock provider.
 
 ## Documentation
 
@@ -74,12 +74,17 @@ Hosted deployment is deliberately out of scope; the local path is the full produ
 
 ### Using Gemini + Groq (two real models)
 
-A ready-to-fill `.env.local` is present and gitignored. Paste the keys directly
-after `GEMINI_API_KEY=` and `GROQ_API_KEY=`; leave the `*_MODEL` lines empty to use
-the catalog defaults, or fill them to pin a different free model. Set
-`LLM_PROVIDER=gemini` to make Gemini the app default once its key is present; the
-offline mock remains the safe default in `.env.example` and in the Run panel.
-Keys are read server-side and never reach the browser. Notes are redacted before
+The gitignored `.env.local` is ready with `GEMINI_MODEL=gemini-flash-lite-latest` and
+`GROQ_MODEL=qwen/qwen3.8-27b`. Paste the keys directly after `GEMINI_API_KEY=`
+and `GROQ_API_KEY=`; change the `*_MODEL` lines only to pin a different free
+model. `LLM_PROVIDER=gemini` makes Gemini the app default; the offline mock
+remains the safe default in `.env.example` and in the Run panel.
+
+The requested `gemini-4-hydrogen` model was probed but its free tier allows only
+20 requests/day; this gate needs 10 repetitions × 4 agent calls = 40 calls, so
+the working `gemini-flash-lite-latest` model is pinned instead. The exact quota
+error is preserved in `docs/eval-live.md`. Keys are read server-side and never
+reach the browser. Notes are redacted before
 egress, the verdict is still computed locally, and a 429 or quota error falls
 back to the deterministic template with the reason recorded in the audit log.
 
@@ -112,8 +117,9 @@ implemented. The separate two-model live gate is recorded in `docs/eval-live.md`
 
 `npm run check` runs the secret scan, lint, typecheck, the full unit suite and the engine purity
 guard. `npm run build` and `npm run test:e2e` cover the production UI. CI also runs
-`npm run eval:gate`, `npm run eval:live` (skips real providers without keys) and
-`npm run demo:rehearse`. The authoritative two-model repetition result is recorded in
+`npm run eval:gate`, `npm run eval:live` (skips and preserves the recorded report
+when no real key is configured) and `npm run demo:rehearse`. The authoritative
+two-model repetition result is recorded in
 [docs/eval-live.md](docs/eval-live.md); do not treat the gate as passed while that file says
 `INCOMPLETE`.
 

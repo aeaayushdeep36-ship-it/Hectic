@@ -23,6 +23,9 @@ import { audit, buildCoverage, buildFinding } from "../engine/index";
 import { parseRoster } from "../lib/csv";
 import { claimsFileSchema, claimProposalSchema, relevanceTagSchema } from "../lib/schemas";
 import { verdictHash } from "../lib/hash";
+import { loadEnvLocal } from "../lib/env";
+
+loadEnvLocal();
 
 const dir = path.join("fixtures", "clean");
 const rows = parseRoster(readFileSync(path.join(dir, "roster.csv"), "utf8")).rows;

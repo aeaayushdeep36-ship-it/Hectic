@@ -135,6 +135,6 @@ With two people: one takes engine + agents, the other takes interface + delivery
 | Judge attacks the literature: "Pattyn is n=16 and exploratory" | Medium | Medium | Concede it in the docs first: the claim is "the strongest published ordering", not "proven". `research/03-engine-findings.md` §5 lists the four limits unprompted. |
 | Demo reads as accusatory | Medium | High — judges dislike the tone | Copy rules in design system; agent reports coverage, never characterises the founder |
 | LLM latency in the live demo | Medium | High | Pre-warm, stream, and have the deterministic-only path as fallback (`--no-llm` flag) |
-| Free-tier rate limit during judging | Medium | High | 20 calls/run vs 500 RPD; Ollama fallback; cache by input hash |
+| Free-tier rate limit during judging | Medium | High | Provider-disclosed quota; deterministic mock fallback; cache by input hash |
 | Scope creep into transcripts | High | High | Scope lock table above |
 | Team runs out of time for docs | High | 10% of score lost | Docs written 15–17 Dec are templates already drafted in this folder; fill, don't author |

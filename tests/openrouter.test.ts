@@ -59,10 +59,20 @@ function goldenFinding(): Finding {
 
 describe("hosted provider model configuration", () => {
   it("honours explicit Gemini and Groq model overrides", () => {
-    vi.stubEnv("GEMINI_MODEL", "gemini-2.5-flash-lite");
-    vi.stubEnv("GROQ_MODEL", "llama-3.3-70b-versatile");
-    expect(getProvider("gemini").modelId).toBe("gemini-2.5-flash-lite");
-    expect(getProvider("groq").modelId).toBe("llama-3.3-70b-versatile");
+    vi.stubEnv("GEMINI_MODEL", "gemma-4-31b-it");
+    vi.stubEnv("GROQ_MODEL", "openai/gpt-oss-20b");
+    expect(getProvider("gemini").modelId).toBe("gemma-4-31b-it");
+    expect(getProvider("groq").modelId).toBe("openai/gpt-oss-20b");
+  });
+
+  it("does not force json_object mode on array-returning agents", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "unit-test-key");
+    vi.stubEnv("GROQ_API_KEY", "unit-test-key");
+    for (const id of ["gemini", "groq"] as const) {
+      const calls = fakeFetch();
+      await getProvider(id).complete("system", "user");
+      expect(JSON.parse(calls[0]!.init.body as string)).not.toHaveProperty("response_format");
+    }
   });
 });
 
@@ -150,6 +160,86 @@ describe("tolerant model output", () => {
     expect(result.usedProvider).toBe(true);
     expect(result.fallbackReason).toBeNull();
     expect(claimProposalSchema.safeParse(result.proposal).success).toBe(true);
+  });
+
+  it("fills the server-owned rawText when an open model omits it", async () => {
+    const provider: Provider = {
+      id: "groq",
+      modelId: "qwen/qwen3.8-27b",
+      complete: async () => ({
+        text: JSON.stringify({
+          population: "Buyers in unspecified market segments",
+          predicate: "have a recurring follow-up problem",
+          kind: "frequency",
+          claimType: "theme",
+          rationale: "x".repeat(500),
+          ambiguityFlags: [],
+        }),
+        promptTokens: 1,
+        outputTokens: 1,
+        latencyMs: 1,
+        ok: true,
+        errorCode: null,
+      }),
+    };
+    const result = await formalise(claim.rawText, provider);
+    expect(result.usedProvider).toBe(true);
+    expect(result.fallbackReason).toBeNull();
+    expect(claimProposalSchema.safeParse(result.proposal).success).toBe(true);
+    expect(result.proposal.rawText).toBe(claim.rawText);
+    expect(result.proposal.rationale).toHaveLength(400);
+  });
+
+  it("normalises snake_case field aliases from hosted models", async () => {
+    const provider: Provider = {
+      id: "gemini",
+      modelId: "gemini-flash-lite-latest-alias-regression",
+      complete: async () => ({
+        text: JSON.stringify({
+          population: "Buyers in these segments",
+          predicate: "have a recurring follow-up problem",
+          kind: "frequency",
+          claim_type: "theme",
+          rationale: "r".repeat(500),
+          ambiguity_flags: ["population_scope_undefined"],
+        }),
+        promptTokens: 1,
+        outputTokens: 1,
+        latencyMs: 1,
+        ok: true,
+        errorCode: null,
+      }),
+    };
+    const result = await formalise(claim.rawText, provider);
+    expect(result.usedProvider).toBe(true);
+    expect(result.fallbackReason).toBeNull();
+    expect(claimProposalSchema.safeParse(result.proposal).success).toBe(true);
+    expect(result.proposal.claimType).toBe("theme");
+    expect(result.proposal.ambiguityFlags).toEqual(["population_scope_undefined"]);
+  });
+
+  it("accepts an array-wrapped A3 explanation under an alias key", async () => {
+    const provider: Provider = {
+      id: "groq",
+      modelId: "qwen/qwen3.8-27b-a3-alias-regression",
+      complete: async () => ({
+        text: JSON.stringify([
+          {
+            explanation:
+              "The available evidence is limited and does not establish the claim across the stated population.",
+          },
+        ]),
+        promptTokens: 1,
+        outputTokens: 1,
+        latencyMs: 1,
+        ok: true,
+        errorCode: null,
+      }),
+    };
+    const result = await explainFinding(claim, goldenFinding(), provider);
+    expect(result.usedProvider).toBe(true);
+    expect(result.fallbackReason).toBeNull();
+    expect(result.text).toContain("The available evidence is limited");
   });
 
   it("keeps the A3 numeric guard even when the model wraps valid JSON", async () => {

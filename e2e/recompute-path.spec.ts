@@ -12,7 +12,7 @@ test("switching provider leaves the finding hash unchanged", async ({ page, requ
   await expect(page.getByText(run.findingHash).first()).toBeVisible();
 
   const response = await request.post(`/api/runs/${run.id}/recompute`, {
-    data: { providerId: "gemini", modelId: "gemini-2.0-flash-lite" },
+    data: { providerId: "gemini", modelId: "gemini-flash-lite-latest" },
   });
   expect(response.ok()).toBeTruthy();
   const body = (await response.json()) as { identical: boolean; run: { findingHash: string } };

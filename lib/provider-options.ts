@@ -17,8 +17,8 @@ export interface ProviderOption {
 export const PROVIDER_OPTIONS: readonly ProviderOption[] = [
   { id: "mock", label: "mock · offline", modelId: "mock-v1" },
   { id: "openrouter", label: "openrouter · gemma 4 31B free", modelId: "google/gemma-4-31b-it:free" },
-  { id: "gemini", label: "gemini", modelId: "gemini-2.0-flash-lite" },
-  { id: "groq", label: "groq", modelId: "llama-3.1-8b-instant" },
+  { id: "gemini", label: "gemini · flash lite latest", modelId: "gemini-flash-lite-latest" },
+  { id: "groq", label: "groq · qwen 3.8 27B", modelId: "qwen/qwen3.8-27b" },
   { id: "ollama", label: "ollama · local", modelId: "qwen2.5:7b" },
 ];
 
@@ -27,7 +27,7 @@ export const MODEL_BY_PROVIDER = Object.fromEntries(
 ) as Readonly<Record<ProviderIdOption, string>>;
 
 export const DEFAULT_ANALYSIS_PROVIDER: ProviderIdOption = "mock";
-export const DEFAULT_RECOMPUTE_PROVIDER: ProviderIdOption = "ollama";
+export const DEFAULT_RECOMPUTE_PROVIDER: ProviderIdOption = "mock";
 
 export interface ProviderSelection {
   readonly providerId: ProviderIdOption;

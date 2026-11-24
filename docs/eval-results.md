@@ -22,5 +22,5 @@ quality of a hosted model's prose, which must be reviewed by a human.
 
 ## What is deliberately not scored here
 
-Prompt quality on Gemini Flash-Lite, Groq and Ollama. Those models are optional
+Prompt quality on Gemini, Groq and Ollama. Those models are optional
 runtimes; every numeric and verdict field is structurally unavailable to them.

@@ -301,8 +301,9 @@ score hosted-model prompt quality, and neither does the gate.
 - the deterministic mock (mandatory), and
 - the chaos provider (mandatory) with seeded 429, timeout and malformed JSON
   injections, asserting that the finding hash is unchanged;
-- Gemini, Groq, Ollama and OpenRouter (`google/gemma-4-31b-it:free`) **only**
-  when a key or endpoint is configured locally.
+- Gemini (`gemini-flash-lite-latest`), Groq (`qwen/qwen3.8-27b`), Ollama and optional
+  OpenRouter (`google/gemma-4-31b-it:free`) **only** when a key or endpoint is
+  configured locally.
 
 It prints pass/fail, latency, retry count, fallback count and injection count per
 provider. No host is contacted without explicit configuration, so the command is

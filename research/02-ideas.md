@@ -31,13 +31,13 @@ The demo moment is the **empty cell**: a heatmap where the row "practice manager
 
 **Reliability story (this is the differentiator).** The model never touches the arithmetic. Same roster, same score, bit-for-bit, whichever model is selected. Put a *Recompute with a different model* button in the demo: the numbers don't move. No competitor can make that claim, because they put an LLM in the scoring path.
 
-**Frugality.** ~20 LLM calls per full run (6 claim formalisations + 11 interview labels + 1 summary). Gemini 3.5 Flash-Lite free tier is 500 RPD / 15 RPM; Groq free tier for the classifier; Ollama `qwen2.5:7b` as the offline demo fallback. Cost per run: €0.00. State that number on the slide.
+**Frugality.** ~20 LLM calls per full run (6 claim formalisations + 11 interview labels + 1 summary). Current pinned runtimes are Gemini `gemini-flash-lite-latest`, Groq `qwen/qwen3.8-27b` and Ollama `qwen2.5:7b`; the mock path makes a local run free. Hosted quotas are disclosed by each provider and are not claimed here.
 
 **Time saved (hypothesis, not measured).** Building an evidence pack by hand is *estimated* to take hours; no manual baseline was timed, so no number is claimed. The "$4,200 / 3.2-month rework" figure that appeared here was withdrawn: no primary source was found. See `TIME_SAVED_REPORT.md` for the protocol that would measure it.
 
 **Demo beat.** 11 interviews, all sourced from one founder's network → heatmap shows 9/11 in a single cell, 0 economic buyers → claim "€200/mo" flagged → founder types a falsifier → export unlocks and shows the recruiting brief for the missing cells.
 
-**Risks.** (a) Reads as "you did it wrong" — mitigate with tone: the agent reports coverage, never characterises the founder. (b) Thin if it's *only* a matrix — the export artefact and the recruiting brief are what make it a product. (c) Time-saved is indirect — lead with the 6–8 hour number, keep the rework number as support.
+**Risks.** (a) Reads as "you did it wrong" — mitigate with tone: the agent reports coverage, never characterises the founder. (b) Thin if it's *only* a matrix — the export artefact and the recruiting brief are what make it a product. (c) Time-saved is indirect — no hours-saved number is claimed until a human baseline is timed.
 
 **Rubric:** 24/25 value, 20/20 human judgment, 18/20 reliability, 15/15 frugality, 9/10 UX, 10/10 docs. Best fit on the board.
 

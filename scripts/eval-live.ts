@@ -6,13 +6,16 @@
  * retry and hash divergence is recorded in docs/eval-live.md. Keys are read
  * from the environment only; nothing is printed and nothing is committed.
  *
- *   OPENROUTER_API_KEY=... npm run eval:live
+ *   GEMINI_API_KEY=... GROQ_API_KEY=... npm run eval:live
  *
- * `OPENROUTER_LIVE_MODELS` can pin an explicit comma-separated model list when
- * an upstream provider is rate-limited. `OPENROUTER_SECOND_MODEL` adds one or
- * more comma-separated models to the default Gemma model. `HECTIC_LIVE_RUNS`
- * and the `HECTIC_LIVE_MAX_RETRIES`/`*_DELAY_MS` knobs are for short probes;
- * the recorded gate must use the defaults (10 runs and bounded backoff).
+ * The two required real models come from Gemini (`gemini-flash-lite-latest`)
+ * and Groq (`qwen/qwen3.8-27b`), optionally overridden by `GEMINI_MODEL`/
+ * `GROQ_MODEL`. Hydrogen was probed but its 20 RPD free tier cannot cover the
+ * 40 calls this gate requires.
+ * `OPENROUTER_LIVE_MODELS` can pin additional OpenRouter models when needed.
+ * `HECTIC_LIVE_RUNS` and the `HECTIC_LIVE_MAX_RETRIES`/`*_DELAY_MS` knobs are
+ * for short probes; the recorded gate must use the defaults (10 runs and
+ * bounded backoff).
  *
  * A run is only "PASS" when at least two real models and 10 repetitions per
  * model completed with no schema-invalid output and a fallback rate at or
@@ -36,12 +39,15 @@ import {
   clearCache,
   getProvider,
   type Provider,
+  type RetryOptions,
 } from "../providers";
 
 loadEnvLocal();
 
 const RUNS = Math.max(1, Number(process.env.HECTIC_LIVE_RUNS ?? 10));
 const MAX_FALLBACK_RATE = 0.1;
+/** A1 once + A2 once per claim (2 claims) + A3 once. */
+const AGENT_STEPS_PER_RUN = 4;
 
 const dir = path.join("fixtures", "clean");
 const rows = parseRoster(readFileSync(path.join(dir, "roster.csv"), "utf8")).rows;
@@ -56,15 +62,26 @@ interface Source {
   readonly name: string;
   readonly provider: Provider;
   readonly real: boolean;
+  readonly retry?: RetryOptions;
 }
 
 function modelList(value: string | undefined): readonly string[] {
   return [...new Set((value ?? "").split(",").map((item) => item.trim()).filter(Boolean))];
 }
 
+/** The chaos wrapper injects failures on purpose; retrying it wastes minutes. */
+const noRetry: RetryOptions = { maxRetries: 0 };
+
 const sources: Source[] = [];
-if (process.env.GEMINI_API_KEY) sources.push({ name: "gemini", provider: getProvider("gemini"), real: true });
-if (process.env.GROQ_API_KEY) sources.push({ name: "groq", provider: getProvider("groq"), real: true });
+// Skip flags are diagnostics only: fewer real models always keeps the gate INCOMPLETE.
+if (process.env.GEMINI_API_KEY && !process.env.HECTIC_LIVE_SKIP_GEMINI) {
+  const provider = getProvider("gemini");
+  sources.push({ name: `gemini:${provider.modelId}`, provider, real: true });
+}
+if (process.env.GROQ_API_KEY && !process.env.HECTIC_LIVE_SKIP_GROQ) {
+  const provider = getProvider("groq");
+  sources.push({ name: `groq:${provider.modelId}`, provider, real: true });
+}
 if (process.env.OPENROUTER_API_KEY) {
   const pinned = modelList(process.env.OPENROUTER_LIVE_MODELS);
   const primary = getProvider("openrouter").modelId;
@@ -87,7 +104,7 @@ if (process.env.OPENROUTER_API_KEY) {
     });
   }
 }
-if (process.env.OLLAMA_BASE_URL || process.env.HECTIC_REHEARSE_OLLAMA === "1") {
+if (process.env.OLLAMA_BASE_URL) {
   sources.push({ name: "ollama", provider: getProvider("ollama"), real: true });
 }
 sources.push({
@@ -99,6 +116,7 @@ sources.push({
     seed: 11,
   }),
   real: false,
+  retry: noRetry,
 });
 
 interface Failure {
@@ -140,18 +158,23 @@ async function once(source: Source, run: number): Promise<Failure[]> {
     failures.push({ provider: source.name, run, agent, reason });
 
   try {
-    const formalised = await formalise(claims[0]!.rawText, source.provider, { retry });
+    const attemptRetry = source.retry ?? retry;
+    const formalised = await formalise(claims[0]!.rawText, source.provider, { retry: attemptRetry });
     if (!claimProposalSchema.safeParse(formalised.proposal).success) record("A1", "SCHEMA_INVALID");
     if (formalised.fallbackReason) record("A1", formalised.fallbackReason);
 
-    const tagged = await tagRelevance(rows.slice(0, 5), claims.slice(0, 2), source.provider, { retry });
+    const tagged = await tagRelevance(rows.slice(0, 5), claims.slice(0, 2), source.provider, {
+      retry: attemptRetry,
+    });
     if (!relevanceTagSchema.array().safeParse(tagged.tags).success || tagged.tags.length !== 10) {
       record("A2", "SCHEMA_INVALID");
     }
     for (const reason of tagged.fallbackReasons) record("A2", reason);
 
     const finding = buildFinding(claims[0]!, buildCoverage(rows, claims[0]!));
-    const explained = await explainFinding(claims[0]!, finding, source.provider, { retry });
+    const explained = await explainFinding(claims[0]!, finding, source.provider, {
+      retry: attemptRetry,
+    });
     if (explained.text.length <= 20) record("A3", "EMPTY");
     if (explained.fallbackReason) record("A3", explained.fallbackReason);
 
@@ -164,6 +187,13 @@ async function once(source: Source, run: number): Promise<Failure[]> {
 }
 
 async function main() {
+  // CI runs this command without keys. Keep the last recorded gate evidence
+  // intact instead of replacing it with a keyless INCOMPLETE report.
+  if (!sources.some((source) => source.real)) {
+    console.log("SKIPPED: no real provider configured; docs/eval-live.md unchanged.");
+    return;
+  }
+
   const failures: Failure[] = [];
   const summaries: Summary[] = [];
 
@@ -174,6 +204,7 @@ async function main() {
     let fallbacks = 0;
     let hashStable = 0;
     for (let run = 1; run <= RUNS; run += 1) {
+      console.error(`${source.name}: run ${run}/${RUNS}`);
       clearCache();
       const runFailures = await once(source, run);
       const schemaOk = !runFailures.some((failure) => failure.reason === "SCHEMA_INVALID" || failure.reason === "EMPTY");
@@ -199,7 +230,9 @@ async function main() {
   // control working, not a model-quality failure. Real models must be clean.
   const allSchemaValid = real.every((summary) => summary.schemaValid === summary.checks);
   const allHashStable = summaries.every((summary) => summary.hashStable === summary.checks);
-  const ratesOk = real.every((summary) => summary.fallbacks / (summary.checks * 3) <= MAX_FALLBACK_RATE);
+  const ratesOk = real.every(
+    (summary) => summary.fallbacks / (summary.checks * AGENT_STEPS_PER_RUN) <= MAX_FALLBACK_RATE,
+  );
   const enoughModels = real.length >= 2;
   const enoughRuns = RUNS >= 10;
   const gate = enoughModels && enoughRuns && allSchemaValid && allHashStable && ratesOk ? "PASS" : "INCOMPLETE";
@@ -216,7 +249,7 @@ async function main() {
       `| ${s.name} | ${s.real ? "yes" : "no (chaos wrapper)"} | ${s.runs} | ${s.schemaValid}/${s.checks} | ${s.fallbacks} | ${s.hashStable}/${s.checks} | ${s.latencyMs} ms |`,
     ),
     "",
-    `Gate: **${gate}**. Requires ≥2 real models, ≥10 repetitions each, zero schema-invalid output, stable hash and ≤${MAX_FALLBACK_RATE * 100}% fallback rate.`,
+    `Gate: **${gate}**. Requires ≥2 real models, ≥10 repetitions each, zero schema-invalid output, stable hash and ≤${MAX_FALLBACK_RATE * 100}% fallback rate (fallbacks ÷ ${AGENT_STEPS_PER_RUN} agent steps per run).`,
     "",
     "Chaos is an adversarial control: injected malformed JSON and forced fallbacks are expected there and are excluded from the schema/fallback gate. Hash stability is still required of it.",
     "",
@@ -235,7 +268,7 @@ async function main() {
 
   if (!enoughModels) {
     lines.push(
-      "Only " + real.length + " real model(s) configured. Set `OPENROUTER_LIVE_MODELS` (or `OPENROUTER_SECOND_MODEL`) or add a second runtime key (`GEMINI_API_KEY`, `GROQ_API_KEY`) or `OLLAMA_BASE_URL` to satisfy the two-model requirement.",
+      "Only " + real.length + " real model(s) configured. Add both `GEMINI_API_KEY` and `GROQ_API_KEY` (or a second optional key/endpoint) to satisfy the two-model requirement.",
       "",
     );
   }

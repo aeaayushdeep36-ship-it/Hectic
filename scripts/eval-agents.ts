@@ -116,7 +116,7 @@ const lines = [
   "",
   "## What is deliberately not scored here",
   "",
-  "Prompt quality on Gemini Flash-Lite, Groq and Ollama. Those models are optional",
+  "Prompt quality on Gemini, Groq and Ollama. Those models are optional",
   "runtimes; every numeric and verdict field is structurally unavailable to them.",
 ];
 writeFileSync(path.join("docs", "eval-results.md"), `${lines.join("\n")}\n`);

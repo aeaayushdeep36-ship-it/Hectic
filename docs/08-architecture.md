@@ -176,10 +176,11 @@ Rules:
 - One repair attempt on schema failure, then a typed `AgentError`. No silent retries beyond that.
 - `mock` returns fixtures and is the default in CI — tests never hit a network.
 - `ollama` is the offline demo path. If the network dies during judging, the app still runs.
-- `openrouter` uses the free `google/gemma-4-31b-it:free` model. JSON mode is not
-  assumed; responses are parsed tolerantly and then validated with the same Zod
-  schemas. The key is server-only, and rate limits are absorbed by batching,
-  retry with jitter and the response cache.
+- `gemini` uses `gemini-flash-lite-latest` and `groq` uses `qwen/qwen3.8-27b`; optional
+  `openrouter` uses the free `google/gemma-4-31b-it:free` model. JSON mode is not
+  assumed for array-returning agents; responses are parsed tolerantly and then
+  validated with the same Zod schemas. Keys are server-only, and rate limits are
+  absorbed by batching, retry with jitter and the response cache.
 
 ---
 
@@ -193,7 +194,8 @@ Rules:
 | Statement composition | 1 | small |
 | **Total** | **≤ 32, typically 20** | |
 
-Against Gemini 3.5 Flash-Lite free tier (500 RPD), that is ~25 full runs per day. Caching means a rehearsal costs nothing after the first run.
+The mock path makes a rehearsal free; hosted paths depend on each provider's
+current free-tier quota and are never represented as unlimited.
 
 Displayed in the UI as a live counter: `Run cost: €0.00 · 18 calls · 4,210 tokens`.
 

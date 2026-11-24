@@ -246,6 +246,9 @@ export function getProvider(
         modelId || process.env.GEMINI_MODEL || ALLOWED.gemini,
         "https://generativelanguage.googleapis.com/v1beta/openai",
         process.env.GEMINI_API_KEY ?? null,
+        // A2 returns an array; OpenAI-style json_object mode rejects arrays on
+        // several gateways. The Zod schemas are the actual contract.
+        { jsonMode: false },
       );
     case "groq":
       return new OpenAiCompatibleProvider(
@@ -253,6 +256,7 @@ export function getProvider(
         modelId || process.env.GROQ_MODEL || ALLOWED.groq,
         "https://api.groq.com/openai/v1",
         process.env.GROQ_API_KEY ?? null,
+        { jsonMode: false },
       );
     case "ollama":
       return new OpenAiCompatibleProvider(

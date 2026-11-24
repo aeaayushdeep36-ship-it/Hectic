@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ANALYSIS_PROVIDER,
+  DEFAULT_RECOMPUTE_PROVIDER,
   MODEL_BY_PROVIDER,
   PROVIDER_OPTIONS,
   isProviderId,
@@ -11,7 +12,10 @@ describe("provider options", () => {
   it("exposes one catalog for UI labels and server defaults", () => {
     expect(PROVIDER_OPTIONS.map((option) => option.id)).toEqual(["mock", "openrouter", "gemini", "groq", "ollama"]);
     expect(MODEL_BY_PROVIDER.openrouter).toBe("google/gemma-4-31b-it:free");
+    expect(MODEL_BY_PROVIDER.gemini).toBe("gemini-flash-lite-latest");
+    expect(MODEL_BY_PROVIDER.groq).toBe("qwen/qwen3.8-27b");
     expect(DEFAULT_ANALYSIS_PROVIDER).toBe("mock");
+    expect(DEFAULT_RECOMPUTE_PROVIDER).toBe("mock");
   });
 
   it("accepts an empty body and an explicit valid selection", () => {

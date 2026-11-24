@@ -22,10 +22,11 @@ their agents.
 | A4 `statement-composer` | the locked ledger | method, coverage, findings, limitations prose | none (pure) |
 | G1 `input-guard` | raw cells and notes | redacted text + injection flag | none (regex) |
 
-Runtimes are free-tier or open-weight only: Gemini Flash-Lite, Groq
-`llama-3.1-8b-instant`, Ollama `qwen2.5:7b`, OpenRouter's free
+Runtimes are free-tier or open-weight only: Gemini `gemini-flash-lite-latest`, Groq
+`qwen/qwen3.8-27b`, Ollama `qwen2.5:7b`, optional OpenRouter
 `google/gemma-4-31b-it:free`, and an in-repo deterministic mock. The mock is the
-default and needs no key. No secret is stored in the repository.
+default in the shipped configuration and needs no key. No secret is stored in the
+repository.
 
 ## 2. What the model cannot do
 
@@ -55,9 +56,10 @@ or a verdict. This is not a policy statement; it is structural:
 The founder's interviewees — people who never heard of this product and did not
 consent to AI processing. Mitigations: offline operation by default, no account,
 no telemetry, aliases instead of names, redaction before any provider call, and
-notes excluded from the export entirely. If OpenRouter is configured, redacted
-notes leave the machine and OpenRouter becomes a processor; the founder makes
-that choice explicitly and the key is never committed.
+notes excluded from the export entirely. If Gemini, Groq or OpenRouter is
+configured, redacted notes leave the machine and that provider becomes a
+processor; the founder makes that choice explicitly and the key is never
+committed.
 
 ## 5. What the tool must not be used for
 
@@ -133,22 +135,23 @@ configured, there is no telemetry, and the audit log records only redactions and
 flags. A founder who needs a strict guarantee should type no names at all. This
 is a GDPR **residual risk**, not a claim of compliance.
 
-## 10. Remote processing disclosure — OpenRouter
+## 10. Remote processing disclosure — Gemini, Groq and OpenRouter
 
-Selecting `openrouter` sends **redacted** notes and claim text to
-`https://openrouter.ai/api/v1` for the free `google/gemma-4-31b-it:free` model.
-The API key is read only from `OPENROUTER_API_KEY` in the server environment, is
-never sent to the browser, and is absent from the repository. No account or
-payment detail is held by Hectic.
+Selecting a hosted provider sends **redacted** notes and claim text to that
+provider's OpenAI-compatible endpoint: Gemini (`gemini-flash-lite-latest`), Groq
+(`qwen/qwen3.8-27b`), or optional OpenRouter (`google/gemma-4-31b-it:free`).
+Each API key is read only from the server environment, is never sent to the
+browser, and is absent from the repository. No account or payment detail is held
+by Hectic.
 
-OpenRouter is a third-party processor for that request. The mitigation chain is
-unchanged: the input guard strips email, phone, IBAN, URLs, formulas, likely
-person names and injection strings before egress; the response is schema-checked
-with Zod; A3 re-checks every generated digit; and the verdict itself is computed
-locally by `engine/` before any call. Free-tier rate limits are handled by one
-batch per claim, retry with jittered backoff, and an LRU cache. If the service is
-unavailable or over quota, the deterministic template fallback runs and the
-reason is logged — the audit still completes.
+Each hosted runtime is a third-party processor for that request. The mitigation
+chain is unchanged: the input guard strips email, phone, IBAN, URLs, formulas,
+likely person names and injection strings before egress; the response is
+schema-checked with Zod; A3 re-checks every generated digit; and the verdict
+itself is computed locally by `engine/` before any call. Free-tier rate limits
+are handled by batching, bounded retry with jittered backoff, and an LRU cache.
+If the service is unavailable or over quota, the deterministic template fallback
+runs and the reason is logged — the audit still completes.
 
 `npm run eval:live` is the repeatability harness for this runtime: it exercises
 each configured provider ten times by default, records every fallback and

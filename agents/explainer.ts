@@ -48,12 +48,20 @@ export async function explainFinding(
   const accept = (text: string): boolean =>
     text.length >= 20 && numbersIn(text).every((value) => allowed.has(value));
 
+  const readText = (value: unknown): string | null => {
+    const candidate = Array.isArray(value) ? value[0] : value;
+    if (!candidate || typeof candidate !== "object") return null;
+    const record = candidate as Record<string, unknown>;
+    const text = record.text ?? record.explanation ?? record.rephrased;
+    return typeof text === "string" ? text : null;
+  };
+
   const cached = getCached(key);
   if (cached !== undefined) {
     try {
-      const body = parseModelJson(cached) as { text?: unknown } | null;
-      if (body && typeof body.text === "string" && accept(body.text)) {
-        return { text: body.text, usedProvider: true, fallbackReason: null };
+      const text = readText(parseModelJson(cached));
+      if (text && accept(text)) {
+        return { text, usedProvider: true, fallbackReason: null };
       }
     } catch {
       // Cached value was not usable; continue to the provider.
@@ -65,15 +73,15 @@ export async function explainFinding(
     if (!completion.ok) {
       return { text: fallback, usedProvider: false, fallbackReason: `PROVIDER_${completion.errorCode ?? "ERROR"}` };
     }
-    const body = parseModelJson(completion.text) as { text?: unknown } | null;
-    if (!body || typeof body.text !== "string") {
+    const text = readText(parseModelJson(completion.text));
+    if (!text) {
       return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
     }
-    if (!accept(body.text)) {
+    if (!accept(text)) {
       return { text: fallback, usedProvider: false, fallbackReason: "NUMERIC_GUARD" };
     }
     putCached(key, completion.text);
-    return { text: body.text, usedProvider: true, fallbackReason: null };
+    return { text, usedProvider: true, fallbackReason: null };
   } catch {
     return { text: fallback, usedProvider: false, fallbackReason: "SCHEMA_INVALID" };
   }

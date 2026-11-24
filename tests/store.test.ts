@@ -93,10 +93,12 @@ describe("the database-backed checkpoint", () => {
     const run = createRun("clean");
     const { identical, run: fresh } = recompute(
       run.id,
-      "openai-compatible",
-      "llama-3.1-8b",
+      "gemini",
+      "gemini-flash-lite-latest",
     );
     expect(identical).toBe(true);
+    expect(fresh.providerId).toBe("gemini");
+    expect(fresh.modelId).toBe("gemini-flash-lite-latest");
     expect(fresh.findingHash).toBe(run.findingHash);
     expect(fresh.findings.map((finding) => finding.level)).toEqual(
       run.findings.map((finding) => finding.level),
