@@ -14,6 +14,7 @@ import {
   markExported,
   recompute,
   importEvidence,
+  workspaceMatrix,
 } from "../server/store";
 
 const LONG_FALSIFIER =
@@ -32,6 +33,17 @@ describe("the database-backed checkpoint", () => {
     const workspaces = listWorkspaces();
     expect(workspaces).toHaveLength(4);
     expect(workspaces.every((workspace) => workspace.isDemo)).toBe(true);
+  });
+
+  it("exposes sorted contributing aliases on each coverage cell", () => {
+    const matrix = workspaceMatrix("underpowered");
+    expect(matrix.cells["SMB retail::user"]).toEqual({
+      rows: 8,
+      orgs: 4,
+      aliases: ["P01", "P01c", "P02", "P02b", "P04", "P04b", "P05", "P05b"],
+    });
+    // Absent keys are rendered as zero cells by CoverageMatrix, not stored as fake evidence.
+    expect(matrix.cells["SMB retail::economic"]).toBeUndefined();
   });
 
   it("blocks a run whose finding is not SUPPORTED", () => {

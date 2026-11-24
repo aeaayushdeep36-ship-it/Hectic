@@ -1,4 +1,4 @@
-import { CheckCircle2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, CircleQuestionMark, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { FindingView } from "@/lib/dto";
@@ -26,7 +26,7 @@ const statusConfig = {
     bg: "bg-[var(--signal-bg)] border-[var(--signal-border)]",
   },
   ambiguous: {
-    icon: ShieldAlert,
+    icon: CircleQuestionMark,
     color: "text-[var(--neutral)]",
     bg: "bg-[var(--neutral-bg)] border-[var(--border)]",
   },
@@ -43,9 +43,13 @@ export function ClaimCard({
   runId,
 }: ClaimCardProps) {
   const { icon: StatusIcon, color, bg } = statusConfig[status];
+  const gap = finding && finding.finding !== "SUPPORTED";
 
   return (
-    <article className="card p-5 transition-colors hover:border-[var(--border-strong)]">
+    <article
+      data-status={status}
+      className="card p-5 transition-colors"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-[12px] font-mono text-[var(--ink-muted)] mb-2">
@@ -53,12 +57,12 @@ export function ClaimCard({
             <span aria-hidden="true">•</span>
             <span>{level}</span>
             <span aria-hidden="true">•</span>
-            <span className={color}>{status}</span>
+            <span className={cn(color, "capitalize")}>{status}</span>
           </div>
           <h3 className="text-base font-semibold text-[var(--ink)]">{title}</h3>
           <p className="text-sm text-[var(--ink-muted)]">Population: {population}</p>
         </div>
-        <div className={cn("p-2 rounded-full border shrink-0", bg)}>
+        <div className={cn("p-2 rounded-full border shrink-0 transition-colors", bg)}>
           <StatusIcon size={20} className={color} aria-hidden="true" />
         </div>
       </div>
@@ -66,15 +70,24 @@ export function ClaimCard({
       {finding ? (
         <div className="mt-4 border-t border-[var(--border)] pt-4">
           <VerdictBadge finding={finding} />
+          {finding.explanation ? (
+            <p className="mt-3 text-[13px] leading-5 text-[var(--ink)]">{finding.explanation}</p>
+          ) : null}
           {finding.binding ? (
-            <p className="mono mt-2 text-[12px] text-[var(--ink-muted)]">
+            <p
+              className={cn(
+                "mono mt-2 text-[12px]",
+                gap ? "text-[var(--signal)]" : "text-[var(--ink-muted)]",
+              )}
+            >
               Binding constraint: {finding.binding}
             </p>
           ) : null}
           {runId ? (
             <Link
               href={`/runs/${runId}`}
-              className="mono mt-3 inline-block text-[12px] text-[var(--ink-muted)] underline underline-offset-4 hover:text-[var(--ink)]"
+              aria-label={`View evidence trail for ${title}`}
+              className="mono mt-3 inline-flex rounded-md text-[12px] text-[var(--ink-muted)] underline underline-offset-4 transition-colors hover:text-[var(--ink)] focus-visible:text-[var(--ink)]"
             >
               View evidence trail →
             </Link>

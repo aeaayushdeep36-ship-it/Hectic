@@ -157,9 +157,26 @@ For prevalence claims, the interval renders on a second line in mono: `95% [0.23
 
 - Axis headers: `--label` style, `--surface-sunk`.
 - Zero cell: hatch + `—`.
-- Cell hover/focus: shows contributing aliases in a popover.
+- Cell hover/focus: keyboard-focusable cells open a fixed-position popover listing contributing aliases; the label and `aria-describedby` carry the same information for screen readers.
 - Row labels truncate at 28ch with a title attribute.
 - The matrix is a `<table>` with proper `<th scope>` — it *is* tabular data, and screen readers should get the structure for free.
+
+### 6.2.1 `ClaimCard`
+
+```
+[✓] THEME · L4 · confirmed
+    Budget holders will sign a paid pilot for this.
+    Population: SMB retail
+    ─────────────────────────────────────────────
+    claimed L4 commitment → L2 stated · 5 orgs DOWNGRADE
+    Evidence type is the constraint; get one organisation to the next level.
+    Binding constraint: type
+    View evidence trail →
+```
+
+- Status uses three distinct glyphs (check, warning, question) plus the written status; colour is never the only signal.
+- Card hover and `focus-within` strengthen the border; the evidence-trail link keeps the global 2px focus ring.
+- An audited card shows the verdict, the factual explanation and the binding constraint. The constraint uses signal red only for a non-`SUPPORTED` finding and always carries its label.
 
 ### 6.3 `FindingRow`
 

@@ -24,9 +24,9 @@ The engine model itself was falsified before any of this was written. `research/
 
 ```
         ┌──────────────────────────┐
-        │  Playwright · 3 specs    │  the demo path only
+        │  Playwright · 4 specs    │  real browser paths
         ├──────────────────────────┤
-        │  Vitest · 55 tests       │  engine, agents, routes, DB, checkpoint, remediation, pipeline
+        │  Vitest · 103 tests       │  engine, agents, routes, DB, checkpoint, remediation, pipeline
         └──────────────────────────┘
 ```
 
@@ -208,6 +208,7 @@ was never run.
   The observed score is 100.
 - Manual keyboard walk: import → confirm → matrix → checkpoint → export, no mouse.
 - Heatmap zero cells carry a dash, a hatch and a dashed border, so greyscale checks do not depend on colour alone.
+- The demo-path spec asserts the rounded emerald/soft-red cell tokens, the contributor popover on keyboard focus, the claim-card status glyph, its hover border and the evidence-link focus ring.
 
 ---
 

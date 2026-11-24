@@ -768,27 +768,40 @@ export function workspaceMatrix(slug: string): MatrixView {
     return { segments: [], roles: [], cells: {}, totalRows: 0, totalOrgs: 0 };
   }
   const rows = db
-    .select({ segment: evidence.segment, role: evidence.role, orgRef: evidence.orgRef })
+    .select({
+      segment: evidence.segment,
+      role: evidence.role,
+      orgRef: evidence.orgRef,
+      alias: evidence.alias,
+    })
     .from(evidence)
     .where(eq(evidence.workspaceId, workspace.id))
     .all();
 
-  const cells: Record<string, { rows: number; orgs: number }> = {};
+  const cells: Record<string, { rows: number; orgs: number; aliases: readonly string[] }> = {};
   const segments = new Set<string>();
   const roles = new Set<string>();
   const orgsByCell = new Map<string, Set<string>>();
+  const aliasesByCell = new Map<string, Set<string>>();
 
   for (const row of rows) {
     segments.add(row.segment);
     roles.add(row.role);
     const key = `${row.segment}::${row.role}`;
-    cells[key] = { rows: (cells[key]?.rows ?? 0) + 1, orgs: 0 };
+    cells[key] = { rows: (cells[key]?.rows ?? 0) + 1, orgs: 0, aliases: [] };
     const orgs = orgsByCell.get(key) ?? new Set<string>();
     orgs.add(row.orgRef);
     orgsByCell.set(key, orgs);
+    const aliases = aliasesByCell.get(key) ?? new Set<string>();
+    aliases.add(row.alias);
+    aliasesByCell.set(key, aliases);
   }
   for (const [key, orgs] of orgsByCell) {
-    cells[key] = { ...cells[key]!, orgs: orgs.size };
+    cells[key] = {
+      ...cells[key]!,
+      orgs: orgs.size,
+      aliases: [...(aliasesByCell.get(key) ?? [])].sort(),
+    };
   }
 
   return {

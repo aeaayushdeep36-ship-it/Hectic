@@ -105,6 +105,8 @@ export interface ClaimView {
 export interface MatrixCellView {
   readonly rows: number;
   readonly orgs: number;
+  /** Sorted participant aliases, used by the cell hover/focus popover. */
+  readonly aliases: readonly string[];
 }
 
 export interface MatrixView {

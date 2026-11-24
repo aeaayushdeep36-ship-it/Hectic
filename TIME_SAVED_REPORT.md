@@ -49,7 +49,7 @@ the live-model quality gate is reported separately in `docs/eval-live.md`.
 
 | Check | Result | Source |
 |---|---:|---|
-| Unit + integration suite | 102 passed in 11 files | `npm run check`, 2026-11-25 |
+| Unit + integration suite | 103 passed in 11 files | `npm run check`, 2026-11-25 |
 | Static check | secret scan, lint, typecheck, engine purity all green | `npm run check` |
 | Golden-fixture rehearsal | mock + chaos + both configured real providers passed | `npm run demo:rehearse`, invoked by `npm run build` |
 | Browser suite | 12 Playwright specs passed with axe on the main views | `npm run test:e2e` |

@@ -18,8 +18,27 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "Coverage" })).toBeVisible();
   await expect(page.getByText(/Who was in the room/)).toBeVisible();
   await expect(page.getByText("Synthetic demo").first()).toBeVisible();
-  await expect(page.getByRole("table", { name: "Evidence coverage matrix" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: /no interviews/ }).first()).toBeVisible();
+  const matrix = page.getByRole("table", { name: "Evidence coverage matrix" });
+  await expect(matrix).toBeVisible();
+  await expect(matrix.getByRole("cell", { name: /no interviews/ }).first()).toHaveCSS(
+    "background-color",
+    "rgb(254, 242, 242)",
+  );
+  const populatedCell = matrix.getByRole("cell", {
+    name: /8 interviews across 4 organisations · User/,
+  });
+  await expect(populatedCell).toHaveCSS("border-radius", "10px");
+  await expect(populatedCell).toHaveCSS("background-color", "rgb(143, 185, 154)");
+  await populatedCell.focus();
+  const cellPopover = page.getByRole("tooltip");
+  await expect(cellPopover).toContainText("Contributing aliases");
+  await expect(cellPopover).toContainText("P01");
+  await populatedCell.evaluate((element) => (element as HTMLElement).blur());
+
+  const claimCard = page.locator("article[data-status]").first();
+  await expect(claimCard.locator("svg")).toHaveCount(1);
+  await claimCard.hover();
+  await expect(claimCard).toHaveCSS("border-color", "rgb(203, 213, 225)");
   await expectNoCriticalViolations(page);
 
   const rosterField = page.getByLabel("Roster CSV content");
@@ -38,8 +57,26 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
 
   await page.getByRole("button", { name: "Analyse now" }).click();
   await expect(page).toHaveURL(/\/runs\//);
+  const runUrl = page.url();
   await waitForHydration(page);
   await expect(page.getByRole("heading", { name: "Findings" })).toBeVisible();
+
+  // Audited claim cards expose the evidence trail with a keyboard-visible ring.
+  await page.goto("/workspaces/underpowered");
+  await waitForHydration(page);
+  const evidenceLink = page
+    .locator("article[data-status]")
+    .filter({ has: page.getByRole("link", { name: /View evidence trail/ }) })
+    .first()
+    .getByRole("link", { name: /View evidence trail/ });
+  await expect(evidenceLink).toBeVisible();
+  await evidenceLink.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(evidenceLink).toHaveCSS("outline-color", "rgb(15, 23, 42)");
+  await expect(evidenceLink).toHaveCSS("outline-width", "2px");
+  await page.goto(runUrl);
+  await waitForHydration(page);
   await expect(page.locator('aside a[href="/workspaces/underpowered"]')).toHaveAttribute(
     "aria-current",
     "page",
