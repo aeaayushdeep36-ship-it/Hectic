@@ -1,0 +1,226 @@
+ 
+ AI Agents for Founders Challenge — HETIC 2026: Create AI agents that give founders back their most valuable asset: time to think. - Devpost 
+ We've detected that you are using an unsupported browser. Please
+ upgrade your browser 
+ to Internet Explorer 10 or higher.
+ Log in
+ Sign up
+ Join a hackathon 
+ Devpost
+ Participate in our public hackathons
+ Hackathons 
+ Projects 
+ Devpost for Teams
+ Access your company's private hackathons
+ Login 
+ Host a hackathon
+ Devpost
+ Grow your developer ecosystem and promote your platform
+ Host a public hackathon 
+ Devpost for Teams
+ Drive innovation, collaboration, and retention within your organization
+ Host an internal hackathon 
+ By use case
+ AI hackathons 
+ Customer hackathons 
+ Employee hackathons 
+ Public hackathons 
+ Resources
+ Blog
+ Insights into hackathon planning and participation
+ Customer stories
+ Inspiration from peers and other industry leaders
+ Planning guides
+ Best practices for planning online and in-person hackathons
+ Webinars & events
+ Upcoming events and on-demand recordings
+ Help desk
+ Common questions and support documentation
+ Join a hackathon
+ Devpost
+ Participate in our public hackathons
+ Hackathons 
+ Projects 
+ Devpost for Teams
+ Access your company's private hackathons
+ Login 
+ Host a hackathon
+ Devpost
+ Grow your developer ecosystem and promote your platform
+ Host a public hackathon 
+ Devpost for Teams
+ Drive innovation, collaboration, and retention within your organization
+ Host an internal hackathon 
+ By use case
+ AI hackathons 
+ Customer hackathons 
+ Employee hackathons 
+ Public hackathons 
+ Resources
+ Blog
+ Insights into hackathon planning and participation
+ Customer stories
+ Inspiration from peers and other industry leaders
+ Planning guides
+ Best practices for planning online and in-person hackathons
+ Webinars & events
+ Upcoming events and on-demand recordings
+ Help desk
+ Common questions and support documentation
+ Log in
+ Sign up
+ AI Agents for Founders Challenge — HETIC 2026 
+ Deadline: Dec 18, 2026 @ 11:00pm CET 
+ Join hackathon 
+ Descend 
+ Overview 
+ My projects 
+ Participants (543) 
+ Resources 
+ Rules 
+ Project gallery 
+ Updates 
+ Discussions 
+ AI Agents for Founders Challenge — HETIC 2026
+ Create AI agents that give founders back their most valuable asset: time to think.
+ Join hackathon 
+ Who can participate
+ Above legal age of majority in country of residence
+ College students only
+ Team required: 2 to 4 members
+ Companies/professional organizations excluded from participation
+ All countries/territories, excluding
+ standard exceptions 
+ View full rules 
+ December 18 at 5:00pm EST to deadline
+ View schedule 
+ Deadline: Dec 18, 2026 @ 11:00pm CET
+ Apple
+ Google
+ Outlook
+ Online
+ Public
+ € 1,000 in cash
+ 543 
+ participants
+ HETIC
+ Low/No Code
+ Machine Learning/AI
+ Productivity
+ Founders lose hours every week on repetitive work: market scans, lead lists, meeting summaries, competitor tracking, first drafts. The AI Agents for Founders Challenge invites higher-education students from around the world to build AI agents that take that work off their plate, and give them back time for what no agent should decide for them: judgment.
+ YOUR MISSION 
+ Design and ship an AI agent that saves measurable time on one concrete step of an entrepreneurial project (ideation, customer discovery, market research, lead generation, go-to-market, investor preparation...), while keeping a human firmly in charge of the decisions.
+ WHAT MAKES THIS CHALLENGE DIFFERENT: EQUAL ACCESS TO AI 
+ Every agent must run on AI models that any participant can use for free: open-weight models or free tiers. No paid credits, no premium subscriptions at runtime. The best agents are not the ones with the biggest budget, but the ones with the smartest design.
+ WHY IT MATTERS 
+ AI should not think for founders. It should free them to think better. That is why every agent must include at least one human checkpoint, and why we reward the teams that design for critical thinking.
+ KEY DATES (Paris time, CET) 
+ - Registration opens: mid-October 2026 
+ - Kick-off and submission period starts: November 16, 2026, 9:00 AM
+ - Submission deadline: December 18, 2026, 5:00 PM
+ - Judging: December 19, 2026 to January 8, 2027
+ - Winners announced: week of January 11, 2027
+ PRIZES: 1,000 EUR 
+ - Grand Prize: 600 EUR
+ - Runner-up: 250 EUR
+ - Critical Thinking by Design Award: 150 EUR
+ WHO CAN JOIN 
+ Higher-education students aged 18 or over, worldwide, in teams of 2 to 4. No-code, low-code and code-based projects are equally welcome.
+ ABOUT THE ORGANIZER 
+ The challenge is hosted by HETIC, a Paris-based digital school, as part of its Master's program for future Chief Marketing Officers.
+ Requirements
+ WHAT TO BUILD 
+ A working AI agent (or multi-step AI workflow) that: 
+ 1. automates or accelerates one clearly identified business task for early-stage founders; 
+ 2. includes at least one human checkpoint, where the user reviews, challenges or validates the agent's output before any decision or external action; 
+ 3. shows its reasoning or sources where relevant, so the user can check the output rather than trust it blindly; 
+ 4. complies with the Equal Access AI Policy below. 
+ EQUAL ACCESS AI POLICY 
+ - Runtime models: the agent must run exclusively on models that are free to access for any participant (open-weight models, or free tiers of commercial APIs). Paid credits, paid API plans and premium subscriptions are not allowed for the agent's runtime. 
+ - AI-assisted building: using AI tools to help write code or design the workflow is allowed, but must be declared. 
+ - No secrets: never publish API keys or credentials in your repository, video or workflow export. 
+ - Verification: judges may ask any team for a live demo or additional evidence. Undeclared use of paid AI, or a false declaration, leads to disqualification. 
+ WHAT TO SUBMIT ON DEVPOST 
+ - A project page in English (detailed documentation may be in French, with an English summary). 
+ - A demo video of 3 minutes maximum, uploaded to YouTube or Vimeo, showing a complete run of the agent, including the human checkpoint. 
+ - A way for judges to test the agent at no cost: deployed link, test environment, or workflow export with setup instructions. 
+ - A public code repository or workflow export, with installation instructions. 
+ - An architecture diagram. 
+ - An AI Disclosure Statement: every model, provider and tool used, its role in the agent, the plan used (free tier or open-weight), and an estimate of tokens or calls per run. 
+ - A Time-Saved Report: the task before and after the agent, with a measured or reasonably estimated time saving. 
+ - A Human Judgment section: what the agent does, what the human decides, and why. 
+ - A Responsible AI section: data used, privacy, known limitations, bias and failure cases. 
+ Prizes
+ € 1,000 in prizes
+ Grand Prize
+ € 600 in cash
+ 1 winner
+ Runner-up
+ € 250 in cash
+ 1 winner
+ Critical Thinking by Design Award
+ € 150 in cash
+ 1 winner
+ Judges
+ Michael NGUYEN 
+ Data/ IA entrepreuneur 
+ RIJI KRISHNAN 
+ IT Senior Manager and Principal Architect 
+ Prabhas Kumar 
+ consultant in Boston Consulting Group’ 
+ Yunjie Yao 
+ co-founder & ceo @ kuku 
+ Sumit Bhasin 
+ Platform & AI Engineering Leader | Agentic AI · Cloud · Kubernetes · SRE | Building AI-driven platforms at scale | Ex-Walmart, TJX 
+ Sudhindra Desai 
+ Engineering Leader, Agentic Payments @ Visa | Building Agents That Think, Remember & Pay Their Way 
+ Jhan Liufu 
+ NeuroAI research @ Caltech, 
+ Abhishek Bora 
+ ead digital growth at All Star Elite 
+ Vasanthi Dande 
+ Application Engineer II @ HCA Healthcare | Vue | Python | React | React Native | PostgreSQL | Certified Vue Developer | Certified Google Cloud 
+ Judging Criteria
+ Business value & time saved 
+ 25% Does the agent solve a real founder problem, and is the time saving credible and measured?
+ Human judgment by design 
+ 20% Does the agent strengthen the user's critical thinking instead of replacing it?
+ Agent design & reliability 
+ 20% Is the workflow coherent, robust and reproducible? How does it handle errors?
+ Frugality & accessibility 
+ 15% Does it make smart use of free models and resources? Could anyone reuse it?
+ User experience 
+ 10% Can a founder use the agent without help from the team?
+ Documentation & responsible AI 
+ 10% Is the project transparent, well documented and honest about its limits?
+ Questions?
+ Email the hackathon manager 
+ Invite others to compete
+ This site is protected by reCAPTCHA and the Google
+ Privacy Policy and
+ Terms of Service apply.
+ Devpost
+ About 
+ Careers 
+ Contact 
+ Help 
+ Hackathons
+ Browse hackathons 
+ Explore projects 
+ Host a hackathon 
+ Hackathon guides 
+ Portfolio
+ Your projects 
+ Your hackathons 
+ Settings 
+ Connect
+ Twitter
+ Discord
+ Facebook
+ LinkedIn
+ © 2026 Devpost, Inc. All rights reserved.
+ Community guidelines 
+ Security 
+ CA notice 
+ Privacy policy 
+ Terms of service 
