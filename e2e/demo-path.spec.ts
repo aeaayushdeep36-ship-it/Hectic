@@ -9,7 +9,7 @@ const ROSTER = [
 test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
   await page.goto("/");
   await waitForHydration(page);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Know what you actually know");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Evidence Audit");
   await expectNoCriticalViolations(page);
 
   await page.goto("/workspaces/underpowered");

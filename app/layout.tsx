@@ -1,21 +1,43 @@
 import type { Metadata } from "next";
 import { HydrationMarker } from "../components/HydrationMarker";
+import { QueryProvider } from "../components/QueryProvider";
+import { Sidebar } from "../components/Sidebar";
+import { WorkspaceNavProvider } from "../components/WorkspaceNavContext";
+import type { SidebarWorkspace } from "../lib/workspace-nav";
+import { listWorkspaces } from "../server/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hectic — Know what you actually know",
-  description:
-    "Audits the validity of a founder's customer-discovery evidence and blocks the evidence statement until every claim is resolved.",
+  title: "Hectic | Evidence Coverage Auditor",
+  description: "Know what you actually know. Audit your founder evidence.",
 };
+
+/** Real rows from the store, mapped for the sidebar and the dashboard. */
+function workspaceNav(): readonly SidebarWorkspace[] {
+  return listWorkspaces().map((workspace) => ({
+    name: workspace.name,
+    slug: workspace.slug,
+    runCount: workspace.runCount,
+  }));
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const workspaces = workspaceNav();
+
   return (
     <html lang="en">
-      <body>
-        <HydrationMarker />
-        {children}
+      <body className="bg-[var(--paper)] min-h-screen flex">
+        <QueryProvider>
+          <HydrationMarker />
+          <WorkspaceNavProvider workspaces={workspaces}>
+            <Sidebar workspaces={workspaces} />
+            <main className="flex-1 min-w-0 overflow-y-auto">
+              <div className="mx-auto max-w-5xl px-6 py-12 lg:px-12">{children}</div>
+            </main>
+          </WorkspaceNavProvider>
+        </QueryProvider>
       </body>
     </html>
   );

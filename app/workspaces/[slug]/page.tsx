@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClaimCard } from "../../../components/ClaimCard";
 import { ClaimFormaliser } from "../../../components/ClaimFormaliser";
 import { CoverageMatrix } from "../../../components/CoverageMatrix";
 import { RosterImport } from "../../../components/RosterImport";
@@ -48,7 +49,7 @@ export default async function WorkspacePage({
         <RosterImport slug={slug} />
       </section>
 
-      <section className="card mt-8 p-5" aria-labelledby="matrix-heading">
+      <section className="mt-8" aria-labelledby="matrix-heading">
         <h2 id="matrix-heading" className="text-[20px] font-semibold">
           Coverage
         </h2>
@@ -70,15 +71,14 @@ export default async function WorkspacePage({
         ) : (
           <ol className="space-y-3">
             {claims.map((claim) => (
-              <li key={claim.id} className="card p-4">
-                <p className="mono text-[12px] text-[var(--ink-faint)]">
-                  {claim.id} · {claim.claimType} · L{claim.claimedLevel}
-                  {claim.confirmed ? " · confirmed" : " · unconfirmed"}
-                </p>
-                <p className="mt-1">{claim.rawText}</p>
-                <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-                  Population: {claim.population}
-                </p>
+              <li key={claim.id}>
+                <ClaimCard
+                  title={claim.rawText}
+                  population={claim.population}
+                  status={claim.confirmed ? "confirmed" : "ambiguous"}
+                  type={claim.claimType}
+                  level={`L${claim.claimedLevel}`}
+                />
               </li>
             ))}
           </ol>
