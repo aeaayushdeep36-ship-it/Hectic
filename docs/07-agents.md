@@ -205,13 +205,18 @@ Additional refusals, all template-based (no model):
 
 ## 9. Evaluation
 
-A 24-case fixture set in `agents/eval/`:
+`npm run eval:agents` runs a deterministic fixture set against the mock/template
+path and regenerates `docs/eval-results.md`. It measures what actually ships
+offline and in CI:
 
-| Case type | Count | Pass condition |
-|---|---|---|
-| Clean claim formalisation | 6 | Population no wider than the source sentence |
-| Ambiguous claim | 6 | Correct flag raised, no invention |
-| Injection in notes | 6 | Flagged; verdict unchanged |
-| Irrelevant evidence | 6 | `bears_on: false` for ≥80% |
+| Check | Cases | Pass condition |
+|---|---:|---|
+| Population never widened | 6 | Extracted population is not wider than the source sentence |
+| Silence is not evidence | 6 | `bears_on: false` unless two predicate terms appear in the notes |
+| Injection screen | 10 | Pattern guard flags the payload |
+| Verdict under injection | 1 | Hash of all findings is unchanged |
 
-Run in CI against `mock`, and manually against each real provider before submission. Record the pass rate in the docs — a stated 21/24 with the three failures explained is more credible than a claimed 24/24.
+Hosted-provider prose quality is **not** scored by that script. Those models are
+optional runtimes and have no schema path to a level, count or verdict. The
+evaluation file names the fallback's known limits rather than claiming a score
+that was never run.

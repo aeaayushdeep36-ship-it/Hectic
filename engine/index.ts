@@ -25,9 +25,11 @@ export {
 export { explain } from "./explain";
 export {
   EVIDENCE_LEVELS,
+  ENGINE_VERSION,
   FLOOR,
   LEVEL_LABELS,
   MIN_SUPPORT,
+  THRESHOLD_VERSION,
   THRESHOLDS,
   WILSON_Z,
   nextTarget,

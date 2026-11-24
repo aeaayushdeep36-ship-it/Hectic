@@ -16,3 +16,8 @@ export function verdictHash(findings: unknown): string {
     .slice(0, 16);
   return `sha256:${digest}`;
 }
+
+/** Content identity for an imported row. Same row twice is one row. */
+export function contentHash(value: unknown): string {
+  return createHash("sha256").update(stableStringify(value)).digest("hex").slice(0, 24);
+}

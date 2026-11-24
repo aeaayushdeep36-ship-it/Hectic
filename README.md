@@ -6,7 +6,7 @@ Hectic audits the validity of a founder's customer-discovery evidence — who wa
 
 Built for the **AI Agents for Founders Challenge — HETIC 2026**.
 
-> Independent student project. Not affiliated with, endorsed by, or produced by HETIC.
+> Hectic is an independent student project submitted to the AI Agents for Founders Challenge. It is not affiliated with, endorsed by, or produced by HETIC.
 
 ---
 
@@ -27,7 +27,7 @@ The verdict has three parts — evidence type, support, and precision — and is
 
 ## Stack
 
-Node 22 · Next.js (App Router) · TypeScript strict · Tailwind · SQLite via better-sqlite3 + Drizzle · Zod · Papa Parse (CSV) · Vitest + fast-check + Playwright + axe-core · ESLint.
+Node 22+ · Next.js (App Router) · TypeScript strict · Tailwind · SQLite via better-sqlite3 + Drizzle · Zod · Papa Parse (CSV) · Vitest + fast-check + Playwright + axe-core · ESLint. A [`.npmrc`](.npmrc) skips install scripts because every native dependency ships a prebuilt binary; `npm ci` needs no C++ toolchain.
 
 LLM runtimes, all free-tier or open-weight: Gemini Flash-Lite · Groq · Ollama `qwen2.5:7b` · in-repo mock provider.
 
@@ -51,12 +51,31 @@ Background research is in [`research/`](research/): the competitive analysis tha
 
 ```bash
 npm ci
-npm test
+npm run db:reset
+npm run dev
+```
+
+These three commands were rehearsed in a clean copy with no `node_modules`, no
+database and no environment file. Open <http://localhost:3000>. Four synthetic
+demo workspaces are seeded from the hand-computed fixtures. Then:
+
+```bash
+npm run check        # lint, typecheck, 34 unit/integration tests, engine purity guard
+npm run build        # production build
+npm run test:e2e     # 3 Playwright specs with axe, needs the dev server (started automatically)
 npm run audit -- --roster fixtures/underpowered/roster.csv --claims fixtures/underpowered/claims.json
 ```
 
-The app itself is `npm run dev`. Hosted deployment is deliberately out of scope;
-the local path is the full product.
+Hosted deployment is deliberately out of scope; the local path is the full product.
+
+## What is implemented
+
+Roster CSV import (redacted at the boundary, idempotent), claim formalisation
+with mandatory human confirmation, the coverage heatmap, the claim ledger, the
+blocking resolution drawer with a substantive falsifier, the provider-swap
+recompute proof, the recruiting brief, the audit log, and the print-CSS evidence
+statement. The export checkpoint is enforced in four places: service, HTTP 422
+route, DB trigger, and an unverified-draft watermark on the statement page.
 
 ## Status
 
@@ -71,6 +90,14 @@ implemented. Every fixture's expected verdict was written by hand from its
 | `wrong-population` | `L1 · 0`, binding `population` | match |
 | `ambiguous` | `L4 · 1`, `[0.21, 1.00]`, binding `support` | match |
 
-`npm run check` runs lint, typecheck, 15 tests, and the engine purity guard.
-`npm run build` produces a clean static Next.js build. The interface, database,
-agents and checkpoint are the next phase.
+`npm run check` runs lint, typecheck, 34 tests and the engine purity guard.
+`npm run build` and `npm run test:e2e` are green. CI runs all three.
+
+## Submission artefacts
+
+- [AI Disclosure Statement](AI_DISCLOSURE.md)
+- [Responsible AI](RESPONSIBLE_AI.md)
+- [Time-Saved Report](TIME_SAVED_REPORT.md)
+- [Agent evaluation results](docs/eval-results.md)
+- [Architecture diagram](docs/architecture.svg) (source) and [PNG](docs/architecture.png)
+- 3-minute demo video: `docs/demo.mp4`

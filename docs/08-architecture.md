@@ -141,13 +141,13 @@ Every run stores `input_hash = sha256(canonical(claims) + canonical(evidence) + 
                               └──────────────┘
 ```
 
-`BLOCKED → EXPORTED` must be impossible. Enforced in three places: the orchestrator refuses, the route handler returns 422, and the DB has a `CHECK` constraint on the export record referencing a resolved run.
+`BLOCKED → EXPORTED` must be impossible. Enforced in four places: the service refuses, the route handler returns 422, a SQLite trigger rejects a direct status write to `EXPORTED`, and the statement page watermarks an unverified draft.
 
 ---
 
 ## 6. The export path
 
-No headless browser. No Puppeteer. Export is a server-rendered HTML document with a print stylesheet, served at `/w/[slug]/statement` with `@media print` rules. The user prints to PDF.
+No headless browser. No Puppeteer. Export is a server-rendered HTML document with a print stylesheet, served at `/runs/[id]/statement` with `@media print` rules. The user prints to PDF.
 
 Reasons: removes a 300MB dependency, removes a class of font-rendering bugs, works on any judge's machine, and keeps the artefact inspectable — a judge can view source and see every number was server-rendered, not drawn by JS.
 
@@ -212,7 +212,7 @@ The principle: **the finding is never lost to a prose failure.** Degrade the lan
 
 ## 10. Deployment
 
-- Local: `npm i && npm run db:reset && npm run dev`
+- Local: `npm ci && npm run db:reset && npm run dev`. The committed `.npmrc` skips install scripts: native dependencies ship prebuilt binaries, so no C++ toolchain is needed. Rehearsed in a clean copy with no `node_modules`, database or environment file.
 - Optional Docker: single stage, Node 22 alpine, volume for the SQLite file.
 - Hosted demo (if used): Vercel for the app, but SQLite requires a persistent volume — so the hosted demo uses a pre-seeded read-only DB and disables writes. The full experience is local. State this plainly in the README rather than pretending otherwise.
 
@@ -220,7 +220,8 @@ The principle: **the finding is never lost to a prose failure.** Degrade the lan
 
 ## 11. Architecture diagram (submission artifact)
 
-Excalidraw, exported to PNG at 2x. Must show, in this order top-to-bottom:
+Editable SVG source at `docs/architecture.svg`, rendered to `docs/architecture.png`
+at 2x by `npm run diagram:png`. It shows, in this order top-to-bottom:
 
 1. Inputs: roster CSV, claim text
 2. Agent layer with the four steps, visually distinct (dashed) from the engine

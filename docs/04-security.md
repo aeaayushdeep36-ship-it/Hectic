@@ -103,7 +103,7 @@ Layered, in order:
 5. **Semantic impossibility** — the output schema has no verdict field. This is the layer that matters.
 6. **Audit** — every flagged input writes a `guard.injection_flagged` event with the matched pattern.
 
-**Test:** `06-testing.md` §5 includes a red-team suite of 20 injection strings. The assertion is *"finding_hash unchanged."*
+**Test:** `06-testing.md` §6 includes a red-team suite of 10 injection strings. The assertion is *"finding_hash unchanged."*
 
 ---
 

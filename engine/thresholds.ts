@@ -72,6 +72,10 @@ export const LEVEL_LABELS: Readonly<Record<EvidenceLevel, EvidenceTypeName>> = {
 /** L1 is a floor, not a finding. The scale has no "zero evidence" rung. */
 export const FLOOR: EvidenceLevel = 1;
 
+/** Stamped on every run so a historical finding can be reproduced exactly. */
+export const ENGINE_VERSION = "1.0.0";
+export const THRESHOLD_VERSION = "2026-11-24";
+
 export type ThresholdKind = "level" | "support" | "saturation" | "precision";
 
 export interface ThresholdDef {

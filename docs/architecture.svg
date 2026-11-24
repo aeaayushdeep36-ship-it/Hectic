@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1020" viewBox="0 0 1600 1020" role="img" aria-labelledby="title desc">
+  <title id="title">Hectic architecture</title>
+  <desc id="desc">Inputs feed a language layer and a pure deterministic engine separated by a line labelled no numbers cross this line. A blocking gate precedes export.</desc>
+
+  <style>
+    .bg { fill: #fbfaf7; }
+    .box { fill: #fff; stroke: #c9c5bb; stroke-width: 1.5; rx: 6; }
+    .sunk { fill: #f3f1eb; stroke: #e2dfd8; stroke-width: 1.2; rx: 5; }
+    .agent { fill: #fdf8f3; stroke: #bb8f77; stroke-width: 1.5; stroke-dasharray: 7 5; rx: 8; }
+    .engine { fill: #eef6f0; stroke: #7fa98a; stroke-width: 2; rx: 8; }
+    .gate { fill: #fdf1e9; stroke: #9a3412; stroke-width: 2; rx: 8; }
+    .txt { font: 15px Arial, Helvetica, sans-serif; fill: #14171a; }
+    .small { font: 13px Arial, Helvetica, sans-serif; fill: #5f5e59; }
+    .mono { font: 13px Consolas, monospace; fill: #14171a; }
+    .label { font: 600 12px Arial, Helvetica, sans-serif; fill: #5f5e59; letter-spacing: .08em; }
+    .head { font: 600 22px Arial, Helvetica, sans-serif; fill: #14171a; }
+    .red { fill: #9a3412; }
+    .green { fill: #14532d; }
+    .arrow { stroke: #8c8a83; stroke-width: 1.6; fill: none; marker-end: url(#a); }
+    .dashline { stroke: #9a3412; stroke-width: 3; stroke-dasharray: 14 8; }
+  </style>
+
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#8c8a83"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="1020"/>
+  <text x="48" y="52" class="head">Hectic — evidence coverage auditor</text>
+  <text x="48" y="78" class="small">One process · one language · one database file · no model produces a number, count, score or verdict</text>
+
+  <!-- Inputs -->
+  <text x="48" y="126" class="label">1 · INPUTS</text>
+  <rect class="box" x="48" y="140" width="300" height="78"/>
+  <text x="66" y="168" class="txt">Roster CSV</text>
+  <text x="66" y="190" class="small">alias · org · segment · role · type</text>
+  <text x="66" y="208" class="small">redacted at the boundary, idempotent</text>
+
+  <rect class="box" x="372" y="140" width="300" height="78"/>
+  <text x="390" y="168" class="txt">Claim text</text>
+  <text x="390" y="190" class="small">population · predicate · claimed level</text>
+  <text x="390" y="208" class="small">human confirms every field</text>
+
+  <rect class="sunk" x="700" y="140" width="300" height="78"/>
+  <text x="718" y="168" class="txt">Provider adapters</text>
+  <text x="718" y="190" class="mono">mock · gemini · groq · ollama</text>
+  <text x="718" y="208" class="small">free tier / open weight only</text>
+
+  <rect class="sunk" x="1024" y="140" width="528" height="78"/>
+  <text x="1042" y="168" class="txt">SQLite · Drizzle · audit trail</text>
+  <text x="1042" y="190" class="mono">runs · findings · resolutions · tags · events · model_calls</text>
+  <text x="1042" y="208" class="small">append-only; export trigger enforced in the database</text>
+
+  <path class="arrow" d="M198 218 L198 300"/>
+  <path class="arrow" d="M522 218 L522 300"/>
+  <path class="arrow" d="M850 218 L850 300"/>
+
+  <!-- Agent layer -->
+  <rect class="agent" x="48" y="300" width="1100" height="176"/>
+  <text x="70" y="330" class="label" style="fill:#8a5a3c">2 · LANGUAGE LAYER — MEANING ONLY</text>
+  <rect class="box" x="70" y="346" width="248" height="106"/>
+  <text x="86" y="372" class="mono">A1 claim-formaliser</text>
+  <text x="86" y="394" class="small">population, predicate, kind</text>
+  <text x="86" y="412" class="small">ambiguity flags</text>
+  <text x="86" y="436" class="small red">no numeric field in schema</text>
+
+  <rect class="box" x="334" y="346" width="248" height="106"/>
+  <text x="350" y="372" class="mono">A2 relevance-tagger</text>
+  <text x="350" y="394" class="small">bears_on · polarity</text>
+  <text x="350" y="412" class="small">human-overridable tags</text>
+  <text x="350" y="436" class="small red">touches a count, never counts</text>
+
+  <rect class="box" x="598" y="346" width="248" height="106"/>
+  <text x="614" y="372" class="mono">A3 constraint-explainer</text>
+  <text x="614" y="394" class="small">rephrases a stored finding</text>
+  <text x="614" y="412" class="small">new digits rejected</text>
+  <text x="614" y="436" class="small red">prose degrades, finding stays</text>
+
+  <rect class="box" x="862" y="346" width="264" height="106"/>
+  <text x="878" y="372" class="mono">A4 statement-composer</text>
+  <text x="878" y="394" class="small">method · findings · limits</text>
+  <text x="878" y="412" class="small">locked ledger in</text>
+  <text x="878" y="436" class="small red">numbers copied, not invented</text>
+
+  <path class="arrow" d="M600 476 L600 528"/>
+
+  <!-- The boundary -->
+  <rect x="48" y="544" width="1504" height="60" fill="#fff7f2"/>
+  <line class="dashline" x1="48" y1="574" x2="1552" y2="574"/>
+  <rect x="572" y="552" width="456" height="44" fill="#fff7f2"/>
+  <text x="800" y="581" text-anchor="middle" class="head red">NO NUMBERS CROSS THIS LINE</text>
+
+  <path class="arrow" d="M800 604 L800 652"/>
+
+  <!-- Engine -->
+  <rect class="engine" x="48" y="652" width="1100" height="190"/>
+  <text x="70" y="682" class="label green">3 · DETERMINISTIC ENGINE</text>
+  <rect class="box" x="70" y="698" width="248" height="118"/>
+  <text x="86" y="724" class="mono">thresholds.ts</text>
+  <text x="86" y="746" class="small">L1–L6 evidence types</text>
+  <text x="86" y="764" class="small">cited, versioned as data</text>
+  <text x="86" y="790" class="small">no sourced heuristic as gate</text>
+
+  <rect class="box" x="334" y="698" width="248" height="118"/>
+  <text x="350" y="724" class="mono">coverage.ts</text>
+  <text x="350" y="746" class="small">independent organisations</text>
+  <text x="350" y="764" class="small">per-cell counts, population</text>
+  <text x="350" y="790" class="small">network share = diagnostic</text>
+
+  <rect class="box" x="598" y="698" width="248" height="118"/>
+  <text x="614" y="724" class="mono">verdict.ts</text>
+  <text x="614" y="746" class="small">level · support · precision</text>
+  <text x="614" y="764" class="small">binding constraint</text>
+  <text x="614" y="790" class="small">never one score</text>
+
+  <rect class="box" x="862" y="698" width="264" height="118"/>
+  <text x="878" y="724" class="mono">explain.ts · index.ts</text>
+  <text x="878" y="746" class="small">hand-computed fixtures</text>
+  <text x="878" y="764" class="small">day-3 gate passed 4/4</text>
+  <text x="878" y="790" class="small">engine purity guard in CI</text>
+
+  <path class="arrow" d="M600 842 L600 886"/>
+
+  <!-- Gate -->
+  <rect class="gate" x="48" y="886" width="1100" height="100"/>
+  <text x="70" y="916" class="label red">4 · BLOCKING CHECKPOINT</text>
+  <text x="70" y="944" class="txt">Any non-SUPPORTED finding unresolved?</text>
+  <text x="70" y="968" class="mono red">→ HTTP 422 { error: "UNRESOLVED_FINDINGS", unresolved: [...] }</text>
+  <text x="640" y="944" class="small">Resolution needs a typed action and a 40-char falsifier.</text>
+  <text x="640" y="968" class="small">DB trigger blocks a direct status write to EXPORTED.</text>
+
+  <path class="arrow" d="M1148 936 L1250 936"/>
+
+  <!-- Export -->
+  <rect class="box" x="1250" y="886" width="302" height="100"/>
+  <text x="1268" y="916" class="label">5 · EXPORT</text>
+  <text x="1268" y="944" class="txt">Evidence statement</text>
+  <text x="1268" y="968" class="small">server-rendered print HTML → PDF</text>
+
+  <text x="48" y="1010" class="small">Audit log on every step · unverified drafts carry a watermark · provider swap leaves finding_hash byte-identical</text>
+</svg>

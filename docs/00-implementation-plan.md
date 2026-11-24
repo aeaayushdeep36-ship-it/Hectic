@@ -57,7 +57,7 @@ The model this gate tests was itself falsified once and rebuilt; the audit is `r
 
 | Day | Work | Done when |
 |---|---|---|
-| 6 | DB schema + migrations + seed three demo workspaces | `npm run db:reset` produces three browsable workspaces |
+| 6 | DB schema + migrations + seed the demo workspaces | `npm run db:reset` produces four browsable workspaces |
 | 6 | App shell, workspace switcher, empty states | Navigable, keyboard-accessible |
 | 7 | Coverage heatmap with empty-cell treatment and threshold tooltips | The empty row is legible from 3 metres |
 | 7 | Claim ledger: claimed vs verified level, blocker list | Reads in under 10 seconds |
@@ -91,7 +91,7 @@ The model this gate tests was itself falsified once and rebuilt; the audit is `r
 | 15 | Record the 3-minute video. One take, no cuts, real checkpoint. Re-record twice, keep the third. |
 | 15 | Write AI Disclosure Statement, Responsible AI section, Time-Saved Report |
 | 16 | README: three commands to run. Test on a clean machine or fresh container. |
-| 16 | Architecture diagram (Excalidraw), export PNG + source |
+| 16 | Architecture diagram (editable SVG source), export PNG |
 | 17 | Judge dry-run: hand the repo to someone who hasn't seen it. Fix whatever they stumble on. |
 | 18 | Submit by 12:00 CET. Twelve hours of buffer, not twelve hours of work. |
 

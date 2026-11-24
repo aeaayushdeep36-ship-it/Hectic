@@ -50,7 +50,7 @@ agents/
   prompts/
     claim-formaliser.v3.md
 app/
-  (app)/w/[slug]/
+  workspaces/[slug]/
     page.tsx
     coverage-matrix.tsx
 ```

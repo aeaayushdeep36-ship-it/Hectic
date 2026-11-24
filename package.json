@@ -17,9 +17,12 @@
     "engine:boundary": "node scripts/engine-boundary.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run engine:boundary",
     "audit": "tsx scripts/audit.ts",
+    "eval:agents": "tsx scripts/eval-agents.ts",
+    "diagram:png": "node scripts/render-diagram.mjs",
+    "demo:video": "node scripts/record-demo.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:reset": "tsx scripts/db-reset.ts"
+    "db:reset": "node scripts/db-clean.mjs && tsx db/seed.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.2.0",
@@ -33,6 +36,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@playwright/test": "1.65.1",
     "@tailwindcss/postcss": "4.3.5",
     "@types/better-sqlite3": "^7.6.13",
@@ -49,9 +53,5 @@
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.1.1"
-  },
-  "allowScripts": {
-    "esbuild": true,
-    "better-sqlite3": true
   }
 }

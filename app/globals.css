@@ -1,26 +1,154 @@
 @import "tailwindcss";
 
 :root {
+  /* Surface */
   --paper: #fbfaf7;
   --surface: #ffffff;
-  --ink: #17191c;
-  --ink-muted: #5b6068;
-  --ink-faint: #8b9098;
-  --line: #dddeda;
-  --signal: #b54708;
-  --signal-bg: #fff6e8;
-  --confirm: #1f6b4f;
-  --confirm-bg: #eaf5ef;
-  --danger: #9b1c1c;
-  --danger-bg: #fdeeee;
+  --surface-sunk: #f3f1eb;
+
+  /* Ink */
+  --ink: #14171a;
+  --ink-muted: #5f5e59;
+  --ink-faint: #8c8a83;
+
+  /* Structure */
+  --border: #e2dfd8;
+  --border-strong: #c9c5bb;
+
+  /* Signal — the gap */
+  --signal: #9a3412;
+  --signal-bg: #fdf1e9;
+  --signal-border: #f0c9b4;
+
+  /* Confirmed */
+  --confirm: #14532d;
+  --confirm-bg: #eef6f0;
+  --confirm-border: #bfd9c7;
+
+  /* Neutral finding */
+  --neutral: #475569;
+  --neutral-bg: #f1f3f6;
+
+  --font-ui: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
 }
 
+* { box-sizing: border-box; }
+
 body {
+  margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 24px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .mono {
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
+
+.label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+a { color: inherit; text-decoration-color: var(--border-strong); }
+a:hover { text-decoration-color: var(--ink); }
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.sunk {
+  background: var(--surface-sunk);
+}
+
+.btn {
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { border-color: var(--ink); }
+.btn:disabled { color: var(--ink-faint); cursor: not-allowed; background: var(--surface-sunk); }
+.btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn-primary:hover:not(:disabled) { background: #2c3136; }
+.btn-danger { color: var(--signal); border-color: var(--signal-border); }
+
+.field {
+  font: inherit;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* Heatmap: three redundant signals for zero (dash + hatch + dashed border). */
+.cell { border: 1px solid transparent; text-align: center; }
+.cell-0 {
+  background: var(--signal-bg);
+  border: 1px dashed var(--signal-border);
+  color: var(--signal);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(154, 52, 18, 0.11) 4px,
+    rgba(154, 52, 18, 0.11) 5px
+  );
+}
+.cell-1 { background: #e8efe9; border-color: #c7d8cb; }
+.cell-2 { background: #c3d9c8; border-color: #a6c4ad; }
+.cell-3 { background: #8fb99a; border-color: #6fa07d; }
+.cell-4 { background: #4e8a62; border-color: #3c6e4e; color: #fff; }
+
+.badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.badge-confirm { background: var(--confirm-bg); border: 1px solid var(--confirm-border); color: var(--confirm); }
+.badge-signal { background: var(--signal-bg); border: 1px solid var(--signal-border); color: var(--signal); }
+.badge-neutral { background: var(--neutral-bg); border: 1px solid var(--border); color: var(--neutral); }
+
+@keyframes drawer-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.drawer { animation: drawer-in 180ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Print: a one-page A4 artefact, no chrome, no JS. */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff; font-size: 11px; line-height: 16px; }
+  .no-print, nav, button { display: none !important; }
+  .card { border-color: #999; break-inside: avoid; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }
