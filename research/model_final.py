@@ -113,6 +113,11 @@ def binding(v, types, in_pop_orgs):
         return "population"            # nothing you have is about this claim
     if v["level"] == FLOOR:
         return "type"
+    # A reached type resting on one or two organisations is a support problem.
+    # More of the same interviews does not unlock the next type. This makes
+    # the ambiguous gate fixture (L4 with a single LOI) bind on support.
+    if v["level"] >= 4 and v["support"] < 3:
+        return "support"
     if v["level"] < 6:
         nxt = next_target(v["level"])
         if types.get(nxt, 0) == 0:

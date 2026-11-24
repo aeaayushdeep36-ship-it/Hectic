@@ -1,0 +1,18 @@
+{
+  "fixture": "wrong-population",
+  "verdicts": [
+    {
+      "claimId": "buyer-claim",
+      "claimType": "theme",
+      "claimed": 4,
+      "level": 1,
+      "support": 0,
+      "breadth": 0,
+      "saturation": "insufficient",
+      "interval": null,
+      "finding": "WRONG_POPULATION",
+      "binding": "population"
+    }
+  ],
+  "verdictHash": "sha256:eeccce7be220225b"
+}

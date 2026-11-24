@@ -47,6 +47,30 @@ LLM runtimes, all free-tier or open-weight: Gemini Flash-Lite · Groq · Ollama 
 
 Background research is in [`research/`](research/): the competitive analysis that killed three earlier directions, and the falsification of the engine model that was here before this one.
 
+## Run it
+
+```bash
+npm ci
+npm test
+npm run audit -- --roster fixtures/underpowered/roster.csv --claims fixtures/underpowered/claims.json
+```
+
+The app itself is `npm run dev`. Hosted deployment is deliberately out of scope;
+the local path is the full product.
+
 ## Status
 
-Specification complete. Implementation starting with the pure engine and its four hand-computed fixtures.
+**Day-3 gate passed.** The pure `engine/` and all four hand-computed fixtures are
+implemented. Every fixture's expected verdict was written by hand from its
+`README.md` before the engine was run against it:
+
+| Fixture | Hand-computed | Result |
+|---|---|---|
+| `clean` | `L6 · 3`, SUPPORTED (theme), IMPRECISE (prevalence) | match |
+| `underpowered` | `L2 · 5`, `insufficient`, binding `type` | match |
+| `wrong-population` | `L1 · 0`, binding `population` | match |
+| `ambiguous` | `L4 · 1`, `[0.21, 1.00]`, binding `support` | match |
+
+`npm run check` runs lint, typecheck, 15 tests, and the engine purity guard.
+`npm run build` produces a clean static Next.js build. The interface, database,
+agents and checkpoint are the next phase.

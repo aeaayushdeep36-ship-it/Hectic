@@ -1,0 +1,18 @@
+{
+  "fixture": "ambiguous",
+  "verdicts": [
+    {
+      "claimId": "will-pay",
+      "claimType": "prevalence",
+      "claimed": 5,
+      "level": 4,
+      "support": 1,
+      "breadth": 13,
+      "saturation": null,
+      "interval": [0.21, 1, 0.79],
+      "finding": "DOWNGRADE",
+      "binding": "support"
+    }
+  ],
+  "verdictHash": "sha256:117f59eeb287a83a"
+}

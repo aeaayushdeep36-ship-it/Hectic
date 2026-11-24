@@ -1,0 +1,16 @@
+[
+  {
+    "id": "will-pay",
+    "ordinal": 1,
+    "rawText": "Most dental practices will pay for this.",
+    "population": "Dental practices",
+    "populationSpec": { "segments": ["Dental practices"] },
+    "predicate": "will pay for the product",
+    "kind": "willingness_to_pay",
+    "claimType": "prevalence",
+    "claimedLevel": 5,
+    "observed": { "k": 1, "n": 1 },
+    "precisionTolerance": 0.1,
+    "confirmed": true
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "theme-coverage",
+    "ordinal": 1,
+    "rawText": "Buyers in these segments have a recurring follow-up problem.",
+    "population": "Dental practices, Legal practices and Clinics",
+    "populationSpec": {},
+    "predicate": "has a recurring follow-up problem",
+    "kind": "pain",
+    "claimType": "theme",
+    "claimedLevel": 6,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  },
+  {
+    "id": "willingness-to-pay",
+    "ordinal": 2,
+    "rawText": "Most approached buyers would pay for this.",
+    "population": "Dental practices, Legal practices and Clinics",
+    "populationSpec": {},
+    "predicate": "would pay for the product",
+    "kind": "willingness_to_pay",
+    "claimType": "prevalence",
+    "claimedLevel": 6,
+    "observed": { "k": 3, "n": 3 },
+    "precisionTolerance": 0.1,
+    "confirmed": true
+  }
+]

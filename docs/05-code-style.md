@@ -38,12 +38,12 @@ Conventions that exist to protect two things: the purity of `engine/`, and the a
 - No `index.ts` barrels except at a package boundary — they hide the import graph and slow the build
 
 ```
-engine/
-  requirements.ts
+engine/                ← package boundary: the only barrel is index.ts
+  thresholds.ts
   coverage.ts
   verdict.ts
   explain.ts
-  types.ts
+  index.ts
 agents/
   claim-formaliser.ts
   relevance-tagger.ts

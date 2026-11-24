@@ -1,0 +1,15 @@
+id,orgId,alias,segment,role,channel,relationship,evidenceType,date,durationMin,notes
+I01,O01,P01,Dental practices,user,interviews,cold,2,2026-10-01,30,End user interview
+I02,O02,P02,Dental practices,user,interviews,cold,2,2026-10-02,28,End user interview
+I03,O03,P03,Dental practices,user,interviews,cold,2,2026-10-03,27,End user interview
+I04,O04,P04,Dental practices,user,interviews,cold,2,2026-10-04,31,End user interview
+I05,O05,P05,Dental practices,user,interviews,cold,2,2026-10-05,26,End user interview
+I06,O06,P06,Dental practices,user,interviews,cold,2,2026-10-06,29,End user interview
+I07,O07,P07,Dental practices,user,interviews,cold,2,2026-10-07,24,End user interview
+I08,O08,P08,Dental practices,user,interviews,cold,2,2026-10-08,32,End user interview
+I09,O09,P09,Dental practices,user,interviews,cold,2,2026-10-09,25,End user interview
+I10,O10,P10,Dental practices,user,interviews,cold,2,2026-10-10,30,End user interview
+I11,O11,P11,Dental practices,user,interviews,cold,2,2026-10-11,28,End user interview
+I12,O12,P12,Dental practices,user,interviews,cold,2,2026-10-12,27,End user interview
+I13,O13,P13,Dental practices,user,interviews,cold,2,2026-10-13,33,End user interview
+I14,O14,P14,Dental practices,user,interviews,cold,2,2026-10-14,26,End user interview

@@ -1,0 +1,30 @@
+{
+  "fixture": "clean",
+  "verdicts": [
+    {
+      "claimId": "theme-coverage",
+      "claimType": "theme",
+      "claimed": 6,
+      "level": 6,
+      "support": 3,
+      "breadth": 18,
+      "saturation": null,
+      "interval": null,
+      "finding": "SUPPORTED",
+      "binding": null
+    },
+    {
+      "claimId": "willingness-to-pay",
+      "claimType": "prevalence",
+      "claimed": 6,
+      "level": 6,
+      "support": 3,
+      "breadth": 18,
+      "saturation": null,
+      "interval": [0.44, 1, 0.56],
+      "finding": "IMPRECISE",
+      "binding": null
+    }
+  ],
+  "verdictHash": "sha256:a4c77a32313de071"
+}

@@ -1,0 +1,12 @@
+id,orgId,alias,segment,role,channel,relationship,evidenceType,date,durationMin,notes
+I01,O01,P01,SMB retail,user,founder-linkedin,founder_network,2,2026-10-01,30,Described stock counts
+I02,O01,P01b,SMB retail,technical,founder-linkedin,founder_network,2,2026-10-02,22,Second informant same org
+I03,O01,P01c,SMB retail,user,founder-linkedin,founder_network,2,2026-10-03,19,Third informant same org
+I04,O02,P02,SMB retail,user,founder-linkedin,founder_network,2,2026-10-04,28,Described reconciliation
+I05,O02,P02b,SMB retail,user,founder-linkedin,founder_network,2,2026-10-05,21,Second informant same org
+I06,O03,P03,SMB retail,technical,founder-linkedin,founder_network,2,2026-10-06,26,Discussed their spreadsheet
+I07,O03,P03b,SMB retail,influencer,founder-linkedin,founder_network,2,2026-10-07,20,Second informant same org
+I08,O04,P04,SMB retail,user,founder-linkedin,founder_network,2,2026-10-08,29,Described end-of-week admin
+I09,O04,P04b,SMB retail,user,founder-linkedin,founder_network,2,2026-10-09,18,Second informant same org
+I10,O05,P05,SMB retail,user,conference,cold,2,2026-10-10,31,Met at event
+I11,O05,P05b,SMB retail,user,conference,cold,2,2026-10-11,23,Second informant same org

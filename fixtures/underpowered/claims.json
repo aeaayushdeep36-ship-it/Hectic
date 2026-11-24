@@ -1,0 +1,16 @@
+[
+  {
+    "id": "willingness-to-pay",
+    "ordinal": 1,
+    "rawText": "Budget holders will sign a paid pilot for this.",
+    "population": "SMB retail",
+    "populationSpec": { "segments": ["SMB retail"] },
+    "predicate": "will sign a paid pilot",
+    "kind": "willingness_to_pay",
+    "claimType": "theme",
+    "claimedLevel": 4,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  }
+]

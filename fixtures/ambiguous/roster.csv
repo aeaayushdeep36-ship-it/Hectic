@@ -1,0 +1,14 @@
+id,orgId,alias,segment,role,channel,relationship,evidenceType,date,durationMin,notes
+I01,U01,P01,Dental practices,user,interviews,cold,2,2026-10-01,30,Discovery interview
+I02,U02,P02,Dental practices,user,interviews,cold,2,2026-10-02,28,Discovery interview
+I03,U03,P03,Dental practices,user,interviews,cold,2,2026-10-03,27,Discovery interview
+I04,U04,P04,Dental practices,user,interviews,cold,2,2026-10-04,31,Discovery interview
+I05,U05,P05,Dental practices,user,interviews,cold,2,2026-10-05,26,Discovery interview
+I06,U06,P06,Dental practices,user,interviews,cold,2,2026-10-06,29,Discovery interview
+I07,U07,P07,Dental practices,user,interviews,cold,2,2026-10-07,24,Discovery interview
+I08,U08,P08,Dental practices,user,interviews,cold,2,2026-10-08,32,Discovery interview
+I09,U09,P09,Dental practices,user,interviews,cold,2,2026-10-09,25,Discovery interview
+I10,U10,P10,Dental practices,user,interviews,cold,2,2026-10-10,30,Discovery interview
+I11,U11,P11,Dental practices,user,interviews,cold,2,2026-10-11,28,Discovery interview
+I12,U12,P12,Dental practices,user,interviews,cold,2,2026-10-12,27,Discovery interview
+L01,O_B01,P13,Dental practices,economic,friend-intro,founder_network,4,2026-11-04,15,Signed letter of intent from a friend

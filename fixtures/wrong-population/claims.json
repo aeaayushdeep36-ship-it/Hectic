@@ -1,0 +1,16 @@
+[
+  {
+    "id": "buyer-claim",
+    "ordinal": 1,
+    "rawText": "Budget holders at dental practices will adopt this.",
+    "population": "Budget holders at dental practices",
+    "populationSpec": { "segments": ["Dental practices"], "roles": ["economic"] },
+    "predicate": "will adopt the product",
+    "kind": "role_ownership",
+    "claimType": "theme",
+    "claimedLevel": 4,
+    "observed": null,
+    "precisionTolerance": null,
+    "confirmed": true
+  }
+]

@@ -1,0 +1,26 @@
+id,orgId,alias,segment,role,channel,relationship,evidenceType,date,durationMin,notes
+I01,O01,P01,Dental practices,economic,in-person,cold,2,2026-10-01,32,Discussed hiring costs
+I02,O02,P02,Dental practices,user,video,cold,2,2026-10-02,28,Described scheduling pain
+I03,O03,P03,Dental practices,technical,referral-call,referral,2,2026-10-03,25,Mentioned existing tooling
+I04,O04,P04,Dental practices,user,in-person,cold,2,2026-10-04,31,Described manual follow-up
+I05,O05,P05,Dental practices,economic,video,founder_network,2,2026-10-05,27,Had budget context
+I06,O06,P06,Dental practices,user,referral-call,referral,2,2026-10-06,24,Described patient reminders
+I07,O07,P07,Dental practices,technical,in-person,cold,2,2026-10-07,30,Discussed integrations
+I08,O08,P08,Dental practices,user,video,cold,2,2026-10-08,26,Described front-desk workload
+I09,O09,P09,Legal practices,economic,video,referral,2,2026-10-09,33,Discussed partner time
+I10,O10,P10,Legal practices,user,in-person,cold,2,2026-10-10,29,Described intake process
+I11,O11,P11,Legal practices,technical,referral-call,cold,2,2026-10-11,22,Asked about data handling
+I12,O12,P12,Legal practices,user,video,cold,2,2026-10-12,28,Described missed follow-ups
+I13,O13,P13,Legal practices,economic,in-person,founder_network,2,2026-10-13,35,Had purchasing authority
+I14,O14,P14,Clinics,user,referral-call,referral,2,2026-10-14,26,Described appointment load
+I15,O15,P15,Clinics,technical,video,cold,2,2026-10-15,24,Discussed workflow fit
+I16,O16,P16,Clinics,economic,in-person,cold,2,2026-10-16,34,Discussed budget cycle
+I17,O17,P17,Clinics,user,video,cold,2,2026-10-17,27,Described no-show problem
+I18,O18,P18,Clinics,economic,referral-call,referral,2,2026-10-18,30,Discussed purchasing process
+I19,O01,P01b,Dental practices,economic,video,cold,2,2026-10-19,18,Second informant same org
+I20,O02,P02b,Dental practices,user,in-person,cold,2,2026-10-20,21,Second informant same org
+I21,O03,P03b,Dental practices,technical,video,referral,2,2026-10-21,19,Second informant same org
+I22,O04,P04b,Dental practices,user,referral-call,cold,2,2026-10-22,20,Second informant same org
+L01,O16,P16,Dental practices,economic,in-person,cold,6,2026-11-01,12,Paid deposit
+L02,O17,P17,Clinics,economic,video,cold,6,2026-11-02,11,Paid deposit
+L03,O18,P18,Clinics,economic,referral-call,referral,6,2026-11-03,14,Paid deposit

@@ -1,0 +1,18 @@
+{
+  "fixture": "underpowered",
+  "verdicts": [
+    {
+      "claimId": "willingness-to-pay",
+      "claimType": "theme",
+      "claimed": 4,
+      "level": 2,
+      "support": 5,
+      "breadth": 5,
+      "saturation": "insufficient",
+      "interval": null,
+      "finding": "DOWNGRADE",
+      "binding": "type"
+    }
+  ],
+  "verdictHash": "sha256:58a04a8be65ada62"
+}

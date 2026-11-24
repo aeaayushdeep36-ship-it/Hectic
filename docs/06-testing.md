@@ -98,7 +98,7 @@ These catch the bugs a golden file cannot, because the bug requires a shape you 
 | Adding an in-population org never lowers `support` | Prevents a fix making things worse |
 | `level == max(type of any in-population org)`, else L1 | No level may be manufactured from an absent type |
 | `support == count of in-pop orgs at that level` | Support must mean what it says |
-| `in_pop_orgs == 0` implies `level == 1 ∧ support == 0 ∧ binding == "population"` | Population gate cannot leak |
+| `in_pop_orgs == 0 ∧ external evidence exists` implies `level == 1 ∧ support == 0 ∧ binding == "population"` | Population gate cannot leak |
 | A claim with no external evidence is `L1 · 0` and `UNTOUCHED` | No phantom support |
 | `WRONG_POPULATION` iff evidence elsewhere > 0 ∧ in-pop orgs == 0 | No misclassification |
 | Applying the named `binding` strictly raises `(level, support, breadth)` | The advice is the product; it must be true |

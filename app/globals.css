@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #fbfaf7;
+  --surface: #ffffff;
+  --ink: #17191c;
+  --ink-muted: #5b6068;
+  --ink-faint: #8b9098;
+  --line: #dddeda;
+  --signal: #b54708;
+  --signal-bg: #fff6e8;
+  --confirm: #1f6b4f;
+  --confirm-bg: #eaf5ef;
+  --danger: #9b1c1c;
+  --danger-bg: #fdeeee;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.mono {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
