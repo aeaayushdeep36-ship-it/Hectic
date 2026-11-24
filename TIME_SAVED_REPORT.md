@@ -16,7 +16,7 @@ audit, described in Appendix A.
 | | Result | Status |
 |---|---|---|
 | Manual: ____ min / ____ errors / ____ unsupported claims missed | **Not yet recorded** — no timed human audit was run | Blank by design |
-| Hectic: 6.6–6.7 s / 0 arithmetic errors on the golden fixture | Measured twice on 2026-11-24, Playwright demo path | Measured |
+| Hectic: 9.1 s / 0 arithmetic errors on the golden fixture | Measured on 2026-11-25, Playwright `demo-path.spec.ts` | Measured |
 | Delta | **Not claimed** | Cannot be computed until the manual field is filled |
 
 A single operator who knows the engine's rules is not a control: they would be
@@ -28,23 +28,24 @@ produce a baseline that is independent of the implementation.
 
 ## 2. Measured Hectic numbers
 
-Every number below was produced on 2026-11-24 from the committed repository.
-The command that produced it is named in the last column.
+Numbers below were produced from the working branch. Rows measured on 2026-11-25
+are current; the clean-install row was measured on 2026-11-24. The command that
+produced each number is named in the last column.
 
 | Measured operation | Result | How it was measured |
 |---|---:|---|
 | Clean install | 31 s | `npm ci` in a fresh copy with no `node_modules`; no C++ toolchain required |
-| Unit and integration tests | ~0.5 s | `npm test`: 62 tests in 7 files, all passing |
-| Full static check | 5.6–6.8 s | `npm run check`: lint, typecheck, tests, engine purity guard (two runs) |
-| Full demo path in a browser | 6.6–6.7 s | Playwright `demo-path.spec.ts`: import → confirm → analyse → resolve every finding → export → privacy assertions, plus live agent-status and reasoning-trace checks (two runs) |
-| All browser specs | 12.8–13.0 s | `npm run test:e2e`, one Chromium worker, axe on the main views (two runs) |
+| Unit and integration tests | 696 ms | `npm test`: 83 tests in 11 files, all passing |
+| Full static check | see `npm run check` output | secret scan, lint, typecheck, tests, engine purity guard |
+| Full demo path in a browser | 9.1 s | Playwright `demo-path.spec.ts`: import → confirm → analyse → resolve every finding → export → privacy assertions |
+| All browser specs | 23.4 s | `npm run test:e2e`, one Chromium worker, 11 tests, axe on the main views |
 | Golden-fixture rehearsal (mock + chaos) | <10 ms | `npm run demo:rehearse`: seed-injected 429/timeout/malformed JSON, verdict hash unchanged |
 | Cost per standard mock run | €0.00, 0 network calls | `createRun()` computes verdicts locally and stores `callCount: 0`; the live-stream path optionally logs 3 mock calls on the same fixture |
-| OpenRouter free-tier run | **Not measured** | No key was configured when this report was written; `npm run eval:live` is ready to record ten repetitions once one is set |
+| Gemini/Groq live gate | **Not measured** | Keys were not pasted into `.env.local` when this report was updated; `npm run eval:live` records ten repetitions per model once both are set |
 
 The product path is short because the arithmetic is local and the model is
 optional. The audit itself is a table join over roster rows; the browser test
-includes the whole human checkpoint and still finishes in single-digit seconds.
+includes the whole human checkpoint and finishes in the low double-digit seconds.
 
 **Reproducibility.** `npm test` includes the provider-swap test: the
 `finding_hash` is byte-identical after changing provider, and the extended test

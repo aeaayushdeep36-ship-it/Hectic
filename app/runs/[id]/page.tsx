@@ -15,7 +15,7 @@ export default async function RunPage({
   if (!run) notFound();
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
+    <div className="mx-auto max-w-5xl px-6 py-12">
       <nav className="label mb-8">
         <Link href={`/workspaces/${run.workspaceSlug}`}>Workspace</Link>{" "}
         <span aria-hidden="true">/</span> Run
@@ -32,6 +32,6 @@ export default async function RunPage({
       <div className="mt-8">
         <RunConsole initialRun={run} workspaceSlug={run.workspaceSlug} />
       </div>
-    </main>
+    </div>
   );
 }

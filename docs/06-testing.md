@@ -323,8 +323,9 @@ with at least two real models, ten repetitions each, zero schema-invalid output,
 a stable hash and a fallback rate at or below 10%; otherwise it prints
 **INCOMPLETE** instead of claiming the gate was met.
 
-With only `OPENROUTER_API_KEY` set, the harness produces ten OpenRouter
-repetitions and ten chaos repetitions but correctly reports INCOMPLETE: a second
-real key (Groq, Gemini) or a local Ollama endpoint is still needed. The
-deterministic `docs/eval-gate.md` states what was actually measured without
-keys, rather than implying the live gate was run.
+With only one real key set (for example `GEMINI_API_KEY`), the harness produces
+ten repetitions for that model and ten chaos repetitions but correctly reports
+INCOMPLETE: `GROQ_API_KEY` (or a local Ollama endpoint) is still needed. Fill both
+keys in the gitignored `.env.local` and rerun `npm run eval:live`. The
+deterministic `docs/eval-gate.md` states what was actually measured without keys,
+rather than implying the live gate was run.

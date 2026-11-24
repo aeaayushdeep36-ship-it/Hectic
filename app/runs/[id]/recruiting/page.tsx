@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { nextTarget } from "../../../../engine/thresholds";
 import { getRun } from "../../../../server/store";
+import { nextLevelTarget } from "../../../../server/threshold-view";
 import type { FindingView } from "../../../../lib/dto";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export default async function RecruitingPage({
   );
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
+    <div className="mx-auto max-w-4xl px-6 py-12">
       <nav className="label mb-8">
         <Link href={`/runs/${id}`}>← Back to run</Link>
       </nav>
@@ -28,8 +28,9 @@ export default async function RecruitingPage({
       <header>
         <h1 className="text-[28px] font-semibold">Recruiting brief</h1>
         <p className="mt-2 max-w-2xl text-[var(--ink-muted)]">
-          The smallest set of conversations that would move a binding constraint. Cell and
-          count come from the verified finding, not from a model.
+          The smallest next conversation that would move a binding constraint. The cell and
+          target type come from the verified finding; the minimum add is one independent
+          organisation in that cell.
         </p>
       </header>
 
@@ -51,13 +52,13 @@ export default async function RecruitingPage({
                   <dd className="mono text-[13px]">{cellFor(finding)}</dd>
                 </div>
                 <div>
-                  <dt className="label">Count</dt>
-                  <dd className="mono text-[13px]">1 organisation</dd>
+                  <dt className="label">Minimum add</dt>
+                  <dd className="mono text-[13px]">1 independent org</dd>
                 </div>
                 <div>
                   <dt className="label">Target type</dt>
                   <dd className="mono text-[13px]">
-                    L{finding.binding === "population" ? 2 : nextTarget(finding.level)}
+                    L{finding.binding === "population" ? 2 : nextLevelTarget(finding.level)}
                   </dd>
                 </div>
               </dl>
@@ -70,7 +71,7 @@ export default async function RecruitingPage({
           ))}
         </ol>
       )}
-    </main>
+    </div>
   );
 }
 

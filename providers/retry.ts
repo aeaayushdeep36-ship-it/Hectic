@@ -64,7 +64,10 @@ export async function completeWithRetry(
 
   let completion = await provider.complete(system, user);
   for (let attempt = 0; attempt < maxRetries && !completion.ok && isRetryable(completion.errorCode); attempt += 1) {
-    const delayMs = delayFor(attempt, config, random);
+    const backoffMs = delayFor(attempt, config, random);
+    const delayMs = completion.retryAfterMs
+      ? Math.min(Math.max(backoffMs, completion.retryAfterMs), config.maxDelayMs)
+      : backoffMs;
     options.onRetry?.(completion.errorCode ?? "UNKNOWN", attempt + 1, delayMs);
     await sleep(delayMs);
     completion = await provider.complete(system, user);

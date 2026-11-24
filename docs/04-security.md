@@ -117,7 +117,7 @@ Layered, in order:
 | Never in an error surfaced to UI | Errors are mapped to codes before display |
 | `.env.example` ships with empty values | README explains where to get each key |
 
-**Pre-commit:** a script greps staged files for `AIza`, `gsk_`, `sk-`, `xoxb-` and refuses. Ten lines of Node, no dependency.
+**Pre-commit equivalent:** `npm run secrets:check` scans every tracked and untracked, non-ignored file for real-shaped provider keys and fails the build. It runs as the first step of `npm run check`, so CI and local verification share the same gate. `.env.local` stays gitignored and is never scanned.
 
 The brief requires no secrets in the repo. A pre-commit hook is the cheapest way to be certain rather than careful.
 

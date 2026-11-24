@@ -1,4 +1,4 @@
-import { LEVEL_LABELS } from "../engine/thresholds";
+import { LEVEL_LABELS } from "../lib/levels";
 import type { FindingView } from "../lib/dto";
 
 export function VerdictBadge({ finding }: { finding: FindingView }) {

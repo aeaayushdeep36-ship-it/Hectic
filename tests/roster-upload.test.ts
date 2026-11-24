@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_ROSTER_FILE_BYTES,
   MAX_ROSTER_ROWS,
+  parseRosterText,
   parseRosterUpload,
   RosterUploadError,
   type RosterUploadSource,
@@ -34,6 +35,16 @@ describe("roster upload zone", () => {
     expect(preview.headers).toContain("orgId");
     expect(preview.rows[0]).toContain("upload-org-1");
     expect(preview.csv).toContain(ROW);
+  });
+
+  it("validates pasted CSV with the same rules as a file", async () => {
+    const preview = await parseRosterText(`${HEADER}\n${ROW}`);
+    expect(preview.rowCount).toBe(1);
+    expect(preview.fileName).toBe("pasted-roster.csv");
+
+    await expect(parseRosterText("id,orgId\n1,1")).rejects.toMatchObject({
+      code: "MISSING_COLUMNS",
+    });
   });
 
   it("rejects a 0-byte file", async () => {

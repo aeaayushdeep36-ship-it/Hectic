@@ -110,7 +110,8 @@ a:hover { text-decoration-color: var(--ink); }
 }
 
 /* Heatmap: three redundant signals for zero (dash + hatch + dashed border). */
-.cell { border: 1px solid transparent; text-align: center; }
+.cell { border: 1px solid transparent; text-align: center; transition: border-color 80ms ease-out; }
+.cell:hover { border-color: var(--ink-faint); }
 .cell-0 {
   background: var(--signal-bg);
   border: 1px dashed var(--signal-border);

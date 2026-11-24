@@ -5,9 +5,10 @@
  * No provider module is imported by engine/, app/ or any client component.
  */
 import { heuristicTag, templateProposal } from "../lib/heuristics";
+import { MODEL_BY_PROVIDER, type ProviderIdOption } from "../lib/provider-options";
 import type { Claim, EvidenceRow } from "../lib/types";
 
-export type ProviderId = "mock" | "gemini" | "groq" | "ollama" | "openrouter" | "chaos";
+export type ProviderId = ProviderIdOption | "chaos";
 
 export interface Completion {
   readonly text: string;
@@ -16,6 +17,8 @@ export interface Completion {
   readonly latencyMs: number;
   readonly ok: boolean;
   readonly errorCode: string | null;
+  /** Upstream `Retry-After` hint in milliseconds, when the gateway supplies one. */
+  readonly retryAfterMs?: number;
 }
 
 export interface Provider {
@@ -27,12 +30,7 @@ export interface Provider {
 }
 
 const ALLOWED: Readonly<Record<ProviderId, string>> = {
-  mock: "mock-v1",
-  gemini: "gemini-2.0-flash-lite",
-  groq: "llama-3.1-8b-instant",
-  ollama: "qwen2.5:7b",
-  // OpenRouter's free tier for an open-weight model. No card required.
-  openrouter: "google/gemma-4-31b-it:free",
+  ...MODEL_BY_PROVIDER,
   chaos: "chaos-v1",
 };
 
@@ -150,6 +148,14 @@ interface HttpOptions {
   readonly headers?: Readonly<Record<string, string>>;
 }
 
+function parseRetryAfter(raw: string | null): number | undefined {
+  if (!raw) return undefined;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const at = Date.parse(raw);
+  return Number.isFinite(at) ? Math.max(0, at - Date.now()) : undefined;
+}
+
 class OpenAiCompatibleProvider implements Provider {
   callCount = 0;
 
@@ -193,6 +199,9 @@ class OpenAiCompatibleProvider implements Provider {
           latencyMs: Date.now() - start,
           ok: false,
           errorCode: `HTTP_${response.status}`,
+          ...(response.status === 429
+            ? { retryAfterMs: parseRetryAfter(response.headers.get("retry-after")) }
+            : {}),
         };
       }
 
@@ -227,19 +236,21 @@ class OpenAiCompatibleProvider implements Provider {
 
 export function getProvider(
   requested: string | undefined = process.env.LLM_PROVIDER,
+  modelId?: string,
+  apiKey?: string,
 ): Provider {
   switch (requested) {
     case "gemini":
       return new OpenAiCompatibleProvider(
         "gemini",
-        ALLOWED.gemini,
+        modelId || process.env.GEMINI_MODEL || ALLOWED.gemini,
         "https://generativelanguage.googleapis.com/v1beta/openai",
         process.env.GEMINI_API_KEY ?? null,
       );
     case "groq":
       return new OpenAiCompatibleProvider(
         "groq",
-        ALLOWED.groq,
+        modelId || process.env.GROQ_MODEL || ALLOWED.groq,
         "https://api.groq.com/openai/v1",
         process.env.GROQ_API_KEY ?? null,
       );
@@ -254,9 +265,9 @@ export function getProvider(
       // The key stays server-side. Only the provider id crosses the client boundary.
       return new OpenAiCompatibleProvider(
         "openrouter",
-        process.env.OPENROUTER_MODEL ?? ALLOWED.openrouter,
+        modelId || process.env.OPENROUTER_MODEL || ALLOWED.openrouter,
         "https://openrouter.ai/api/v1",
-        process.env.OPENROUTER_API_KEY ?? null,
+        apiKey ?? process.env.OPENROUTER_API_KEY ?? null,
         {
           jsonMode: false,
           headers: {

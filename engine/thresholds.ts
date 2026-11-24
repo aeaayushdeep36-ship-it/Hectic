@@ -7,6 +7,8 @@
 
 import type { EvidenceLevel, EvidenceTypeName } from "../lib/types";
 
+export { LEVEL_LABELS } from "../lib/levels";
+
 export interface EvidenceLevelDef {
   readonly level: EvidenceLevel;
   readonly code: EvidenceTypeName;
@@ -59,15 +61,6 @@ export const EVIDENCE_LEVELS: readonly EvidenceLevelDef[] = [
     source: "Pattyn, Dillen & Goetz (2026), Computers 15(8):535",
   },
 ];
-
-export const LEVEL_LABELS: Readonly<Record<EvidenceLevel, EvidenceTypeName>> = {
-  1: "internal",
-  2: "stated",
-  3: "concept",
-  4: "commitment",
-  5: "investment",
-  6: "payment",
-};
 
 /** L1 is a floor, not a finding. The scale has no "zero evidence" rung. */
 export const FLOOR: EvidenceLevel = 1;

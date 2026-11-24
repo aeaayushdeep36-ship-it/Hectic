@@ -58,6 +58,18 @@ export class RosterUploadError extends Error {
   }
 }
 
+/** Validate pasted CSV text with the exact same rules as a file upload. */
+export function parseRosterText(
+  csv: string,
+  fileName = "pasted-roster.csv",
+): Promise<RosterUploadPreview> {
+  return parseRosterUpload({
+    name: fileName,
+    size: new TextEncoder().encode(csv).length,
+    text: async () => csv,
+  });
+}
+
 export async function parseRosterUpload(
   source: RosterUploadSource,
 ): Promise<RosterUploadPreview> {

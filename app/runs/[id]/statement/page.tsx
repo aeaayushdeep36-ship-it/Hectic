@@ -17,7 +17,7 @@ export default async function StatementPage({
   const sections = composeStatement(run);
 
   return (
-    <main className="mx-auto max-w-4xl px-8 py-10">
+    <div className="mx-auto max-w-4xl px-8 py-10">
       <div className="no-print label mb-6 flex justify-between">
         <Link href={`/runs/${id}`}>← Back to run</Link>
         <span>Print / Save as PDF</span>
@@ -92,7 +92,7 @@ export default async function StatementPage({
           </p>
         </footer>
       </article>
-    </main>
+    </div>
   );
 }
 

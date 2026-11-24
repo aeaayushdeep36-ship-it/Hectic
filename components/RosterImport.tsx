@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  parseRosterText,
+  parseRosterUpload,
+  ROSTER_REQUIRED_COLUMNS,
+} from "../lib/roster-upload";
 
 interface ImportResult {
   readonly imported: number;
@@ -23,10 +28,11 @@ export function RosterImport({ slug }: { slug: string }) {
     setError(null);
     setResult(null);
     try {
+      const validated = await parseRosterText(csv);
       const response = await fetch(`/api/workspaces/${slug}/evidence/import`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ csv }),
+        body: JSON.stringify({ csv: validated.csv }),
       });
       const body = (await response.json()) as ImportResult & { error?: string };
       if (!response.ok) {
@@ -45,7 +51,14 @@ export function RosterImport({ slug }: { slug: string }) {
 
   async function onFile(file: File | undefined) {
     if (!file) return;
-    setCsv(await file.text());
+    setError(null);
+    setResult(null);
+    try {
+      const preview = await parseRosterUpload(file);
+      setCsv(preview.csv);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not read this file.");
+    }
   }
 
   return (
@@ -54,8 +67,9 @@ export function RosterImport({ slug }: { slug: string }) {
         Import a roster
       </h2>
       <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-        Paste or choose a CSV. Names are not required — use an alias and a stable
-        organisation reference. Cells are redacted before anything leaves this machine.
+        Paste or choose a CSV with these columns: {ROSTER_REQUIRED_COLUMNS.join(", ")}. Names are
+        not required — use an alias and a stable organisation reference. Cells are redacted before
+        anything leaves this machine.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -76,7 +90,7 @@ export function RosterImport({ slug }: { slug: string }) {
           rows={5}
           value={csv}
           onChange={(event) => setCsv(event.target.value)}
-          placeholder={"id,orgId,alias,segment,role,channel,relationship,evidenceType,date,durationMin,notes\ni1,org-1,PX,SMB retail,economic,linkedin,cold,2,2026-01-12,25,They asked about pricing"}
+          placeholder={`${ROSTER_REQUIRED_COLUMNS.join(",")}\n…`}
         />
       </label>
 

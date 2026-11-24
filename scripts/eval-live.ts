@@ -8,9 +8,15 @@
  *
  *   OPENROUTER_API_KEY=... npm run eval:live
  *
- * A run is only "PASS" when at least two real providers and 10 repetitions per
- * provider completed with no schema-invalid output and a fallback rate at or
- * below 10%. With fewer providers the command prints INCOMPLETE rather than
+ * `OPENROUTER_LIVE_MODELS` can pin an explicit comma-separated model list when
+ * an upstream provider is rate-limited. `OPENROUTER_SECOND_MODEL` adds one or
+ * more comma-separated models to the default Gemma model. `HECTIC_LIVE_RUNS`
+ * and the `HECTIC_LIVE_MAX_RETRIES`/`*_DELAY_MS` knobs are for short probes;
+ * the recorded gate must use the defaults (10 runs and bounded backoff).
+ *
+ * A run is only "PASS" when at least two real models and 10 repetitions per
+ * model completed with no schema-invalid output and a fallback rate at or
+ * below 10%. With fewer models the command prints INCOMPLETE rather than
  * claiming the gate was met.
  */
 import { writeFileSync } from "node:fs";
@@ -22,6 +28,7 @@ import { tagRelevance } from "../agents/relevance";
 import { buildCoverage, buildFinding } from "../engine/index";
 import { verdictHash } from "../lib/hash";
 import { parseRoster } from "../lib/csv";
+import { loadEnvLocal } from "../lib/env";
 import { claimsFileSchema, claimProposalSchema, relevanceTagSchema } from "../lib/schemas";
 import {
   ChaosProvider,
@@ -30,6 +37,8 @@ import {
   getProvider,
   type Provider,
 } from "../providers";
+
+loadEnvLocal();
 
 const RUNS = Math.max(1, Number(process.env.HECTIC_LIVE_RUNS ?? 10));
 const MAX_FALLBACK_RATE = 0.1;
@@ -49,11 +58,34 @@ interface Source {
   readonly real: boolean;
 }
 
+function modelList(value: string | undefined): readonly string[] {
+  return [...new Set((value ?? "").split(",").map((item) => item.trim()).filter(Boolean))];
+}
+
 const sources: Source[] = [];
 if (process.env.GEMINI_API_KEY) sources.push({ name: "gemini", provider: getProvider("gemini"), real: true });
 if (process.env.GROQ_API_KEY) sources.push({ name: "groq", provider: getProvider("groq"), real: true });
 if (process.env.OPENROUTER_API_KEY) {
-  sources.push({ name: "openrouter", provider: getProvider("openrouter"), real: true });
+  const pinned = modelList(process.env.OPENROUTER_LIVE_MODELS);
+  const primary = getProvider("openrouter").modelId;
+  // An explicit list lets the gate avoid an upstream model that is temporarily
+  // rate-limited without changing the app's default provider configuration.
+  const openRouterModels = pinned.length > 0
+    ? pinned
+    : [primary, ...modelList(process.env.OPENROUTER_SECOND_MODEL).filter((model) => model !== primary)];
+
+  for (const [index, model] of openRouterModels.entries()) {
+    // A second key doubles the daily free request allowance. Without one, the
+    // same key is reused and the harness reports the rate-limit failures.
+    const key = index === 0
+      ? process.env.OPENROUTER_API_KEY
+      : process.env.OPENROUTER_SECOND_API_KEY || process.env.OPENROUTER_API_KEY;
+    sources.push({
+      name: `openrouter:${model}`,
+      provider: getProvider("openrouter", model, key),
+      real: true,
+    });
+  }
 }
 if (process.env.OLLAMA_BASE_URL || process.env.HECTIC_REHEARSE_OLLAMA === "1") {
   sources.push({ name: "ollama", provider: getProvider("ollama"), real: true });
@@ -87,11 +119,19 @@ interface Summary {
   readonly latencyMs: number;
 }
 
+function positiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : fallback;
+}
+
 const retry = {
-  maxRetries: 2,
-  baseDelayMs: 500,
-  maxDelayMs: 2000,
-  sleep: async () => {},
+  // Free shared pools return 429 bursts. Respect Retry-After and keep a longer
+  // bounded backoff than the app default so one burst is not a false gate fail.
+  // The env knobs exist for short model probes; the recorded gate uses defaults.
+  maxRetries: positiveInt(process.env.HECTIC_LIVE_MAX_RETRIES, 5),
+  baseDelayMs: positiveInt(process.env.HECTIC_LIVE_BASE_DELAY_MS, 3000),
+  maxDelayMs: positiveInt(process.env.HECTIC_LIVE_MAX_DELAY_MS, 20_000),
+  sleep: async (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
 };
 
 async function once(source: Source, run: number): Promise<Failure[]> {
@@ -195,7 +235,7 @@ async function main() {
 
   if (!enoughModels) {
     lines.push(
-      "Only " + real.length + " real model(s) configured. Add a second runtime key (`GEMINI_API_KEY`, `GROQ_API_KEY`) or `OLLAMA_BASE_URL` to satisfy the two-model requirement.",
+      "Only " + real.length + " real model(s) configured. Set `OPENROUTER_LIVE_MODELS` (or `OPENROUTER_SECOND_MODEL`) or add a second runtime key (`GEMINI_API_KEY`, `GROQ_API_KEY`) or `OLLAMA_BASE_URL` to satisfy the two-model requirement.",
       "",
     );
   }

@@ -21,14 +21,14 @@ export function CheckpointDrawer({
   onResolved: () => void;
   onClose: () => void;
 }) {
-  const [action, setAction] = useState<string>("downgrade");
+  const [action, setAction] = useState<string>("");
   const [falsifier, setFalsifier] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const validation = checkFalsifier(falsifier);
-  const valid = validation.ok && !busy;
+  const valid = action !== "" && validation.ok && !busy;
 
   async function submit() {
     setBusy(true);
@@ -107,9 +107,9 @@ export function CheckpointDrawer({
           aria-invalid={falsifier.trim().length > 0 && !validation.ok}
         />
         <p id="falsifier-help" className="mt-1 text-[12px] text-[var(--ink-muted)]">
-          Name a measurable observation that would kill the claim. At least 40 characters;
-          use if/when/unless/should and a number (for example, "if fewer than 3 of 5 managers
-          say X"). {falsifier.trim().length}/40.
+          Name the observation that would make you abandon this claim. Include if/when/unless/should
+          and a measurable outcome. Short measurable statements are accepted; vague text needs 40
+          characters. {falsifier.trim().length}/40.
         </p>
         {falsifier.trim().length > 0 && !validation.ok ? (
           <p className="mono mt-1 text-[12px] text-[var(--signal)]" role="status">

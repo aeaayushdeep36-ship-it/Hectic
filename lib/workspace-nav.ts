@@ -3,4 +3,6 @@ export interface SidebarWorkspace {
   readonly name: string;
   readonly slug: string;
   readonly runCount: number;
+  readonly runIds: readonly string[];
+  readonly isDemo: boolean;
 }

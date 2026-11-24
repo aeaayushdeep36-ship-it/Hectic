@@ -12,7 +12,12 @@ const focusRing =
 /** Permanent sidebar backed by real workspace rows from the server layout. */
 export function Sidebar({ workspaces }: { workspaces: readonly SidebarWorkspace[] }) {
   const segments = useSelectedLayoutSegments();
-  const activeSlug = segments[0] === "workspaces" ? segments[1] : undefined;
+  const activeSlug =
+    segments[0] === "workspaces"
+      ? segments[1]
+      : segments[0] === "runs"
+        ? workspaces.find((workspace) => workspace.runIds.includes(segments[1] ?? ""))?.slug
+        : undefined;
   const onHome = segments.length === 0;
 
   return (
@@ -59,9 +64,17 @@ export function Sidebar({ workspaces }: { workspaces: readonly SidebarWorkspace[
                     focusRing,
                   )}
                 >
-                  <span className="flex items-center gap-2 truncate">
+                  <span className="flex min-w-0 items-center gap-2">
                     <FileText size={16} className="shrink-0 text-[var(--ink-faint)]" aria-hidden="true" />
                     <span className="truncate">{workspace.name}</span>
+                    {workspace.isDemo ? (
+                      <span
+                        className="shrink-0 rounded border border-[var(--border)] px-1 text-[9px] uppercase tracking-wide text-[var(--ink-faint)]"
+                        title="Synthetic demo workspace"
+                      >
+                        Demo
+                      </span>
+                    ) : null}
                   </span>
                   <span className="text-[11px] text-[var(--ink-faint)] shrink-0">{runLabel}</span>
                 </Link>

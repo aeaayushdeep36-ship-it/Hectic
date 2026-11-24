@@ -26,16 +26,27 @@ export default async function WorkspacePage({
   const claims = listClaims(slug);
   const matrix = workspaceMatrix(slug);
   const runs = listRuns(slug);
+  const latestAuditedRun = runs.find((run) => run.findings.length > 0) ?? null;
+  const findingsByClaim = new Map(
+    latestAuditedRun?.findings.map((finding) => [finding.claimId, finding]) ?? [],
+  );
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
+    <div className="mx-auto max-w-5xl px-6 py-12">
       <nav className="label mb-8">
         <Link href="/">Workspaces</Link> <span aria-hidden="true">/</span> {workspace.name}
       </nav>
 
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="text-[28px] font-semibold">{workspace.name}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-[28px] font-semibold">{workspace.name}</h1>
+            {workspace.isDemo ? (
+              <span className="badge badge-neutral" title="This workspace contains synthetic seed data.">
+                Synthetic demo
+              </span>
+            ) : null}
+          </div>
           <p className="mt-2 text-[var(--ink-muted)]">{workspace.contextNote}</p>
           <p className="mono mt-2 text-[12px] text-[var(--ink-faint)]">
             {workspace.evidenceCount} interviews · {workspace.orgCount} organisations ·{" "}
@@ -70,17 +81,28 @@ export default async function WorkspacePage({
           <p className="text-[var(--ink-muted)]">No claims yet. Add one below.</p>
         ) : (
           <ol className="space-y-3">
-            {claims.map((claim) => (
-              <li key={claim.id}>
-                <ClaimCard
-                  title={claim.rawText}
-                  population={claim.population}
-                  status={claim.confirmed ? "confirmed" : "ambiguous"}
-                  type={claim.claimType}
-                  level={`L${claim.claimedLevel}`}
-                />
-              </li>
-            ))}
+            {claims.map((claim) => {
+              const finding = findingsByClaim.get(claim.id) ?? null;
+              const status =
+                finding && finding.finding !== "SUPPORTED" && finding.resolution === null
+                  ? "blocked"
+                  : claim.confirmed
+                    ? "confirmed"
+                    : "ambiguous";
+              return (
+                <li key={claim.id}>
+                  <ClaimCard
+                    title={claim.rawText}
+                    population={claim.population}
+                    status={status}
+                    type={claim.claimType}
+                    level={`L${claim.claimedLevel}`}
+                    finding={finding}
+                    runId={latestAuditedRun?.id}
+                  />
+                </li>
+              );
+            })}
           </ol>
         )}
       </section>
@@ -109,6 +131,6 @@ export default async function WorkspacePage({
           </ul>
         )}
       </section>
-    </main>
+    </div>
   );
 }

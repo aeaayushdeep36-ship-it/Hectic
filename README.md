@@ -61,30 +61,32 @@ database and no environment file. Open <http://localhost:3000>. Four synthetic
 demo workspaces are seeded from the hand-computed fixtures. Then:
 
 ```bash
-npm run check        # lint, typecheck, 62 unit/integration tests, engine purity guard
+npm run check        # secret scan, lint, typecheck, full unit suite, engine purity guard
 npm run eval:gate    # agent fixtures; fails CI on schema-invalid output or >10% fallback
-npm run eval:live    # 10 repetitions per configured real provider + chaos; writes docs/eval-live.md
+npm run eval:live    # 10 repetitions per configured real model + chaos; writes docs/eval-live.md
 npm run demo:rehearse # golden fixture against mock + injected chaos; real providers if configured
 npm run build        # production build
-npm run test:e2e     # 3 Playwright specs with axe, needs the dev server (started automatically)
+npm run test:e2e     # 4 Playwright specs with axe; Playwright starts the server temporarily
 npm run audit -- --roster fixtures/underpowered/roster.csv --claims fixtures/underpowered/claims.json
 ```
 
 Hosted deployment is deliberately out of scope; the local path is the full product.
 
-### Using OpenRouter (Gemma 4 31B, free tier)
+### Using Gemini + Groq (two real models)
 
-Copy `.env.example` to `.env.local` and set `OPENROUTER_API_KEY=...`. The default
-model is `google/gemma-4-31b-it:free`; override it with `OPENROUTER_MODEL` only if
-you consciously want the paid variant. Then either select `openrouter` in the
-Run panel or set `LLM_PROVIDER=openrouter` and restart the dev server. The key is
-read server-side and never reaches the browser. Notes are redacted before egress,
-the verdict is still computed locally, and a 429 or quota error falls back to the
-deterministic template with the reason recorded in the audit log.
+A ready-to-fill `.env.local` is present and gitignored. Paste the keys directly
+after `GEMINI_API_KEY=` and `GROQ_API_KEY=`; leave the `*_MODEL` lines empty to use
+the catalog defaults, or fill them to pin a different free model. Set
+`LLM_PROVIDER=gemini` to make Gemini the app default once its key is present; the
+offline mock remains the safe default in `.env.example` and in the Run panel.
+Keys are read server-side and never reach the browser. Notes are redacted before
+egress, the verdict is still computed locally, and a 429 or quota error falls
+back to the deterministic template with the reason recorded in the audit log.
 
-Verify with `npm run demo:rehearse` (adds OpenRouter automatically once the key is
-present) and `npm run eval:live` (records every repetition and failure in
-`docs/eval-live.md`; it will not claim the two-model gate with only one key).
+Verify with `npm run demo:rehearse` (adds both real providers automatically once
+their keys are present) and `npm run eval:live` (records every repetition and
+failure in `docs/eval-live.md`; it will not claim the two-model gate with only one
+key). OpenRouter remains supported as an optional provider but is not required.
 
 ## What is implemented
 
@@ -97,8 +99,8 @@ route, DB trigger, and an unverified-draft watermark on the statement page.
 
 ## Status
 
-**Day-3 gate passed.** The pure `engine/` and all four hand-computed fixtures are
-implemented. Every fixture's expected verdict was written by hand from its
+**Engine fixture gate passed.** The pure `engine/` and all four hand-computed fixtures are
+implemented. The separate two-model live gate is recorded in `docs/eval-live.md`. Every fixture's expected verdict was written by hand from its
 `README.md` before the engine was run against it:
 
 | Fixture | Hand-computed | Result |
@@ -108,9 +110,12 @@ implemented. Every fixture's expected verdict was written by hand from its
 | `wrong-population` | `L1 · 0`, binding `population` | match |
 | `ambiguous` | `L4 · 1`, `[0.21, 1.00]`, binding `support` | match |
 
-`npm run check` runs lint, typecheck, 62 tests and the engine purity guard.
-`npm run build` and `npm run test:e2e` are green. CI also runs `npm run eval:gate`,
-`npm run eval:live` (skips real providers without keys) and `npm run demo:rehearse`.
+`npm run check` runs the secret scan, lint, typecheck, the full unit suite and the engine purity
+guard. `npm run build` and `npm run test:e2e` cover the production UI. CI also runs
+`npm run eval:gate`, `npm run eval:live` (skips real providers without keys) and
+`npm run demo:rehearse`. The authoritative two-model repetition result is recorded in
+[docs/eval-live.md](docs/eval-live.md); do not treat the gate as passed while that file says
+`INCOMPLETE`.
 
 ## Submission artefacts
 

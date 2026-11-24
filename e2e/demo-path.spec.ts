@@ -10,12 +10,16 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
   await page.goto("/");
   await waitForHydration(page);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Evidence Audit");
+  await expect(page.locator("main main")).toHaveCount(0);
   await expectNoCriticalViolations(page);
 
   await page.goto("/workspaces/underpowered");
   await waitForHydration(page);
   await expect(page.getByRole("heading", { name: "Coverage" })).toBeVisible();
   await expect(page.getByText(/Who was in the room/)).toBeVisible();
+  await expect(page.getByText("Synthetic demo").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Evidence coverage matrix" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /no interviews/ }).first()).toBeVisible();
   await expectNoCriticalViolations(page);
 
   const rosterField = page.getByLabel("Roster CSV content");
@@ -36,6 +40,10 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
   await expect(page).toHaveURL(/\/runs\//);
   await waitForHydration(page);
   await expect(page.getByRole("heading", { name: "Findings" })).toBeVisible();
+  await expect(page.locator('aside a[href="/workspaces/underpowered"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   await expectNoCriticalViolations(page);
 
   // The provider picker exposes OpenRouter while keeping mock as the safe default.
@@ -62,6 +70,7 @@ test("import, confirm, analyse, resolve, export", async ({ page, request }) => {
     await page.getByRole("button", { name: "Resolve this claim" }).first().click();
     const drawer = page.getByRole("dialog");
     await expect(drawer).toBeVisible();
+    await drawer.getByRole("radio", { name: /downgrade/ }).check();
     await drawer.getByLabel("This claim dies if…").fill(FALSIFIER);
     const confirmed = page.waitForResponse(
       (response) =>

@@ -109,6 +109,24 @@ describe("E2 — retry with exponential backoff and jitter", () => {
     expect(provider.callCount).toBe(3);
   });
 
+  it("honours a gateway Retry-After hint on 429", async () => {
+    const waits: number[] = [];
+    const provider = new ScriptedProvider([
+      { ...fail("HTTP_429"), retryAfterMs: 250 },
+      ok("done"),
+    ]);
+    const result = await completeWithRetry(provider, "sys", "usr", {
+      maxRetries: 2,
+      baseDelayMs: 10,
+      maxDelayMs: 1000,
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(waits[0]).toBeGreaterThanOrEqual(250);
+  });
+
   it("exhausts retries and falls back with a logged reason", async () => {
     const provider = new ScriptedProvider([fail("HTTP_429")]);
     const result = await formalise("Budget holders in German clinics sign a paid pilot", provider, {

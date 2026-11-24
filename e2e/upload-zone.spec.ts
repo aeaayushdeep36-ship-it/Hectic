@@ -26,7 +26,7 @@ test("parses a valid roster and shows a real preview", async ({ page }) => {
   await setFile(page, "roster.csv", "text/csv", Buffer.from(VALID_ROSTER));
 
   await expect(page.getByRole("heading", { name: "Roster Parsed Successfully" })).toBeVisible();
-  await expect(page.getByText("1 rows detected.")).toBeVisible();
+  await expect(page.getByText("1 row detected.")).toBeVisible();
   await expect(page.getByRole("table", { name: "Roster preview" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Run Audit" })).toBeEnabled();
   await expectNoCriticalViolations(page);
@@ -73,7 +73,7 @@ test("rejects a CSV past the backend row limit", async ({ page }) => {
 
 test("can upload with the keyboard only", async ({ page }) => {
   const chooserPromise = page.waitForEvent("filechooser");
-  await page.getByTestId("file-select-label").focus();
+  await page.getByTestId("file-select-button").focus();
   await page.keyboard.press("Enter");
 
   const chooser = await chooserPromise;

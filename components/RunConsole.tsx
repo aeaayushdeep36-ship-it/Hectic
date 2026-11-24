@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import type { RunView } from "../lib/dto";
+import {
+  DEFAULT_ANALYSIS_PROVIDER,
+  MODEL_BY_PROVIDER,
+  PROVIDER_OPTIONS,
+  type ProviderIdOption,
+} from "../lib/provider-options";
 import { CheckpointDrawer } from "./CheckpointDrawer";
 import { FindingRow } from "./FindingRow";
 
@@ -20,15 +26,6 @@ type StreamEvent =
     }
   | { type: "error"; message: string };
 
-/** Labels only — the real provider is constructed server-side from env keys. */
-const MODEL_BY_PROVIDER: Record<string, string> = {
-  mock: "mock-v1",
-  openrouter: "google/gemma-4-31b-it:free",
-  gemini: "gemini-2.0-flash-lite",
-  groq: "llama-3.1-8b-instant",
-  ollama: "qwen2.5:7b",
-};
-
 export function RunConsole({
   initialRun,
   workspaceSlug,
@@ -43,7 +40,7 @@ export function RunConsole({
   const [busy, setBusy] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [streamLog, setStreamLog] = useState<string[]>([]);
-  const [provider, setProvider] = useState("mock");
+  const [provider, setProvider] = useState<ProviderIdOption>(DEFAULT_ANALYSIS_PROVIDER);
 
   const unresolved = run.findings.filter((finding) => finding.resolution === null && finding.finding !== "SUPPORTED");
 
@@ -163,14 +160,14 @@ export function RunConsole({
               className="field mono"
               aria-label="Provider"
               value={provider}
-              onChange={(event) => setProvider(event.target.value)}
+              onChange={(event) => setProvider(event.target.value as ProviderIdOption)}
               disabled={streaming || busy}
             >
-              <option value="mock">mock · offline</option>
-              <option value="openrouter">openrouter · gemma 4 31B free</option>
-              <option value="gemini">gemini</option>
-              <option value="groq">groq</option>
-              <option value="ollama">ollama · local</option>
+              {PROVIDER_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <button type="button" className="btn" onClick={() => void doStream()} disabled={streaming || busy}>

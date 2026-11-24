@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseProviderSelection } from "../../../../../lib/provider-options";
 import { createRun, listRuns } from "../../../../../server/store";
 
 export const dynamic = "force-dynamic";
@@ -16,12 +17,13 @@ export async function POST(
   context: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await context.params;
-  const body = (await request.json().catch(() => ({}))) as {
-    providerId?: string;
-    modelId?: string;
-  };
+  const body = await request.json().catch(() => ({}));
+  const selection = parseProviderSelection(body);
+  if (!selection) {
+    return NextResponse.json({ error: "INVALID_PROVIDER_SELECTION" }, { status: 400 });
+  }
   try {
-    const run = createRun(slug, body.providerId ?? "mock", body.modelId ?? "mock-v1");
+    const run = createRun(slug, selection.providerId, selection.modelId);
     return NextResponse.json({ run }, { status: 201 });
   } catch (error) {
     return NextResponse.json(

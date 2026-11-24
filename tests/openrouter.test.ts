@@ -57,6 +57,15 @@ function goldenFinding(): Finding {
   return buildFinding(first, buildCoverage(rows, first));
 }
 
+describe("hosted provider model configuration", () => {
+  it("honours explicit Gemini and Groq model overrides", () => {
+    vi.stubEnv("GEMINI_MODEL", "gemini-2.5-flash-lite");
+    vi.stubEnv("GROQ_MODEL", "llama-3.3-70b-versatile");
+    expect(getProvider("gemini").modelId).toBe("gemini-2.5-flash-lite");
+    expect(getProvider("groq").modelId).toBe("llama-3.3-70b-versatile");
+  });
+});
+
 describe("OpenRouter provider", () => {
   it("defaults to the free tier of the open-weight Gemma 4 31B model", () => {
     const provider = getProvider("openrouter");
@@ -67,6 +76,12 @@ describe("OpenRouter provider", () => {
   it("honours an explicit model override without a code change", () => {
     vi.stubEnv("OPENROUTER_MODEL", "google/gemma-4-31b-it");
     expect(getProvider("openrouter").modelId).toBe("google/gemma-4-31b-it");
+  });
+
+  it("accepts a per-source model override for the two-model live gate", () => {
+    expect(getProvider("openrouter", "google/gemma-4-26b-a4b-it:free").modelId).toBe(
+      "google/gemma-4-26b-a4b-it:free",
+    );
   });
 
   it("sends the key only from the server environment, with no JSON-mode assumption", async () => {
@@ -86,6 +101,21 @@ describe("OpenRouter provider", () => {
     const body = JSON.parse(calls[0]!.init.body as string) as Record<string, unknown>;
     expect(body.model).toBe("google/gemma-4-31b-it:free");
     expect(body).not.toHaveProperty("response_format");
+  });
+
+  it("uses an explicitly supplied key for a second live-gate model", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "first-key");
+    const calls = fakeFetch();
+    await getProvider("openrouter", "google/gemma-4-26b-a4b-it:free", "second-key").complete(
+      "system",
+      "user",
+    );
+    expect((calls[0]!.init.headers as Record<string, string>).authorization).toBe(
+      "Bearer second-key",
+    );
+    expect(JSON.parse(calls[0]!.init.body as string).model).toBe(
+      "google/gemma-4-26b-a4b-it:free",
+    );
   });
 
   it("never sends an authorization header when no key is configured", async () => {

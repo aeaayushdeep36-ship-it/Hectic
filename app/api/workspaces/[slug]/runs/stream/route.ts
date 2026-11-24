@@ -6,7 +6,9 @@
  * See node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md
  * for the supported ReadableStream response pattern.
  */
+import { parseProviderSelection } from "../../../../../../lib/provider-options";
 import { runAgentPipeline, type AgentPipelineEvent } from "../../../../../../server/agent-pipeline";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +17,11 @@ export async function POST(
   context: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await context.params;
-  const body = (await request.json().catch(() => ({}))) as { providerId?: string };
-  const providerId = body.providerId ?? "mock";
+  const body = await request.json().catch(() => ({}));
+  const selection = parseProviderSelection(body);
+  if (!selection) {
+    return NextResponse.json({ error: "INVALID_PROVIDER_SELECTION" }, { status: 400 });
+  }
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
@@ -25,7 +30,7 @@ export async function POST(
         controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       };
       try {
-        const result = await runAgentPipeline(slug, providerId, { onProgress: send });
+        const result = await runAgentPipeline(slug, selection.providerId, { onProgress: send });
         send(result);
       } catch (error) {
         const event: AgentPipelineEvent = {

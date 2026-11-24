@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, LoaderCircle, UploadCloud } from "lucide-react";
+import { AlertCircle, CheckCircle2, UploadCloud } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,11 +11,16 @@ import {
   useState,
   type ChangeEvent,
   type DragEvent,
-  type KeyboardEvent,
 } from "react";
 import { cn } from "@/lib/utils";
-import { parseRosterUpload, type RosterUploadPreview } from "@/lib/roster-upload";
+import {
+  MAX_ROSTER_FILE_BYTES,
+  MAX_ROSTER_ROWS,
+  parseRosterUpload,
+  type RosterUploadPreview,
+} from "@/lib/roster-upload";
 import { WorkspaceNavContext } from "@/components/WorkspaceNavContext";
+import { DEFAULT_ANALYSIS_PROVIDER, MODEL_BY_PROVIDER } from "@/lib/provider-options";
 
 const focusRing =
   "focus-visible:ring-2 focus-visible:ring-[var(--ink)] focus-visible:ring-offset-2";
@@ -44,7 +49,10 @@ export default function WorkspaceDashboard() {
       const runResponse = await fetch(`/api/workspaces/${slug}/runs`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ providerId: "mock", modelId: "mock-v1" }),
+        body: JSON.stringify({
+          providerId: DEFAULT_ANALYSIS_PROVIDER,
+          modelId: MODEL_BY_PROVIDER[DEFAULT_ANALYSIS_PROVIDER],
+        }),
       });
       const body = (await runResponse.json()) as { run?: { id: string }; error?: string };
       if (!runResponse.ok || !body.run) throw new Error(body.error ?? "RUN_FAILED");
@@ -102,16 +110,6 @@ export default function WorkspaceDashboard() {
     fileInputRef.current?.click();
   }, []);
 
-  const onPickerKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLLabelElement>) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openFilePicker();
-      }
-    },
-    [openFilePicker],
-  );
-
   const errorMessage = error ?? audit.error?.message ?? null;
   const busy = isParsing || audit.isPending;
 
@@ -146,32 +144,32 @@ export default function WorkspaceDashboard() {
               {preview ? preview.fileName : "Click to upload or drag and drop"}
             </p>
             <p id="file-upload-hint" className="text-sm text-[var(--ink-muted)] mt-1">
-              CSV format only (max. 2MB, 500 rows)
+              CSV format only (max. {MAX_ROSTER_FILE_BYTES / 1_000_000}MB, {MAX_ROSTER_ROWS} rows)
             </p>
           </div>
           <input
             ref={fileInputRef}
             type="file"
             accept=".csv,text/csv"
+            aria-label="Roster CSV file"
             aria-describedby="file-upload-hint"
             className="sr-only"
             id="file-upload"
             tabIndex={-1}
             onChange={onSelect}
           />
-          <label
-            htmlFor="file-upload"
-            role="button"
-            tabIndex={0}
-            data-testid="file-select-label"
-            onKeyDown={onPickerKeyDown}
+          <button
+            type="button"
+            data-testid="file-select-button"
+            onClick={openFilePicker}
+            aria-describedby="file-upload-hint"
             className={cn(
               "mt-4 px-6 py-2.5 bg-white border border-[var(--border-strong)] rounded-lg text-sm font-medium text-[var(--ink)] cursor-pointer transition-colors shadow-sm hover:bg-[var(--paper)]",
               focusRing,
             )}
           >
             Select File
-          </label>
+          </button>
         </div>
       </div>
 
@@ -194,14 +192,12 @@ export default function WorkspaceDashboard() {
 
       {audit.isPending ? (
         <div role="status" className="card p-6" aria-live="polite">
-          <div className="animate-pulse space-y-3" aria-hidden="true">
-            <div className="h-4 w-1/3 rounded bg-[var(--surface-sunk)]" />
-            <div className="h-3 w-2/3 rounded bg-[var(--surface-sunk)]" />
-            <div className="h-3 w-1/2 rounded bg-[var(--surface-sunk)]" />
-          </div>
-          <p className="mt-4 text-sm text-[var(--ink-muted)]">
-            Importing roster and running the deterministic audit…
-          </p>
+          <p className="label">Working</p>
+          <ol className="mono mt-3 space-y-1 text-[13px] text-[var(--ink-muted)]">
+            <li>1. Import and redact roster</li>
+            <li>2. Run deterministic audit</li>
+          </ol>
+          <p className="mt-4 text-sm text-[var(--ink-muted)]">Do not close this tab.</p>
         </div>
       ) : null}
 
@@ -239,7 +235,7 @@ export default function WorkspaceDashboard() {
                 Roster Parsed Successfully
               </h2>
               <p className="text-sm text-[var(--ink-muted)] mt-1">
-                {preview.rowCount} rows detected.
+                {preview.rowCount} {preview.rowCount === 1 ? "row" : "rows"} detected.
                 {preview.invalidRowCount > 0
                   ? ` ${preview.invalidRowCount} rows will be skipped by the importer.`
                   : ""}
@@ -254,9 +250,6 @@ export default function WorkspaceDashboard() {
                   audit.mutate({ slug: workspaceSlug, csv: preview.csv })
                 }
               >
-                {audit.isPending ? (
-                  <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
-                ) : null}
                 {audit.isPending ? "Analysing…" : "Run Audit"}
               </button>
             ) : null}

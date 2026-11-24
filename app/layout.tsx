@@ -4,7 +4,7 @@ import { QueryProvider } from "../components/QueryProvider";
 import { Sidebar } from "../components/Sidebar";
 import { WorkspaceNavProvider } from "../components/WorkspaceNavContext";
 import type { SidebarWorkspace } from "../lib/workspace-nav";
-import { listWorkspaces } from "../server/store";
+import { listRuns, listWorkspaces } from "../server/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,6 +18,8 @@ function workspaceNav(): readonly SidebarWorkspace[] {
     name: workspace.name,
     slug: workspace.slug,
     runCount: workspace.runCount,
+    runIds: listRuns(workspace.slug).map((run) => run.id),
+    isDemo: workspace.isDemo,
   }));
 }
 
