@@ -380,18 +380,74 @@ function HomeContent() {
                     )}
 
                     {idx === 1 && (
-                      <div className="flex items-center gap-4">
-                        <div className="relative font-mono-tabular text-[16px] text-[#475569] px-1">
-                          <span>78 / 100</span>
-                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[#64748B]/70 text-[24px] font-light">
-                            ×
+                      <div className="flex items-center gap-3">
+                        {/* Crossed-out 78/100 */}
+                        <div className="relative flex items-center justify-center w-[72px] h-[52px]">
+                          <span className="font-display text-[20px] leading-none text-[#475569] tracking-normal">
+                            78/100
                           </span>
+                          <svg
+                            viewBox="0 0 72 52"
+                            className="pointer-events-none absolute inset-0 w-full h-full"
+                            aria-hidden="true"
+                          >
+                            <line
+                              x1="14"
+                              y1="8"
+                              x2="58"
+                              y2="44"
+                              stroke="rgba(148,163,184,0.38)"
+                              strokeWidth="1.5"
+                            />
+                            <line
+                              x1="58"
+                              y1="8"
+                              x2="14"
+                              y2="44"
+                              stroke="rgba(148,163,184,0.38)"
+                              strokeWidth="1.5"
+                            />
+                          </svg>
                         </div>
-                        <div className="space-y-2.5 w-[112px]">
+
+                        {/* 3-way branching lines */}
+                        <svg
+                          viewBox="0 0 42 74"
+                          className="w-[42px] h-[74px] shrink-0"
+                          aria-hidden="true"
+                        >
+                          <line
+                            x1="0"
+                            y1="37"
+                            x2="40"
+                            y2="11"
+                            stroke="rgba(255,255,255,0.28)"
+                            strokeWidth="1"
+                          />
+                          <line
+                            x1="0"
+                            y1="37"
+                            x2="40"
+                            y2="37"
+                            stroke="rgba(255,255,255,0.28)"
+                            strokeWidth="1"
+                          />
+                          <line
+                            x1="0"
+                            y1="37"
+                            x2="40"
+                            y2="63"
+                            stroke="rgba(255,255,255,0.28)"
+                            strokeWidth="1"
+                          />
+                        </svg>
+
+                        {/* Level / Support / Precision bars */}
+                        <div className="space-y-2.5 w-[108px]">
                           {[
-                            { label: "LEVEL", pct: "56%", color: "#7D8CA3" },
-                            { label: "SUPPORT", pct: "72%", color: "#D4AF6A" },
-                            { label: "PRECISION", pct: "64%", color: "#10B981" },
+                            { label: "LEVEL", pct: "70%", color: "#7D8CA3" },
+                            { label: "SUPPORT", pct: "70%", color: "#D4AF6A" },
+                            { label: "PRECISION", pct: "76%", color: "#10B981" },
                           ].map((bar) => (
                             <div key={bar.label}>
                               <span className="block font-mono-tabular text-[9px] tracking-[0.08em] text-[#9CA3AF] mb-1">
