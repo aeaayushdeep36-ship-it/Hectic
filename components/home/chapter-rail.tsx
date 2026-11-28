@@ -24,39 +24,43 @@ export function ChapterRail() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const elements = HOME_CHAPTERS.map((ch) => document.getElementById(ch.id)).filter(
-      (el): el is HTMLElement => el !== null,
-    );
-    if (elements.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        let bestIndex = -1;
-        let bestRatio = 0;
-        for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= bestRatio) {
-            const idx = HOME_CHAPTERS.findIndex((ch) => ch.id === entry.target.id);
-            if (idx !== -1) {
-              bestRatio = entry.intersectionRatio;
-              bestIndex = idx;
-            }
-          }
-        }
-        if (bestIndex !== -1) {
-          setActiveIndex(bestIndex);
-        }
-      },
-      {
-        rootMargin: "-25% 0px -35% 0px",
-        threshold: [0.1, 0.25, 0.5, 0.75],
-      },
-    );
+    function updateActiveChapter() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
 
-    for (const el of elements) {
-      observer.observe(el);
+      // Always snap to 01 at the very top and 06 at the bottom of the document.
+      if (scrollTop <= 24) {
+        setActiveIndex(0);
+        return;
+      }
+      if (winHeight + scrollTop >= docHeight - 24) {
+        setActiveIndex(HOME_CHAPTERS.length - 1);
+        return;
+      }
+
+      const anchorY = winHeight * 0.42;
+      let current = 0;
+      for (let i = 0; i < HOME_CHAPTERS.length; i++) {
+        const el = document.getElementById(HOME_CHAPTERS[i]!.id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= anchorY) {
+          current = i;
+        }
+      }
+      setActiveIndex(current);
     }
 
-    return () => observer.disconnect();
+    updateActiveChapter();
+    window.addEventListener("scroll", updateActiveChapter, { passive: true });
+    window.addEventListener("resize", updateActiveChapter, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", updateActiveChapter);
+      window.removeEventListener("resize", updateActiveChapter);
+    };
   }, []);
 
   const currentCode = HOME_CHAPTERS[activeIndex]?.code ?? "01";
