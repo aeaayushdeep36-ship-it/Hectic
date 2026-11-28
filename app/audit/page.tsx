@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -757,6 +758,35 @@ export default function UserAuditStudioPage() {
     setEvidenceScroll(computeScrollRatio(e.currentTarget));
   }
 
+  function handleRemoveStagedCsv() {
+    setCsvPreview(null);
+    setImportErr(null);
+    setImportMsg(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleClearRoster() {
+    if (!activeId) return;
+    const db = getFirebaseDb();
+    if (!db) return;
+    setImportBusy(true);
+    setImportErr(null);
+    setImportMsg(null);
+    try {
+      const snap = await getDocs(collection(db, "workspaces", activeId, "evidence"));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      setEvidence([]);
+      setAuditResult(null);
+      setCsvPreview(null);
+      if (fileRef.current) fileRef.current.value = "";
+      setImportMsg("CSV roster removed. Upload a valid .csv file to continue.");
+    } catch (err) {
+      setImportErr(err instanceof Error ? err.message : "Could not remove CSV roster.");
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   function onClaimsScroll(e: UIEvent<HTMLDivElement>) {
     setClaimsScroll(computeScrollRatio(e.currentTarget));
   }
@@ -1122,11 +1152,24 @@ export default function UserAuditStudioPage() {
 
                   {csvPreview && (
                     <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] space-y-3">
-                      <div className="flex items-center justify-between font-mono-tabular text-[11px]">
-                        <span className="text-[var(--ink-primary)]">{csvPreview.fileName}</span>
-                        <span className="text-[var(--status-emerald)]">
-                          {csvPreview.rowCount} valid rows detected
+                      <div className="flex items-center justify-between gap-2 font-mono-tabular text-[11px]">
+                        <span className="text-[var(--ink-primary)] truncate">
+                          {csvPreview.fileName}
                         </span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-[var(--status-emerald)]">
+                            {csvPreview.rowCount} valid rows
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleRemoveStagedCsv}
+                            aria-label="Remove staged CSV file"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 border border-[var(--border-elevated)] text-[var(--ink-muted)] hover:text-[var(--status-crimson)] hover:border-[var(--status-crimson-border)] rounded-[2px] cursor-pointer transition-colors"
+                          >
+                            <X size={12} />
+                            Remove
+                          </button>
+                        </div>
                       </div>
                       <button
                         type="button"
@@ -1155,9 +1198,20 @@ export default function UserAuditStudioPage() {
 
                   {evidence.length > 0 && (
                     <div className="border-t border-[var(--border-hair)] pt-4 space-y-2">
-                      <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
-                        IMPORTED INTERVIEWS ({evidence.length})
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
+                          IMPORTED INTERVIEWS ({evidence.length})
+                        </p>
+                        <button
+                          type="button"
+                          disabled={importBusy}
+                          onClick={() => void handleClearRoster()}
+                          className="inline-flex items-center gap-1 font-mono-tabular text-[10px] uppercase tracking-[0.06em] text-[var(--ink-muted)] hover:text-[var(--status-crimson)] cursor-pointer disabled:opacity-50 transition-colors"
+                        >
+                          <Trash2 size={11} />
+                          Remove CSV
+                        </button>
+                      </div>
                       <div
                         onScroll={onEvidenceScroll}
                         className="max-h-[220px] overflow-y-auto no-scrollbar space-y-0.5 pr-1"
