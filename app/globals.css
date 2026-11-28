@@ -7,27 +7,81 @@
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
-:root {
-  --bg-obsidian: #08090b;
-  --bg-obsidian-band: #0c0e13;
-  --bg-slate: #0e1014;
-  --bg-graphite: #15181f;
-  --border-subtle: rgba(255, 255, 255, 0.07);
+:root,
+[data-theme="dark"] {
+  --bg-canvas: #08090b;
+  --bg-canvas-band: #0c0e13;
+  --bg-surface: #0e1014;
+  --bg-elevated: #15181f;
+  --bg-sheet: #f8f7f4;
   --border-hair: #1e222a;
   --border-elevated: #262b35;
+  --border-subtle: rgba(255, 255, 255, 0.07);
   --ink-primary: #f5f6f8;
   --ink-secondary: #9ca3af;
   --ink-muted: #64748b;
-  --accent-gold: #d4af6a;
+  --ink-sheet: #0f172a;
+  --cta-bg: #d4af6a;
+  --cta-text: #08090b;
+  --accent-graphic: #d4af6a;
+  --accent-text: #d4af6a;
   --status-emerald: #10b981;
+  --status-emerald-bg: #0f1d19;
   --heatmap-1: #0f1d19;
   --heatmap-2: #132b23;
   --heatmap-3: #183d31;
   --status-amber: #f59e0b;
+  --status-amber-bg: rgba(245, 158, 11, 0.1);
   --status-crimson: #ef4444;
+  --status-crimson-bg: #2a1215;
+  --status-crimson-border: #4c1d24;
+
+  /* Legacy aliases */
+  --bg-obsidian: #08090b;
+  --bg-obsidian-band: #0c0e13;
+  --bg-slate: #0e1014;
+  --bg-graphite: #15181f;
+  --accent-gold: #d4af6a;
   --paper-statement: #f8f7f4;
   --ink-statement: #0f172a;
   --font-ui: "Switzer", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg-canvas: #f6f5f0;
+  --bg-canvas-band: #f1efe9;
+  --bg-surface: #efece6;
+  --bg-elevated: #ffffff;
+  --bg-sheet: #ffffff;
+  --border-hair: #ddd9d0;
+  --border-elevated: #cfc9be;
+  --border-subtle: #ddd9d0;
+  --ink-primary: #0e1116;
+  --ink-secondary: #4b5563;
+  --ink-muted: #6b7280;
+  --ink-sheet: #0e1116;
+  --cta-bg: #0e1116;
+  --cta-text: #f7f6f2;
+  --accent-graphic: #b89348;
+  --accent-text: #7a5b1d;
+  --status-emerald: #0b5e48;
+  --status-emerald-bg: #e6f2ee;
+  --heatmap-1: #e6f2ee;
+  --heatmap-2: #c6e2d8;
+  --heatmap-3: #9ecbb9;
+  --status-amber: #9a5b06;
+  --status-amber-bg: #fdf3e3;
+  --status-crimson: #991b1b;
+  --status-crimson-bg: #fbeaea;
+  --status-crimson-border: #e5b8b8;
+
+  --bg-obsidian: #f6f5f0;
+  --bg-obsidian-band: #f1efe9;
+  --bg-slate: #efece6;
+  --bg-graphite: #ffffff;
+  --accent-gold: #b89348;
+  --paper-statement: #ffffff;
+  --ink-statement: #0e1116;
 }
 
 * {
@@ -35,7 +89,7 @@
 }
 
 html {
-  background: var(--bg-obsidian);
+  background: var(--bg-canvas);
   color: var(--ink-primary);
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -50,7 +104,7 @@ body::-webkit-scrollbar {
 
 body {
   margin: 0;
-  background-color: var(--bg-obsidian);
+  background-color: var(--bg-canvas);
   color: var(--ink-primary);
   font-family: var(--font-ui);
   font-size: 14px;
@@ -65,6 +119,16 @@ body {
   background-attachment: fixed;
 }
 
+[data-theme="light"] body {
+  background-color: #f6f5f0;
+  color: #0e1116;
+  background-image:
+    radial-gradient(ellipse 85% 50% at 50% 0%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 15% 20%, rgba(184, 147, 72, 0.045), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 90%, rgba(11, 94, 72, 0.025), transparent 65%);
+  background-attachment: fixed;
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -73,6 +137,11 @@ body::before {
   z-index: 50;
   opacity: 0.03;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-theme="light"] body::before {
+  opacity: 0.022;
+  mix-blend-mode: multiply;
 }
 
 /* Display Serif: Cormorant Garamond reserved for display headlines (>= 28px) & wordmark */
@@ -90,7 +159,7 @@ body::before {
 }
 
 :focus-visible {
-  outline: 1px solid var(--accent-gold);
+  outline: 1px solid var(--accent-graphic);
   outline-offset: 2px;
 }
 

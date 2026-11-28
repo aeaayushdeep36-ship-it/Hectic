@@ -19,6 +19,7 @@ import { AuthBar } from "./AuthBar";
 import { useAuth } from "./AuthProvider";
 import { AuthPromptModal } from "./AuthPromptModal";
 import { HecticLogo } from "./HecticLogo";
+import { ThemeToggle } from "./theme-toggle";
 import { WorkspaceDrawer } from "./WorkspaceDrawer";
 
 const ROLE_COLUMNS: ReadonlyArray<{ key: string; label: string }> = [
@@ -39,10 +40,10 @@ const LADDER_LABELS: ReadonlyArray<{ level: EvidenceLevel; label: string }> = [
 ];
 
 function heatmapClass(orgs: number): string {
-  if (orgs === 0) return "bg-[#0E1014] text-[#7D8CA3]";
-  if (orgs <= 2) return "bg-[#0F1D19] text-[#F5F6F8]";
-  if (orgs === 3) return "bg-[#132B23] text-[#F5F6F8]";
-  return "bg-[#183D31] text-[#F5F6F8]";
+  if (orgs === 0) return "bg-[var(--bg-canvas)] text-[var(--ink-muted)]";
+  if (orgs <= 2) return "bg-[var(--heatmap-1)] text-[var(--ink-primary)]";
+  if (orgs === 3) return "bg-[var(--heatmap-2)] text-[var(--ink-primary)]";
+  return "bg-[var(--heatmap-3)] text-[var(--ink-primary)]";
 }
 
 export interface WorkspaceDashboardProps {
@@ -136,11 +137,11 @@ export function WorkspaceDashboardClient({
   }
 
   return (
-    <div className="min-h-screen flex bg-[#07080A] text-[#F5F6F8]">
-      {/* ── Fixed 200px Left Sidebar (Image 2) ───────────────────────── */}
-      <aside className="hidden md:flex w-[200px] shrink-0 flex-col border-r border-[#1E222A] bg-[#07080A]">
+    <div className="min-h-screen flex bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      {/* ── Fixed 200px Left Sidebar ───────────────────────── */}
+      <aside className="hidden md:flex w-[200px] shrink-0 flex-col border-r border-[var(--border-hair)] bg-[var(--bg-surface)]">
         <div className="px-5 pt-5 pb-4">
-          <Link href="/" className="flex items-center gap-2.5 font-display text-[22px] leading-none text-[#F5F6F8] no-underline">
+          <Link href="/" className="flex items-center gap-2.5 font-display text-[22px] leading-none text-[var(--ink-primary)] no-underline">
             <HecticLogo size={24} />
             <span>Hectic</span>
           </Link>
@@ -150,7 +151,7 @@ export function WorkspaceDashboardClient({
               aria-label="Switch workspace"
               value={workspace.slug}
               onChange={(e) => router.push(`/workspaces/${e.target.value}`)}
-              className="w-full px-2.5 py-1.5 bg-[#0E1014] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none cursor-pointer"
+              className="w-full px-2.5 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none cursor-pointer"
             >
               {workspaces.map((ws) => (
                 <option key={ws.slug} value={ws.slug}>
@@ -218,17 +219,17 @@ export function WorkspaceDashboardClient({
       </aside>
 
       {/* ── Main Content Area ────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col bg-[#0E1014]">
+      <div className="flex-1 min-w-0 flex flex-col bg-[var(--bg-canvas)]">
         {/* Top Command Header */}
         <header
           id="overview"
-          className="px-8 py-5 border-b border-[#1E222A] bg-[#07080A] flex flex-wrap items-center justify-between gap-4"
+          className="px-8 py-5 border-b border-[var(--border-hair)] bg-[var(--bg-canvas)] flex flex-wrap items-center justify-between gap-4"
         >
           <div>
-            <h1 className="font-display text-[32px] leading-[1.1] text-[#F5F6F8]">
+            <h1 className="font-display text-[32px] leading-[1.1] text-[var(--ink-primary)]">
               {workspace.name}
             </h1>
-            <p className="mt-1 font-mono-tabular text-[12px] text-[#7D8CA3]">
+            <p className="mt-1 font-mono-tabular text-[12px] text-[var(--ink-muted)]">
               {workspace.evidenceCount} interviews · {workspace.orgCount} orgs ·{" "}
               {matrix.segments.length} segments
             </p>
@@ -236,11 +237,25 @@ export function WorkspaceDashboardClient({
 
           <div className="flex flex-wrap items-center gap-2.5">
             {gapCount > 0 ? (
-              <span className="px-3 py-1.5 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[11px] rounded-[2px]">
+              <span
+                className="px-3 py-1.5 border font-mono-tabular text-[11px] rounded-[2px]"
+                style={{
+                  backgroundColor: "var(--status-crimson-bg)",
+                  borderColor: "var(--status-crimson-border)",
+                  color: "var(--status-crimson)",
+                }}
+              >
                 BLOCKED · {gapCount} gap{gapCount === 1 ? "" : "s"}
               </span>
             ) : latestRun ? (
-              <span className="px-3 py-1.5 bg-[#0F1D19] border border-[#183D31] text-[#10B981] font-mono-tabular text-[11px] rounded-[2px]">
+              <span
+                className="px-3 py-1.5 border font-mono-tabular text-[11px] rounded-[2px]"
+                style={{
+                  backgroundColor: "var(--status-emerald-bg)",
+                  borderColor: "var(--status-emerald)",
+                  color: "var(--status-emerald)",
+                }}
+              >
                 RESOLVED
               </span>
             ) : null}
@@ -248,7 +263,7 @@ export function WorkspaceDashboardClient({
             <button
               type="button"
               onClick={() => openDrawerGuarded("import a CSV roster")}
-              className="px-3.5 py-1.5 bg-[#0E1014] border border-[#262B35] text-[#F5F6F8] text-[12px] rounded-[2px] hover:bg-[#15181F] cursor-pointer transition-colors"
+              className="px-3.5 py-1.5 bg-[var(--bg-surface)] border border-[var(--border-elevated)] text-[var(--ink-primary)] text-[12px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors"
             >
               Import CSV
             </button>
@@ -256,16 +271,18 @@ export function WorkspaceDashboardClient({
             <button
               type="button"
               onClick={() => openDrawerGuarded("add a claim")}
-              className="px-3.5 py-1.5 bg-[#0E1014] border border-[#262B35] text-[#F5F6F8] text-[12px] rounded-[2px] hover:bg-[#15181F] cursor-pointer transition-colors"
+              className="px-3.5 py-1.5 bg-[var(--bg-surface)] border border-[var(--border-elevated)] text-[var(--ink-primary)] text-[12px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors"
             >
               Add Claim
             </button>
+
+            <ThemeToggle />
 
             <button
               type="button"
               disabled={running}
               onClick={() => void triggerRunAudit()}
-              className="px-4 py-1.5 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
+              className="px-4 py-1.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
             >
               {running ? "Running…" : "Run Audit"}
             </button>
@@ -277,15 +294,15 @@ export function WorkspaceDashboardClient({
         {/* Upper Workspace Split (65% / 35% -> 8 / 4 cols) */}
         <section
           id="coverage"
-          className="grid grid-cols-1 xl:grid-cols-12 border-b border-[#1E222A]"
+          className="grid grid-cols-1 xl:grid-cols-12 border-b border-[var(--border-hair)]"
         >
           {/* Left 8 Columns — Coverage Matrix */}
-          <div className="xl:col-span-8 xl:border-r border-[#1E222A] p-6">
+          <div className="xl:col-span-8 xl:border-r border-[var(--border-hair)] p-6">
             <div className="flex flex-wrap items-baseline gap-3 mb-5">
-              <h2 className="text-[15px] font-medium text-[#F5F6F8]">
+              <h2 className="text-[15px] font-medium text-[var(--ink-primary)]">
                 Coverage Matrix
               </h2>
-              <span className="font-mono-tabular text-[11px] text-[#7D8CA3]">
+              <span className="font-mono-tabular text-[11px] text-[var(--ink-muted)]">
                 Segment × Role · Independent Orgs
               </span>
             </div>

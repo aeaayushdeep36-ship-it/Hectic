@@ -32,7 +32,7 @@ export function AuthBar({ compact = false }: { compact?: boolean }) {
 
   if (loading) {
     return (
-      <div className="h-8 w-20 bg-[#15181F] border border-[#1E222A] rounded-[2px] animate-pulse" />
+      <div className="h-8 w-20 bg-[var(--bg-surface)] border border-[var(--border-hair)] rounded-[2px] animate-pulse" />
     );
   }
 
@@ -40,7 +40,7 @@ export function AuthBar({ compact = false }: { compact?: boolean }) {
     return (
       <Link
         href="/signin"
-        className="px-3.5 py-1.5 text-[12px] font-medium text-[#F5F6F8] border border-[#262B35] bg-[#0E1014] rounded-[2px] hover:border-[#D4AF6A] hover:bg-[#15181F] no-underline transition-colors"
+        className="px-3.5 py-1.5 text-[12px] font-medium text-[var(--ink-primary)] border border-[var(--border-elevated)] bg-[var(--bg-surface)] rounded-[2px] hover:border-[var(--accent-graphic)] hover:bg-[var(--bg-elevated)] no-underline transition-colors"
       >
         Sign In
       </Link>
@@ -57,26 +57,26 @@ export function AuthBar({ compact = false }: { compact?: boolean }) {
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2.5 px-2.5 py-1 bg-[#0E1014] border border-[#262B35] rounded-[2px] hover:border-[#D4AF6A] hover:bg-[#15181F] cursor-pointer transition-colors"
+        className="flex items-center gap-2.5 px-2.5 py-1 bg-[var(--bg-surface)] border border-[var(--border-elevated)] rounded-[2px] hover:border-[var(--accent-graphic)] hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors"
       >
         {user.photoURL ? (
           <img
             src={user.photoURL}
             alt={displayName}
             referrerPolicy="no-referrer"
-            className="h-6 w-6 object-cover rounded-[2px] border border-[#262B35]"
+            className="h-6 w-6 object-cover rounded-[2px] border border-[var(--border-elevated)]"
           />
         ) : (
-          <span className="flex h-6 w-6 items-center justify-center bg-[#D4AF6A] text-[#07080A] font-mono-tabular text-[10px] font-semibold rounded-[2px]">
+          <span className="flex h-6 w-6 items-center justify-center bg-[var(--cta-bg)] text-[var(--cta-text)] font-mono-tabular text-[10px] font-semibold rounded-[2px]">
             {initials}
           </span>
         )}
         {!compact && (
-          <span className="text-[12px] text-[#F5F6F8] max-w-[130px] truncate">
+          <span className="text-[12px] text-[var(--ink-primary)] max-w-[130px] truncate">
             {displayName}
           </span>
         )}
-        <ChevronDown size={13} className="text-[#7D8CA3]" />
+        <ChevronDown size={13} className="text-[var(--ink-muted)]" />
       </button>
 
       <AnimatePresence>
@@ -87,14 +87,14 @@ export function AuthBar({ compact = false }: { compact?: boolean }) {
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
             role="menu"
-            className="absolute right-0 top-full mt-1.5 w-52 bg-[#0E1014] border border-[#262B35] rounded-none z-50 divide-y divide-[#1E222A]"
+            className="absolute right-0 top-full mt-1.5 w-52 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] rounded-none z-50 divide-y divide-[var(--border-hair)]"
           >
             <div className="px-3.5 py-2.5">
-              <p className="text-[12px] font-medium text-[#F5F6F8] truncate">
+              <p className="text-[12px] font-medium text-[var(--ink-primary)] truncate">
                 {displayName}
               </p>
               {user.email && (
-                <p className="font-mono-tabular text-[11px] text-[#7D8CA3] truncate">
+                <p className="font-mono-tabular text-[11px] text-[var(--ink-muted)] truncate">
                   {user.email}
                 </p>
               )}

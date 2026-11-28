@@ -128,12 +128,12 @@ export function ChapterRail() {
         className="relative w-12 h-[280px] flex justify-center cursor-pointer touch-none"
       >
         {/* Subtle vertical track */}
-        <div className="w-[1px] h-full bg-white/10" />
+        <div className="w-[1px] h-full bg-[var(--border-hair)]" />
 
         {/* Gold thread from top down to diamond */}
         <div
-          className="absolute top-0 w-[1.5px] bg-gradient-to-b from-[#D4AF6A]/65 to-[#E5C98E]"
-          style={{ height: pct }}
+          className="absolute top-0 w-[1.5px]"
+          style={{ height: pct, backgroundColor: "var(--accent-graphic)" }}
         />
 
         {/* Faceted Gold Diamond + Chapter Code */}
@@ -142,13 +142,10 @@ export function ChapterRail() {
           style={{ top: pct }}
         >
           <span
-            className="block h-3 w-3 rotate-45 border border-[#F3DBA5]/60 shadow-[0_2px_8px_rgba(0,0,0,0.65)]"
-            style={{
-              background:
-                "linear-gradient(135deg, #F3DBA5 0%, #D4AF6A 52%, #8A6B32 100%)",
-            }}
+            className="block h-3 w-3 rotate-45 border border-[var(--accent-graphic)]"
+            style={{ backgroundColor: "var(--accent-graphic)" }}
           />
-          <span className="absolute left-5 font-mono-tabular text-[11px] tracking-[0.08em] text-[#9CA3AF]">
+          <span className="absolute left-5 font-mono-tabular text-[11px] tracking-[0.08em] text-[var(--ink-secondary)]">
             {currentCode}
           </span>
         </div>

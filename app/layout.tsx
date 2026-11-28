@@ -37,14 +37,23 @@ function workspaceNav(): readonly SidebarWorkspace[] {
   }));
 }
 
+const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('hectic-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const workspaces = workspaceNav();
 
   return (
-    <html lang="en" className={`${cormorant.variable} ${geistMono.variable}`}>
-      <body className="min-h-screen bg-[#08090B] text-[#F5F6F8] antialiased">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${cormorant.variable} ${geistMono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
+      <body className="min-h-screen bg-[var(--bg-canvas)] text-[var(--ink-primary)] antialiased">
         <QueryProvider>
           <AuthProvider>
             <HydrationMarker />

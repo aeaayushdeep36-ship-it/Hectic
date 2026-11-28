@@ -5,6 +5,7 @@ import { Check, Copy } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { AuthBar } from "./AuthBar";
+import { ThemeToggle } from "./theme-toggle";
 import type { FindingView, RunView } from "../lib/dto";
 import { checkFalsifier } from "../lib/falsifier";
 import {
@@ -242,24 +243,24 @@ export function RunConsole({
     (falsifierValid ? falsifier.trim() : null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07080A] text-[#F5F6F8]">
-      {/* ── Top Header Bar (Image 4) ──────────────────────────────────── */}
-      <header className="no-print border-b border-[#1E222A] bg-[#07080A] px-6 py-3.5">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      {/* ── Top Header Bar ──────────────────────────────────── */}
+      <header className="no-print border-b border-[var(--border-hair)] bg-[var(--bg-canvas)] px-6 py-3.5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Breadcrumb */}
-          <nav className="font-mono-tabular text-[12px] text-[#7D8CA3]" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-[#9CA3AF] no-underline">
+          <nav className="font-mono-tabular text-[12px] text-[var(--ink-muted)]" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-[var(--ink-primary)] no-underline">
               Workspaces
             </Link>
             <span className="mx-1.5">/</span>
             <Link
               href={`/workspaces/${workspaceSlug}`}
-              className="hover:text-[#9CA3AF] no-underline"
+              className="hover:text-[var(--ink-primary)] no-underline"
             >
               {displayName}
             </Link>
             <span className="mx-1.5">/</span>
-            <span className="text-[#9CA3AF]">{run.id}</span>
+            <span className="text-[var(--ink-secondary)]">{run.id}</span>
           </nav>
 
           {/* 4-Step Pipeline Trace */}
@@ -268,10 +269,10 @@ export function RunConsole({
               const active = step.num === streamStep;
               return (
                 <div key={step.num} className="flex items-center gap-4">
-                  {idx > 0 && <span className="w-5 h-[1px] bg-[#262B35]" aria-hidden="true" />}
+                  {idx > 0 && <span className="w-5 h-[1px] bg-[var(--border-elevated)]" aria-hidden="true" />}
                   <span
                     className={`font-mono-tabular text-[11px] tracking-[0.06em] ${
-                      active ? "text-[#D4AF6A]" : "text-[#7D8CA3]"
+                      active ? "text-[var(--accent-text)]" : "text-[var(--ink-muted)]"
                     }`}
                   >
                     {step.label}
@@ -284,12 +285,13 @@ export function RunConsole({
               animate={{ scaleX: streamStep / 4 }}
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               style={{ originX: 0 }}
-              className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#D4AF6A]"
+              className="absolute bottom-0 left-0 right-0 h-[1px] bg-[var(--accent-graphic)]"
             />
           </div>
 
-          {/* EXPORT PDF + Auth */}
+          {/* ThemeToggle + EXPORT PDF + Auth */}
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <button
               type="button"
               disabled={busy || unresolved.length > 0}
@@ -299,7 +301,7 @@ export function RunConsole({
                   ? `${unresolved.length} blocking checkpoint(s) remaining`
                   : "Export verified statement"
               }
-              className="px-4 py-1.5 border border-[#D4AF6A] text-[#D4AF6A] font-mono-tabular text-[11px] tracking-[0.06em] rounded-[2px] hover:bg-[#15181F] disabled:opacity-40 cursor-pointer transition-colors"
+              className="px-4 py-1.5 bg-[var(--cta-bg)] text-[var(--cta-text)] border border-[var(--cta-bg)] font-mono-tabular text-[11px] tracking-[0.06em] rounded-[2px] hover:opacity-90 disabled:opacity-40 cursor-pointer transition-opacity"
             >
               EXPORT PDF
             </button>
@@ -308,11 +310,11 @@ export function RunConsole({
         </div>
       </header>
 
-      {/* ── Main Split (62% Left Porcelain Sheet / 38% Right Inspector) ── */}
+      {/* ── Main Split (62% Left Sheet / 38% Right Inspector) ── */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12">
-        {/* Left 62% (7 cols) — Warm Porcelain Print-Ready Statement */}
-        <div className="lg:col-span-7 p-6 sm:p-10 bg-[#07080A] flex flex-col items-center justify-start">
-          <article className="print-sheet w-full max-w-[680px] bg-[#F8F7F4] text-[#0F172A] px-10 py-12 rounded-none flex flex-col justify-between min-h-[540px]">
+        {/* Left 62% (7 cols) — Print-Ready Statement */}
+        <div className="lg:col-span-7 p-6 sm:p-10 bg-[var(--bg-canvas)] flex flex-col items-center justify-start">
+          <article className="print-sheet w-full max-w-[680px] bg-[var(--bg-sheet)] text-[var(--ink-sheet)] border border-[var(--border-hair)] px-10 py-12 rounded-none flex flex-col justify-between min-h-[540px]">
             <div>
               <h1 className="font-display text-[36px] leading-[1.08] text-[#0F172A]">
                 Evidence Statement
@@ -348,24 +350,24 @@ export function RunConsole({
           </article>
         </div>
 
-        {/* Right 38% (5 cols) — Smoked Slate Inspector */}
-        <aside className="no-print lg:col-span-5 bg-[#0E1014] border-t lg:border-t-0 lg:border-l border-[#1E222A] divide-y divide-[#1E222A] flex flex-col">
+        {/* Right 38% (5 cols) — Inspector */}
+        <aside className="no-print lg:col-span-5 bg-[var(--bg-surface)] border-t lg:border-t-0 lg:border-l border-[var(--border-hair)] divide-y divide-[var(--border-hair)] flex flex-col">
           {/* 1. CRYPTOGRAPHIC DIGEST */}
           <section className="p-6">
-            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3] mb-3">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)] mb-3">
               CRYPTOGRAPHIC DIGEST
             </p>
-            <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[#07080A] border border-[#262B35] rounded-[2px]">
-              <span className="font-mono-tabular text-[12px] text-[#9CA3AF] truncate">
+            <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] rounded-[2px]">
+              <span className="font-mono-tabular text-[12px] text-[var(--ink-secondary)] truncate">
                 {(run.findingHash || run.inputHash).replace(/^sha256:/, "")}
               </span>
               <button
                 type="button"
                 onClick={() => void copyHash()}
                 aria-label="Copy cryptographic digest"
-                className="text-[#7D8CA3] hover:text-[#F5F6F8] cursor-pointer shrink-0 transition-colors"
+                className="text-[var(--ink-muted)] hover:text-[var(--ink-primary)] cursor-pointer shrink-0 transition-colors"
               >
-                {copied ? <Check size={14} className="text-[#10B981]" /> : <Copy size={14} />}
+                {copied ? <Check size={14} className="text-[var(--status-emerald)]" /> : <Copy size={14} />}
               </button>
             </div>
             <p className="sr-only">hash {run.findingHash}</p>
@@ -373,21 +375,21 @@ export function RunConsole({
 
           {/* 2. ENGINE METADATA */}
           <section className="p-6">
-            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3] mb-3">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)] mb-3">
               ENGINE METADATA
             </p>
             <dl className="space-y-2 text-[13px]">
               <div className="flex items-center justify-between">
-                <dt className="text-[#9CA3AF]">Engine:</dt>
-                <dd className="font-mono-tabular text-[#F5F6F8]">1.0.0</dd>
+                <dt className="text-[var(--ink-secondary)]">Engine:</dt>
+                <dd className="font-mono-tabular text-[var(--ink-primary)]">1.0.0</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-[#9CA3AF]">Thresholds:</dt>
-                <dd className="font-mono-tabular text-[#F5F6F8]">2026-11-24</dd>
+                <dt className="text-[var(--ink-secondary)]">Thresholds:</dt>
+                <dd className="font-mono-tabular text-[var(--ink-primary)]">2026-11-24</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-[#9CA3AF]">Provider:</dt>
-                <dd className="font-mono-tabular text-[#9CA3AF]">
+                <dt className="text-[var(--ink-secondary)]">Provider:</dt>
+                <dd className="font-mono-tabular text-[var(--ink-secondary)]">
                   {run.providerId}/{run.modelId}
                 </dd>
               </div>
