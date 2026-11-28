@@ -34,6 +34,12 @@ try {
   const nextDir = path.join(root, ".next");
   if (existsSync(nextDir)) rmSync(nextDir, { recursive: true, force: true });
 
+  // Pre-seed workspaces + one deterministic run per demo workspace once before parallel Next.js workers run.
+  execSync(
+    'npx tsx -e "import { listWorkspaces, listRuns, createRun } from \'./server/store\'; for (const w of listWorkspaces()) { if (listRuns(w.slug).length === 0) createRun(w.slug, \'mock\', \'mock\'); }"',
+    { stdio: "inherit" },
+  );
+
   execSync("npx next build", {
     stdio: "inherit",
     env: { ...process.env, CF_PAGES: "1" },
@@ -49,5 +55,9 @@ try {
   }
   if (existsSync(apiBackup) && !existsSync(apiDir)) {
     renameSync(apiBackup, apiDir);
+  }
+  for (const dbFile of ["hectic.db", "hectic.db-shm", "hectic.db-wal"]) {
+    const p = path.join(root, dbFile);
+    if (existsSync(p)) rmSync(p, { force: true });
   }
 }
