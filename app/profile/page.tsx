@@ -2,7 +2,9 @@
 
 import {
   EmailAuthProvider,
+  linkWithCredential,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   updatePassword,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -13,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthBar } from "@/components/AuthBar";
 import { useAuth } from "@/components/AuthProvider";
-import { getFirebaseDb } from "@/lib/firebase";
+import { createGoogleProvider, getFirebaseDb } from "@/lib/firebase";
 
 export default function ProfilePage() {
   const { user, loading, signOut } = useAuth();
@@ -25,6 +27,7 @@ export default function ProfilePage() {
   const [pwBusy, setPwBusy] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+  const [linkedPasswordNow, setLinkedPasswordNow] = useState(false);
   const [profileExtra, setProfileExtra] = useState<{
     firstName?: string | null;
     lastName?: string | null;
@@ -76,12 +79,57 @@ export default function ProfilePage() {
 
   const displayName = user.displayName || user.email?.split("@")[0] || "Account";
   const initials = displayName.slice(0, 2).toUpperCase();
-  const hasPasswordProvider = user.providerData.some((p) => p.providerId === "password");
+  const hasPasswordProvider =
+    linkedPasswordNow || user.providerData.some((p) => p.providerId === "password");
   const provider = hasPasswordProvider
-    ? "Email & Password"
+    ? user.providerData.some((p) => p.providerId === "google.com")
+      ? "Google OAuth + Password"
+      : "Email & Password"
     : user.providerData[0]?.providerId === "google.com"
       ? "Google OAuth"
       : "Authenticated";
+
+  async function handleSetPasswordForOAuth(e: FormEvent) {
+    e.preventDefault();
+    if (!user || !user.email) return;
+    setPwError(null);
+    setPwSuccess(null);
+
+    if (newPassword.length < 6) {
+      setPwError("New password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("Passwords do not match.");
+      return;
+    }
+
+    setPwBusy(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email, newPassword);
+      try {
+        await linkWithCredential(user, credential);
+      } catch (linkErr) {
+        const linkCode = (linkErr as { code?: string })?.code ?? "";
+        if (linkCode === "auth/requires-recent-login") {
+          await reauthenticateWithPopup(user, createGoogleProvider());
+          await linkWithCredential(user, credential);
+        } else {
+          throw linkErr;
+        }
+      }
+      await user.reload();
+      setLinkedPasswordNow(true);
+      setNewPassword("");
+      setConfirmPassword("");
+      setPwSuccess("Password set! You can now sign in with email & password or change it here.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not set password.";
+      setPwError(msg.replace(/^Firebase:\s*/i, ""));
+    } finally {
+      setPwBusy(false);
+    }
+  }
 
   async function handleChangePassword(e: FormEvent) {
     e.preventDefault();
@@ -354,9 +402,78 @@ export default function ProfilePage() {
               </div>
             </form>
           ) : (
-            <div className="px-8 py-5 text-[13px] text-[#9CA3AF]">
-              Password management is handled by Google for this account.
-            </div>
+            <form onSubmit={(e) => void handleSetPasswordForOAuth(e)} className="p-8 space-y-4">
+              <p className="text-[13px] text-[#9CA3AF]">
+                This account was created with Google OAuth. Set an account password below to also
+                sign in with your email and password.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="oauth-new-password"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                  >
+                    New Password
+                  </label>
+                  <input
+                    id="oauth-new-password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min. 6 chars"
+                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="oauth-confirm-password"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                  >
+                    Confirm Password
+                  </label>
+                  <input
+                    id="oauth-confirm-password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat password"
+                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {pwError && (
+                <div
+                  role="alert"
+                  className="px-3.5 py-2.5 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[11px]"
+                >
+                  {pwError}
+                </div>
+              )}
+
+              {pwSuccess && (
+                <div
+                  role="status"
+                  className="px-3.5 py-2.5 bg-[#0F1D19] border border-[#183D31] text-[#10B981] font-mono-tabular text-[11px]"
+                >
+                  {pwSuccess}
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={pwBusy}
+                  className="px-5 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
+                >
+                  {pwBusy ? "Saving…" : "Set Account Password"}
+                </button>
+              </div>
+            </form>
           )}
         </motion.section>
       </main>
