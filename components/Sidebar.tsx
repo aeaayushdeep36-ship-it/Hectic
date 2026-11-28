@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { SidebarWorkspace } from "@/lib/workspace-nav";
+import { HecticLogo } from "./HecticLogo";
 
 const focusRing =
   "focus-visible:ring-2 focus-visible:ring-[var(--ink)] focus-visible:ring-offset-2";
@@ -23,9 +24,7 @@ export function Sidebar({ workspaces }: { workspaces: readonly SidebarWorkspace[
   return (
     <aside className="w-64 shrink-0 border-r border-[var(--border)] bg-white flex flex-col h-screen sticky top-0">
       <div className="p-6 flex items-center gap-2 border-b border-[var(--border)]">
-        <div className="w-8 h-8 bg-[var(--ink)] rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-lg">H</span>
-        </div>
+        <HecticLogo size={32} />
         <span className="font-semibold text-[var(--ink)] tracking-tight text-lg">Hectic</span>
       </div>
 

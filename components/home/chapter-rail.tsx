@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLenis } from "./lenis-provider";
 
 export interface ChapterItem {
@@ -20,85 +20,139 @@ export const HOME_CHAPTERS: readonly ChapterItem[] = [
 
 export function ChapterRail() {
   const { scrollTo } = useLenis();
+  const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    function updateActiveChapter() {
+    function updateRail() {
       const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight;
-      const winHeight = window.innerHeight;
+      const maxScroll = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const ratio = Math.min(1, Math.max(0, scrollTop / maxScroll));
+      setProgress(ratio);
 
-      // Always snap to 01 at the very top and 06 at the bottom of the document.
       if (scrollTop <= 24) {
         setActiveIndex(0);
         return;
       }
-      if (winHeight + scrollTop >= docHeight - 24) {
+      if (window.innerHeight + scrollTop >= document.documentElement.scrollHeight - 24) {
         setActiveIndex(HOME_CHAPTERS.length - 1);
         return;
       }
 
-      const anchorY = winHeight * 0.42;
+      const anchorY = window.innerHeight * 0.42;
       let current = 0;
       for (let i = 0; i < HOME_CHAPTERS.length; i++) {
         const el = document.getElementById(HOME_CHAPTERS[i]!.id);
         if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= anchorY) {
+        if (el.getBoundingClientRect().top <= anchorY) {
           current = i;
         }
       }
       setActiveIndex(current);
     }
 
-    updateActiveChapter();
-    window.addEventListener("scroll", updateActiveChapter, { passive: true });
-    window.addEventListener("resize", updateActiveChapter, { passive: true });
+    updateRail();
+    window.addEventListener("scroll", updateRail, { passive: true });
+    window.addEventListener("resize", updateRail, { passive: true });
 
     return () => {
-      window.removeEventListener("scroll", updateActiveChapter);
-      window.removeEventListener("resize", updateActiveChapter);
+      window.removeEventListener("scroll", updateRail);
+      window.removeEventListener("resize", updateRail);
     };
   }, []);
 
+  const scrubToClientY = useCallback(
+    (clientY: number, immediate: boolean) => {
+      const track = trackRef.current;
+      if (!track || typeof window === "undefined") return;
+      const rect = track.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
+      const maxScroll = Math.max(
+        0,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const targetY = ratio * maxScroll;
+      if (immediate) {
+        window.scrollTo({ top: targetY, behavior: "auto" });
+      } else {
+        scrollTo(targetY, { duration: 0.75 });
+      }
+    },
+    [scrollTo],
+  );
+
+  function handlePointerDown(e: PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragging(true);
+    scrubToClientY(e.clientY, false);
+  }
+
+  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
+    if (!dragging) return;
+    scrubToClientY(e.clientY, true);
+  }
+
+  function handlePointerUp(e: PointerEvent<HTMLDivElement>) {
+    if (!dragging) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    setDragging(false);
+  }
+
   const currentCode = HOME_CHAPTERS[activeIndex]?.code ?? "01";
+  const pct = `${(progress * 100).toFixed(2)}%`;
 
   return (
     <aside
-      aria-label="Section progress"
-      className="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-30 flex-col items-center gap-5 select-none"
+      aria-label="Scroll progress"
+      className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 z-30 items-center select-none"
     >
-      <div className="flex flex-col items-center gap-2">
-        {HOME_CHAPTERS.map((ch, idx) => {
-          const isActive = idx === activeIndex;
-          return (
-            <button
-              key={ch.id}
-              type="button"
-              onClick={() => scrollTo(`#${ch.id}`, { duration: 1.1 })}
-              aria-label={`Jump to ${ch.label}`}
-              className="py-0.5 px-2 cursor-pointer group"
-            >
-              <span
-                className={`block w-[2px] transition-all duration-300 ${
-                  isActive
-                    ? "h-6 bg-[#D4AF6A]"
-                    : "h-3 bg-white/15 group-hover:bg-white/40"
-                }`}
-              />
-            </button>
-          );
-        })}
-      </div>
-
-      <span
-        className="font-mono-tabular text-[11px] tracking-[0.14em] text-[#9CA3AF]"
-        style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+      <div
+        ref={trackRef}
+        role="slider"
+        aria-label="Document scroll position"
+        aria-valuemin={1}
+        aria-valuemax={HOME_CHAPTERS.length}
+        aria-valuenow={activeIndex + 1}
+        tabIndex={0}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="relative w-12 h-[280px] flex justify-center cursor-pointer touch-none"
       >
-        {currentCode} / 06
-      </span>
+        {/* Subtle vertical track */}
+        <div className="w-[1px] h-full bg-white/10" />
+
+        {/* Gold thread from top down to diamond */}
+        <div
+          className="absolute top-0 w-[1.5px] bg-gradient-to-b from-[#D4AF6A]/65 to-[#E5C98E]"
+          style={{ height: pct }}
+        />
+
+        {/* Faceted Gold Diamond + Chapter Code */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center pointer-events-none"
+          style={{ top: pct }}
+        >
+          <span
+            className="block h-3 w-3 rotate-45 border border-[#F3DBA5]/60 shadow-[0_2px_8px_rgba(0,0,0,0.65)]"
+            style={{
+              background:
+                "linear-gradient(135deg, #F3DBA5 0%, #D4AF6A 52%, #8A6B32 100%)",
+            }}
+          />
+          <span className="absolute left-5 font-mono-tabular text-[11px] tracking-[0.08em] text-[#9CA3AF]">
+            {currentCode}
+          </span>
+        </div>
+      </div>
     </aside>
   );
 }

@@ -18,6 +18,7 @@ import type { SidebarWorkspace } from "@/lib/workspace-nav";
 import { AuthBar } from "./AuthBar";
 import { useAuth } from "./AuthProvider";
 import { AuthPromptModal } from "./AuthPromptModal";
+import { HecticLogo } from "./HecticLogo";
 import { WorkspaceDrawer } from "./WorkspaceDrawer";
 
 const ROLE_COLUMNS: ReadonlyArray<{ key: string; label: string }> = [
@@ -139,8 +140,9 @@ export function WorkspaceDashboardClient({
       {/* ── Fixed 200px Left Sidebar (Image 2) ───────────────────────── */}
       <aside className="hidden md:flex w-[200px] shrink-0 flex-col border-r border-[#1E222A] bg-[#07080A]">
         <div className="px-5 pt-5 pb-4">
-          <Link href="/" className="font-display text-[22px] leading-none text-[#F5F6F8] no-underline">
-            Hectic
+          <Link href="/" className="flex items-center gap-2.5 font-display text-[22px] leading-none text-[#F5F6F8] no-underline">
+            <HecticLogo size={24} />
+            <span>Hectic</span>
           </Link>
 
           <div className="mt-4">

@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { HecticLogo } from "@/components/HecticLogo";
 import {
   validateMobileNumber,
   validatePasswordMatch,
@@ -188,9 +189,7 @@ export default function SignInPage() {
     <div className="min-h-screen flex flex-col bg-[#07080A] text-[#F5F6F8]">
       <header className="h-16 border-b border-[#1E222A] px-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 no-underline">
-          <span className="flex h-7 w-7 items-center justify-center bg-[#D4AF6A] text-[#07080A] rounded-none">
-            <span className="font-display text-[19px] leading-none font-medium">H</span>
-          </span>
+          <HecticLogo size={28} />
           <span className="font-display text-[24px] leading-none text-[#F5F6F8]">
             Hectic
           </span>

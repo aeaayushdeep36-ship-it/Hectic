@@ -15,6 +15,7 @@ import {
 import { AuthBar } from "@/components/AuthBar";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthPromptModal } from "@/components/AuthPromptModal";
+import { HecticLogo } from "@/components/HecticLogo";
 import { ChapterRail } from "@/components/home/chapter-rail";
 import { LenisProvider, useLenis } from "@/components/home/lenis-provider";
 import { MethodologyBand } from "@/components/home/methodology-band";
@@ -150,9 +151,7 @@ function HomeContent() {
       <header className="sticky top-0 z-40 h-20 bg-[#08090B]/85 backdrop-blur-md border-b border-white/[0.06]">
         <div className="mx-auto h-full max-w-[1360px] px-8 lg:px-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 no-underline">
-            <span className="flex h-7 w-7 items-center justify-center border border-[#D4AF6A]/60 text-[#D4AF6A] rounded-[2px]">
-              <span className="font-display text-[18px] leading-none font-medium">H</span>
-            </span>
+            <HecticLogo size={28} />
             <span className="font-display text-[22px] leading-none text-[#F5F6F8]">
               Hectic
             </span>
@@ -242,9 +241,9 @@ function HomeContent() {
         {/* ── Band 1: Unboxed Hero (01 / 06) ──────────────────────────── */}
         <section
           id="hero"
-          className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-between mx-auto max-w-[1360px] px-8 lg:px-16 pt-16 pb-10"
+          className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-center mx-auto max-w-[1360px] px-8 lg:px-16 py-16"
         >
-          <div className="my-auto grid grid-cols-1 lg:grid-cols-12 items-center gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-16">
             {/* Left (Cols 1-7) */}
             <div className="lg:col-span-7">
               <p className="font-mono-tabular text-[12px] uppercase tracking-[0.14em] text-[#64748B] mb-6">
@@ -336,16 +335,6 @@ function HomeContent() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="pt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={() => scrollTo("#problem", { duration: 1.2 })}
-              className="text-[13px] text-[#9CA3AF] hover:text-[#F5F6F8] cursor-pointer transition-colors"
-            >
-              Scroll to explore ↓
-            </button>
           </div>
         </section>
 
