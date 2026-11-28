@@ -150,7 +150,7 @@ function HomeContent() {
           {/* Left: H Logo + Workspaces + Methodology */}
           <nav className="flex items-center gap-6 justify-self-start" aria-label="Primary navigation">
             <Link href="/" className="flex items-center no-underline shrink-0" aria-label="Hectic Home">
-              <HecticLogo size={28} />
+              <HecticLogo size={40} />
             </Link>
 
             <div className="relative" ref={dropdownRef}>
