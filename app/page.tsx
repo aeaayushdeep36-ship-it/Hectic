@@ -23,6 +23,7 @@ import { LenisProvider, useLenis } from "@/components/home/lenis-provider";
 import { MethodologyBand } from "@/components/home/methodology-band";
 import { PipelineBand } from "@/components/home/pipeline-band";
 import { WorkspaceNavContext } from "@/components/WorkspaceNavContext";
+import { validateCsvFileMeta } from "@/lib/account-validation";
 import { parseRosterUpload, type RosterUploadPreview } from "@/lib/roster-upload";
 
 const PROBLEM_ROWS: ReadonlyArray<{ title: string; body: string }> = [
@@ -101,6 +102,12 @@ function HomeContent() {
 
   const handleCsvFile = useCallback((file: File) => {
     setCsvError(null);
+    setCsvPreview(null);
+    const meta = validateCsvFileMeta(file);
+    if (!meta.ok) {
+      setCsvError(meta.reason ?? "Only valid .csv files are accepted.");
+      return;
+    }
     void parseRosterUpload(file)
       .then((preview) => {
         setCsvPreview(preview);

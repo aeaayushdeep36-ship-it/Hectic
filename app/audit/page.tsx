@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   FileText,
   FolderPlus,
+  Lock,
+  MoreVertical,
   Play,
   Printer,
   ShieldAlert,
@@ -22,12 +24,28 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+  type UIEvent,
+} from "react";
 import { AuthBar } from "@/components/AuthBar";
 import { useAuth } from "@/components/AuthProvider";
 import { HecticLogo } from "@/components/HecticLogo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WorkspaceNavContext } from "@/components/WorkspaceNavContext";
+import {
+  validateClaimDraftText,
+  validateClaimSubmission,
+  validateCsvFileMeta,
+} from "@/lib/account-validation";
 import { getFirebaseDb } from "@/lib/firebase";
 import { contentHash } from "@/lib/hash";
 import { LEVEL_LABELS } from "@/lib/levels";
@@ -85,9 +103,15 @@ function slugify(name: string): string {
 
 function heatmapClass(orgs: number): string {
   if (orgs === 0) return "bg-[var(--bg-surface)] text-[var(--ink-muted)]";
-  if (orgs <= 2) return "bg-[var(--status-emerald-bg)] text-[var(--ink-primary)]";
-  if (orgs === 3) return "bg-[#132B23] text-[var(--ink-primary)]";
-  return "bg-[#183D31] text-[var(--ink-primary)]";
+  if (orgs <= 2) return "bg-[var(--heatmap-1)] text-[var(--ink-primary)]";
+  if (orgs === 3) return "bg-[var(--heatmap-2)] text-[var(--ink-primary)]";
+  return "bg-[var(--heatmap-3)] text-[var(--ink-primary)]";
+}
+
+function computeScrollRatio(el: HTMLElement): number {
+  const max = el.scrollHeight - el.clientHeight;
+  if (max <= 0) return 1;
+  return Math.min(1, Math.max(0.08, el.scrollTop / max));
 }
 
 export default function UserAuditStudioPage() {
@@ -100,6 +124,11 @@ export default function UserAuditStudioPage() {
   const [loadingWorkspaces, setLoadingWorkspaces] = useState(true);
   const [creatingOpen, setCreatingOpen] = useState(false);
 
+  // Sidebar menu & delete confirmation state
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserWorkspace | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
   // New workspace form
   const [newName, setNewName] = useState("");
   const [newContext, setNewContext] = useState("");
@@ -111,6 +140,10 @@ export default function UserAuditStudioPage() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [auditResult, setAuditResult] = useState<WorkerAuditResponse | null>(null);
   const [loadingData, setLoadingData] = useState(false);
+
+  // Golden scroll-progress indicators (0..1)
+  const [evidenceScroll, setEvidenceScroll] = useState(0.15);
+  const [claimsScroll, setClaimsScroll] = useState(0.15);
 
   // CSV upload state
   const [isDragging, setIsDragging] = useState(false);
@@ -144,6 +177,46 @@ export default function UserAuditStudioPage() {
     () => workspaces.find((w) => w.id === activeId) ?? null,
     [workspaces, activeId],
   );
+
+  const resetTransientState = useCallback(() => {
+    setCsvPreview(null);
+    setImportErr(null);
+    setImportMsg(null);
+    if (fileRef.current) fileRef.current.value = "";
+    setRawClaim("");
+    setPopulation("");
+    setPredicate("");
+    setKind("willingness_to_pay");
+    setClaimType("theme");
+    setClaimedLevel(6);
+    setObservedK("");
+    setObservedN("");
+    setClaimErr(null);
+    setClaimMsg(null);
+    setAuditErr(null);
+    setFalsifierText("");
+    setFalsifierResult(null);
+    setFalsifierErr(null);
+    setEvidenceScroll(0.15);
+    setClaimsScroll(0.15);
+  }, []);
+
+  // Close sidebar 3-dots menu on outside click / Escape
+  useEffect(() => {
+    if (!menuOpenId) return;
+    function onDocClick() {
+      setMenuOpenId(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpenId(null);
+    }
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpenId]);
 
   // Load user's own workspaces from Firestore
   useEffect(() => {
@@ -203,7 +276,7 @@ export default function UserAuditStudioPage() {
     };
   }, [authLoading, user]);
 
-  // Load evidence + claims for active workspace
+  // Load evidence + claims + latest saved audit result for active workspace
   useEffect(() => {
     if (!user || !activeId) {
       setEvidence([]);
@@ -219,8 +292,9 @@ export default function UserAuditStudioPage() {
     void Promise.all([
       getDocs(collection(db, "workspaces", activeId, "evidence")),
       getDocs(query(collection(db, "workspaces", activeId, "claims"), orderBy("ordinal", "asc"))),
+      getDocs(query(collection(db, "workspaces", activeId, "events"), orderBy("createdAt", "desc"))),
     ])
-      .then(([evSnap, clSnap]) => {
+      .then(([evSnap, clSnap, evtSnap]) => {
         if (!active) return;
         const evRows: EvidenceRow[] = evSnap.docs.map((d) => {
           const r = d.data() as Record<string, unknown>;
@@ -259,8 +333,23 @@ export default function UserAuditStudioPage() {
             confirmed: true,
           };
         });
+
+        let savedAudit: WorkerAuditResponse | null = null;
+        for (const evDoc of evtSnap.docs) {
+          const ed = evDoc.data() as { type?: string; payloadJson?: string };
+          if (ed.type === "AUDIT_RESULT" && typeof ed.payloadJson === "string") {
+            try {
+              savedAudit = JSON.parse(ed.payloadJson) as WorkerAuditResponse;
+              break;
+            } catch {
+              // ignore malformed event payload
+            }
+          }
+        }
+
         setEvidence(evRows);
         setClaims(clRows);
+        setAuditResult(savedAudit);
       })
       .finally(() => {
         if (active) setLoadingData(false);
@@ -269,6 +358,22 @@ export default function UserAuditStudioPage() {
       active = false;
     };
   }, [user, activeId]);
+
+  function openNewWorkspaceForm() {
+    resetTransientState();
+    setNewName("");
+    setNewContext("");
+    setCreateError(null);
+    setCreatingOpen(true);
+  }
+
+  function selectWorkspace(id: string) {
+    if (id !== activeId) {
+      resetTransientState();
+      setActiveId(id);
+    }
+    setCreatingOpen(false);
+  }
 
   async function handleCreateWorkspace(e: FormEvent) {
     e.preventDefault();
@@ -305,6 +410,10 @@ export default function UserAuditStudioPage() {
         contextNote: newContext.trim() || null,
         createdAt: now,
       };
+      resetTransientState();
+      setEvidence([]);
+      setClaims([]);
+      setAuditResult(null);
       setWorkspaces((prev) => [created, ...prev]);
       setActiveId(id);
       setNewName("");
@@ -317,9 +426,52 @@ export default function UserAuditStudioPage() {
     }
   }
 
+  async function handleConfirmDeleteWorkspace() {
+    if (!deleteTarget) return;
+    const db = getFirebaseDb();
+    if (!db) return;
+    setDeleteBusy(true);
+    try {
+      const targetId = deleteTarget.id;
+      for (const sub of ["evidence", "claims", "runs", "events"] as const) {
+        const snap = await getDocs(collection(db, "workspaces", targetId, sub));
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      }
+      await deleteDoc(doc(db, "workspaces", targetId));
+
+      const remaining = workspaces.filter((w) => w.id !== targetId);
+      setWorkspaces(remaining);
+      if (activeId === targetId) {
+        resetTransientState();
+        setEvidence([]);
+        setClaims([]);
+        setAuditResult(null);
+        if (remaining.length > 0) {
+          setActiveId(remaining[0]!.id);
+          setCreatingOpen(false);
+        } else {
+          setActiveId(null);
+          setCreatingOpen(true);
+        }
+      }
+      setDeleteTarget(null);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   const processCsvFile = useCallback((file: File) => {
     setImportErr(null);
     setImportMsg(null);
+    setCsvPreview(null);
+
+    const metaCheck = validateCsvFileMeta(file);
+    if (!metaCheck.ok) {
+      setImportErr(metaCheck.reason ?? "Invalid file type. Only .csv files are allowed.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+
     void parseRosterUpload(file)
       .then((parsed) => {
         setCsvPreview(parsed);
@@ -328,7 +480,8 @@ export default function UserAuditStudioPage() {
         }
       })
       .catch((err: unknown) => {
-        setImportErr(err instanceof Error ? err.message : "Could not read CSV file.");
+        setCsvPreview(null);
+        setImportErr(err instanceof Error ? err.message : "Invalid CSV format.");
       });
   }, []);
 
@@ -401,6 +554,7 @@ export default function UserAuditStudioPage() {
         return Array.from(map.values());
       });
       setCsvPreview(null);
+      if (fileRef.current) fileRef.current.value = "";
       setImportMsg(
         `Imported ${savedRows.length} interview${savedRows.length === 1 ? "" : "s"} (PII redacted).`,
       );
@@ -412,10 +566,16 @@ export default function UserAuditStudioPage() {
   }
 
   async function handleFormalise() {
-    if (rawClaim.trim().length < 5) {
-      setClaimErr("Enter a claim of at least 5 characters to formalise.");
+    if (evidence.length === 0) {
+      setClaimErr("Step 02 required: Import a valid interview CSV roster before formalising claims.");
       return;
     }
+    const textCheck = validateClaimDraftText(rawClaim);
+    if (!textCheck.ok) {
+      setClaimErr(textCheck.reason ?? "Please enter a valid founder or customer claim.");
+      return;
+    }
+
     setFormalising(true);
     setClaimErr(null);
     setClaimMsg(null);
@@ -437,22 +597,28 @@ export default function UserAuditStudioPage() {
   async function handleAddClaim(e: FormEvent) {
     e.preventDefault();
     if (!user || !activeId) return;
-    const db = getFirebaseDb();
-    if (!db) return;
-    if (!rawClaim.trim() || !population.trim() || !predicate.trim()) {
-      setClaimErr("Claim text, target population, and predicate are required.");
+    if (evidence.length === 0) {
+      setClaimErr("Step 02 required: Import a valid interview CSV roster before adding claims.");
       return;
     }
-    let obsK: number | null = null;
-    let obsN: number | null = null;
-    if (claimType === "prevalence") {
-      obsK = Number.parseInt(observedK, 10);
-      obsN = Number.parseInt(observedN, 10);
-      if (Number.isNaN(obsK) || Number.isNaN(obsN) || obsN <= 0 || obsK < 0 || obsK > obsN) {
-        setClaimErr("Prevalence claims require valid observed counts (0 <= k <= n, n > 0).");
-        return;
-      }
+    const db = getFirebaseDb();
+    if (!db) return;
+
+    const claimCheck = validateClaimSubmission({
+      rawText: rawClaim,
+      population,
+      predicate,
+      claimType,
+      observedK,
+      observedN,
+    });
+    if (!claimCheck.ok) {
+      setClaimErr(claimCheck.reason ?? "Please check your claim fields.");
+      return;
     }
+
+    const obsK = claimType === "prevalence" ? Number.parseInt(observedK, 10) : null;
+    const obsN = claimType === "prevalence" ? Number.parseInt(observedN, 10) : null;
 
     setSavingClaim(true);
     setClaimErr(null);
@@ -551,6 +717,16 @@ export default function UserAuditStudioPage() {
           costEur: 0,
           callCount: 0,
         });
+        const payload = JSON.stringify(res);
+        if (payload.length <= 49000) {
+          await setDoc(doc(db, "workspaces", activeId, "events", runId), {
+            workspaceId: activeId,
+            runId,
+            type: "AUDIT_RESULT",
+            payloadJson: payload,
+            createdAt: now,
+          });
+        }
       }
     } catch (err) {
       setAuditErr(err instanceof Error ? err.message : "Audit failed.");
@@ -566,13 +742,23 @@ export default function UserAuditStudioPage() {
     try {
       const res = await validateFalsifierViaWorker(falsifierText);
       if (!res.ok) {
-        setFalsifierErr(res.error ?? "Falsifier must include a measurable threshold and timeframe (40+ chars).");
+        setFalsifierErr(
+          res.error ?? "Falsifier must include a measurable threshold and timeframe (40+ chars).",
+        );
       } else {
         setFalsifierResult("Falsifier rule verified and accepted.");
       }
     } catch {
       setFalsifierErr("Could not validate falsifier.");
     }
+  }
+
+  function onEvidenceScroll(e: UIEvent<HTMLDivElement>) {
+    setEvidenceScroll(computeScrollRatio(e.currentTarget));
+  }
+
+  function onClaimsScroll(e: UIEvent<HTMLDivElement>) {
+    setClaimsScroll(computeScrollRatio(e.currentTarget));
   }
 
   // Derived integrity & ladder metrics
@@ -586,6 +772,7 @@ export default function UserAuditStudioPage() {
 
   const orgCount = useMemo(() => new Set(evidence.map((e) => e.orgId)).size, [evidence]);
   const maxLadder = Math.max(1, ...Object.values(ladderCounts));
+  const step3Unlocked = evidence.length > 0;
 
   // Unauthenticated gate
   if (!authLoading && !user) {
@@ -636,7 +823,7 @@ export default function UserAuditStudioPage() {
   return (
     <div className="min-h-screen flex bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
       {/* ── Left Sidebar: User Workspaces First, Sample Demos Aside ── */}
-      <aside className="hidden md:flex w-[240px] shrink-0 flex-col border-r border-[var(--border-hair)] bg-[var(--bg-canvas)]">
+      <aside className="hidden md:flex w-[250px] shrink-0 flex-col border-r border-[var(--border-hair)] bg-[var(--bg-canvas)]">
         <div className="h-16 px-5 flex items-center justify-between border-b border-[var(--border-hair)]">
           <Link href="/" className="flex items-center gap-2.5 no-underline">
             <HecticLogo size={24} />
@@ -647,7 +834,7 @@ export default function UserAuditStudioPage() {
         <div className="p-4 border-b border-[var(--border-hair)]">
           <button
             type="button"
-            onClick={() => setCreatingOpen(true)}
+            onClick={openNewWorkspaceForm}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer"
           >
             <FolderPlus size={14} />
@@ -655,7 +842,7 @@ export default function UserAuditStudioPage() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-4 space-y-6">
           <div>
             <p className="px-2 mb-2 font-mono-tabular text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">
               YOUR AUDITS
@@ -668,23 +855,59 @@ export default function UserAuditStudioPage() {
               </p>
             ) : (
               <div className="space-y-1">
-                {workspaces.map((ws) => (
-                  <button
-                    key={ws.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveId(ws.id);
-                      setCreatingOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-[13px] rounded-[2px] cursor-pointer transition-colors ${
-                      ws.id === activeId && !creatingOpen
-                        ? "bg-[var(--bg-elevated)] text-[var(--accent-text)] border-l-2 border-[var(--accent-graphic)]"
-                        : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-surface)]"
-                    }`}
-                  >
-                    <span className="block truncate">{ws.name}</span>
-                  </button>
-                ))}
+                {workspaces.map((ws) => {
+                  const isActive = ws.id === activeId && !creatingOpen;
+                  const isMenuOpen = menuOpenId === ws.id;
+                  return (
+                    <div
+                      key={ws.id}
+                      className={`relative flex items-center justify-between rounded-[2px] transition-colors ${
+                        isActive
+                          ? "bg-[var(--bg-elevated)] text-[var(--accent-text)] border-l-2 border-[var(--accent-graphic)]"
+                          : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-surface)]"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => selectWorkspace(ws.id)}
+                        className="flex-1 min-w-0 text-left px-3 py-2 text-[13px] cursor-pointer truncate"
+                      >
+                        {ws.name}
+                      </button>
+
+                      <button
+                        type="button"
+                        aria-label={`Audit options for ${ws.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpenId(isMenuOpen ? null : ws.id);
+                        }}
+                        className="px-2 py-2 text-[var(--ink-muted)] hover:text-[var(--ink-primary)] cursor-pointer shrink-0"
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-1 top-full mt-1 w-36 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] rounded-[2px] z-40 shadow-md"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setDeleteTarget(ws);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] text-[var(--status-crimson)] hover:bg-[var(--status-crimson-bg)] cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            Delete Audit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -718,7 +941,9 @@ export default function UserAuditStudioPage() {
             {activeWorkspace && !creatingOpen && (
               <>
                 <span className="text-[var(--border-elevated)]">/</span>
-                <span className="text-[13px] text-[var(--ink-primary)] truncate">{activeWorkspace.name}</span>
+                <span className="text-[13px] text-[var(--ink-primary)] truncate">
+                  {activeWorkspace.name}
+                </span>
               </>
             )}
           </div>
@@ -726,7 +951,7 @@ export default function UserAuditStudioPage() {
             <ThemeToggle />
             <button
               type="button"
-              onClick={() => setCreatingOpen(true)}
+              onClick={openNewWorkspaceForm}
               className="md:hidden px-3 py-1.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] cursor-pointer"
             >
               + New Audit
@@ -789,7 +1014,9 @@ export default function UserAuditStudioPage() {
                   />
                 </div>
                 {createError && (
-                  <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{createError}</p>
+                  <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">
+                    {createError}
+                  </p>
                 )}
                 <div className="flex items-center gap-3">
                   <button
@@ -831,9 +1058,9 @@ export default function UserAuditStudioPage() {
 
                 <button
                   type="button"
-                  disabled={runningAudit}
+                  disabled={runningAudit || evidence.length === 0 || claims.length === 0}
                   onClick={() => void handleRunAudit()}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-45"
                 >
                   <Play size={14} />
                   {runningAudit ? "Running Audit…" : "Run Deterministic Audit"}
@@ -874,7 +1101,7 @@ export default function UserAuditStudioPage() {
                     className={`border border-dashed p-6 text-center cursor-pointer transition-colors ${
                       isDragging
                         ? "border-[var(--accent-graphic)] bg-[var(--bg-elevated)]"
-                        : "border-[var(--border-elevated)] hover:border-[#7D8CA3]"
+                        : "border-[var(--border-elevated)] hover:border-[var(--ink-muted)]"
                     }`}
                   >
                     <input
@@ -886,10 +1113,10 @@ export default function UserAuditStudioPage() {
                     />
                     <Upload size={18} className="mx-auto text-[var(--accent-text)] mb-2" />
                     <p className="text-[13px] text-[var(--ink-primary)]">
-                      Drop interview CSV here or click to browse
+                      Drop valid .csv roster here or click to browse
                     </p>
                     <p className="mt-1 font-mono-tabular text-[11px] text-[var(--ink-muted)]">
-                      Columns: id, alias, interviewed_at, role, org_id, segment, channel, relationship, evidence_type, notes
+                      Required .csv columns: id, orgId, alias, segment, role, channel, relationship, evidenceType, date
                     </p>
                   </div>
 
@@ -897,7 +1124,9 @@ export default function UserAuditStudioPage() {
                     <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] space-y-3">
                       <div className="flex items-center justify-between font-mono-tabular text-[11px]">
                         <span className="text-[var(--ink-primary)]">{csvPreview.fileName}</span>
-                        <span className="text-[var(--status-emerald)]">{csvPreview.rowCount} rows detected</span>
+                        <span className="text-[var(--status-emerald)]">
+                          {csvPreview.rowCount} valid rows detected
+                        </span>
                       </div>
                       <button
                         type="button"
@@ -911,37 +1140,77 @@ export default function UserAuditStudioPage() {
                   )}
 
                   {importErr && (
-                    <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{importErr}</p>
+                    <div
+                      role="alert"
+                      className="px-3 py-2 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] font-mono-tabular text-[11px] text-[var(--status-crimson)]"
+                    >
+                      {importErr}
+                    </div>
                   )}
                   {importMsg && (
-                    <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">{importMsg}</p>
+                    <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">
+                      {importMsg}
+                    </p>
                   )}
 
                   {evidence.length > 0 && (
-                    <div className="border-t border-[var(--border-hair)] pt-4 space-y-2 max-h-[220px] overflow-y-auto">
+                    <div className="border-t border-[var(--border-hair)] pt-4 space-y-2">
                       <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
                         IMPORTED INTERVIEWS ({evidence.length})
                       </p>
-                      {evidence.map((ev) => (
+                      <div
+                        onScroll={onEvidenceScroll}
+                        className="max-h-[220px] overflow-y-auto no-scrollbar space-y-0.5 pr-1"
+                      >
+                        {evidence.map((ev) => (
+                          <div
+                            key={ev.id}
+                            className="flex items-center justify-between py-2 border-b border-[var(--border-hair)] font-mono-tabular text-[11px]"
+                          >
+                            <span className="text-[var(--ink-primary)] truncate">
+                              {ev.orgId} · {ev.segment} · {ev.role}
+                            </span>
+                            <span className="text-[var(--accent-text)] shrink-0 ml-2">
+                              L{ev.evidenceType}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Golden Scroll Progress Line */}
+                      <div className="h-[2px] w-full bg-[var(--border-hair)] overflow-hidden">
                         <div
-                          key={ev.id}
-                          className="flex items-center justify-between py-1.5 border-b border-[var(--border-hair)] font-mono-tabular text-[11px]"
-                        >
-                          <span className="text-[var(--ink-primary)] truncate">
-                            {ev.orgId} · {ev.segment} · {ev.role}
-                          </span>
-                          <span className="text-[var(--accent-text)] shrink-0 ml-2">L{ev.evidenceType}</span>
-                        </div>
-                      ))}
+                          className="h-full bg-[var(--accent-graphic)] transition-all duration-150"
+                          style={{ width: `${Math.round(evidenceScroll * 100)}%` }}
+                        />
+                      </div>
                     </div>
                   )}
                 </section>
 
-                {/* Step 03: Formalise & Add Claims */}
-                <section className="lg:col-span-6 bg-[var(--bg-surface)] border border-[var(--border-hair)] p-6 space-y-4">
-                  <span className="block font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--accent-text)]">
-                    03 · FORMALISE &amp; ADD CLAIMS
-                  </span>
+                {/* Step 03: Formalise & Add Claims (Locked until valid CSV imported) */}
+                <section
+                  className={`lg:col-span-6 bg-[var(--bg-surface)] border border-[var(--border-hair)] p-6 space-y-4 transition-opacity ${
+                    step3Unlocked ? "opacity-100" : "opacity-60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--accent-text)]">
+                      03 · FORMALISE &amp; ADD CLAIMS
+                    </span>
+                    {!step3Unlocked && (
+                      <span className="inline-flex items-center gap-1.5 font-mono-tabular text-[10px] text-[var(--status-amber)]">
+                        <Lock size={11} />
+                        IMPORT CSV FIRST
+                      </span>
+                    )}
+                  </div>
+
+                  {!step3Unlocked && (
+                    <div className="px-3.5 py-2.5 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] font-mono-tabular text-[11px] text-[var(--ink-secondary)]">
+                      Step 02 required: Import a valid interview CSV roster before formalising and
+                      adding claims.
+                    </div>
+                  )}
 
                   <form onSubmit={(e) => void handleAddClaim(e)} className="space-y-3">
                     <div>
@@ -955,16 +1224,17 @@ export default function UserAuditStudioPage() {
                         <input
                           id="claim-raw"
                           type="text"
+                          disabled={!step3Unlocked}
                           value={rawClaim}
                           onChange={(e) => setRawClaim(e.target.value)}
                           placeholder="e.g. Clinic buyers are willing to pay annually after pilot"
-                          className="flex-1 px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
+                          className="flex-1 px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none disabled:cursor-not-allowed"
                         />
                         <button
                           type="button"
-                          disabled={formalising}
+                          disabled={!step3Unlocked || formalising}
                           onClick={() => void handleFormalise()}
-                          className="px-3 py-2 border border-[var(--accent-graphic)] text-[var(--accent-text)] text-[12px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer disabled:opacity-50 shrink-0"
+                          className="px-3 py-2 border border-[var(--accent-graphic)] text-[var(--accent-text)] text-[12px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                         >
                           {formalising ? "Parsing…" : "Formalise"}
                         </button>
@@ -982,10 +1252,11 @@ export default function UserAuditStudioPage() {
                         <input
                           id="claim-pop"
                           type="text"
+                          disabled={!step3Unlocked}
                           value={population}
                           onChange={(e) => setPopulation(e.target.value)}
                           placeholder="e.g. Clinics"
-                          className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
+                          className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none disabled:cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -998,10 +1269,11 @@ export default function UserAuditStudioPage() {
                         <input
                           id="claim-pred"
                           type="text"
+                          disabled={!step3Unlocked}
                           value={predicate}
                           onChange={(e) => setPredicate(e.target.value)}
                           placeholder="e.g. paid annual invoice"
-                          className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
+                          className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -1016,9 +1288,10 @@ export default function UserAuditStudioPage() {
                         </label>
                         <select
                           id="claim-type"
+                          disabled={!step3Unlocked}
                           value={claimType}
                           onChange={(e) => setClaimType(e.target.value as Claim["claimType"])}
-                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
+                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] disabled:cursor-not-allowed"
                         >
                           <option value="theme">Theme</option>
                           <option value="prevalence">Prevalence</option>
@@ -1033,9 +1306,10 @@ export default function UserAuditStudioPage() {
                         </label>
                         <select
                           id="claim-level"
+                          disabled={!step3Unlocked}
                           value={claimedLevel}
                           onChange={(e) => setClaimedLevel(Number(e.target.value) as EvidenceLevel)}
-                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
+                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] disabled:cursor-not-allowed"
                         >
                           {([1, 2, 3, 4, 5, 6] as EvidenceLevel[]).map((lvl) => (
                             <option key={lvl} value={lvl}>
@@ -1053,9 +1327,10 @@ export default function UserAuditStudioPage() {
                         </label>
                         <select
                           id="claim-kind"
+                          disabled={!step3Unlocked}
                           value={kind}
                           onChange={(e) => setKind(e.target.value as Claim["kind"])}
-                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
+                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] disabled:cursor-not-allowed"
                         >
                           <option value="pain">Pain</option>
                           <option value="willingness_to_pay">Willingness to pay</option>
@@ -1073,6 +1348,7 @@ export default function UserAuditStudioPage() {
                         <input
                           type="number"
                           min={0}
+                          disabled={!step3Unlocked}
                           value={observedK}
                           onChange={(e) => setObservedK(e.target.value)}
                           placeholder="Observed k (successes)"
@@ -1081,6 +1357,7 @@ export default function UserAuditStudioPage() {
                         <input
                           type="number"
                           min={1}
+                          disabled={!step3Unlocked}
                           value={observedN}
                           onChange={(e) => setObservedN(e.target.value)}
                           placeholder="Observed n (total)"
@@ -1090,47 +1367,68 @@ export default function UserAuditStudioPage() {
                     )}
 
                     {claimErr && (
-                      <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{claimErr}</p>
+                      <div
+                        role="alert"
+                        className="px-3 py-2 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] font-mono-tabular text-[11px] text-[var(--status-crimson)]"
+                      >
+                        {claimErr}
+                      </div>
                     )}
                     {claimMsg && (
-                      <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">{claimMsg}</p>
+                      <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">
+                        {claimMsg}
+                      </p>
                     )}
 
                     <button
                       type="submit"
-                      disabled={savingClaim}
-                      className="w-full py-2 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] text-[var(--ink-primary)] hover:border-[var(--accent-graphic)] text-[12px] font-medium rounded-[2px] cursor-pointer"
+                      disabled={!step3Unlocked || savingClaim}
+                      className="w-full py-2 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] text-[var(--ink-primary)] hover:border-[var(--accent-graphic)] text-[12px] font-medium rounded-[2px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {savingClaim ? "Saving…" : "Add Claim to Audit"}
                     </button>
                   </form>
 
                   {claims.length > 0 && (
-                    <div className="border-t border-[var(--border-hair)] pt-4 space-y-2 max-h-[200px] overflow-y-auto">
+                    <div className="border-t border-[var(--border-hair)] pt-4 space-y-2">
                       <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
                         CLAIMS ({claims.length})
                       </p>
-                      {claims.map((cl) => (
-                        <div
-                          key={cl.id}
-                          className="flex items-center justify-between gap-2 py-1.5 border-b border-[var(--border-hair)] text-[12px]"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-mono-tabular text-[10px] text-[var(--accent-text)] mr-2">
-                              {cl.claimType.toUpperCase()} · L{cl.claimedLevel}
-                            </span>
-                            <span className="text-[var(--ink-primary)] truncate">{cl.rawText}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => void handleRemoveClaim(cl.id)}
-                            aria-label="Remove claim"
-                            className="text-[var(--ink-muted)] hover:text-[var(--status-crimson)] cursor-pointer shrink-0"
+                      <div
+                        onScroll={onClaimsScroll}
+                        className="max-h-[200px] overflow-y-auto overflow-x-hidden no-scrollbar space-y-1"
+                      >
+                        {claims.map((cl) => (
+                          <div
+                            key={cl.id}
+                            className="flex items-center justify-between gap-3 py-2 border-b border-[var(--border-hair)] text-[12px]"
                           >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      ))}
+                            <div className="min-w-0 flex-1">
+                              <span className="inline-block font-mono-tabular text-[10px] text-[var(--accent-text)] mr-2">
+                                {cl.claimType.toUpperCase()} · L{cl.claimedLevel}
+                              </span>
+                              <span className="text-[var(--ink-primary)] break-words">
+                                {cl.rawText}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void handleRemoveClaim(cl.id)}
+                              aria-label="Remove claim"
+                              className="p-1.5 text-[var(--ink-muted)] hover:text-[var(--status-crimson)] hover:bg-[var(--status-crimson-bg)] rounded-[2px] cursor-pointer shrink-0 transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Golden Scroll Progress Line */}
+                      <div className="h-[2px] w-full bg-[var(--border-hair)] overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--accent-graphic)] transition-all duration-150"
+                          style={{ width: `${Math.round(claimsScroll * 100)}%` }}
+                        />
+                      </div>
                     </div>
                   )}
                 </section>
@@ -1152,8 +1450,11 @@ export default function UserAuditStudioPage() {
                             <span className="text-[var(--ink-secondary)]">{label}</span>
                             <span className="text-[var(--ink-primary)]">{count}</span>
                           </div>
-                          <div className="h-1 bg-[#1E222A]">
-                            <div className="h-full bg-[var(--accent-graphic)]" style={{ width: `${pct}%` }} />
+                          <div className="h-1 bg-[var(--border-hair)]">
+                            <div
+                              className="h-full bg-[var(--accent-graphic)]"
+                              style={{ width: `${pct}%` }}
+                            />
                           </div>
                         </div>
                       );
@@ -1162,13 +1463,13 @@ export default function UserAuditStudioPage() {
                 </section>
               )}
 
-              {/* Step 04: Deterministic Audit Results & Statement */}
+              {/* Step 04: Deterministic Audit Results & Statement (Persisted) */}
               {auditResult && (
                 <section id="runs" className="bg-[var(--bg-surface)] border border-[var(--border-hair)] p-8 space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-hair)] pb-5">
                     <div>
                       <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[var(--status-emerald)]">
-                        04 · DETERMINISTIC EVIDENCE STATEMENT
+                        04 · DETERMINISTIC EVIDENCE STATEMENT (SAVED)
                       </p>
                       <h2 className="font-display text-[28px] text-[var(--ink-primary)] mt-1">
                         Audit Verdicts &amp; Cryptographic Digest
@@ -1208,11 +1509,20 @@ export default function UserAuditStudioPage() {
                               <p className="text-[13px] text-[var(--ink-secondary)] mt-1">{f.explanation}</p>
                             </div>
                             <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 font-mono-tabular text-[11px] rounded-[2px] border ${
+                              className="inline-flex items-center gap-1.5 px-3 py-1 font-mono-tabular text-[11px] rounded-[2px] border"
+                              style={
                                 isSupported
-                                  ? "bg-[var(--status-emerald-bg)] border-[var(--status-emerald)] text-[var(--status-emerald)]"
-                                  : "bg-[var(--status-crimson-bg)] border-[var(--status-crimson-border)] text-[var(--status-crimson)]"
-                              }`}
+                                  ? {
+                                      backgroundColor: "var(--status-emerald-bg)",
+                                      borderColor: "var(--status-emerald)",
+                                      color: "var(--status-emerald)",
+                                    }
+                                  : {
+                                      backgroundColor: "var(--status-crimson-bg)",
+                                      borderColor: "var(--status-crimson-border)",
+                                      color: "var(--status-crimson)",
+                                    }
+                              }
                             >
                               {isSupported ? <CheckCircle2 size={13} /> : <ShieldAlert size={13} />}
                               {f.kind}
@@ -1228,7 +1538,7 @@ export default function UserAuditStudioPage() {
                           )}
 
                           {segments.length > 0 && (
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto no-scrollbar">
                               <table className="w-full border-collapse font-mono-tabular text-[11px]">
                                 <thead>
                                   <tr className="border-b border-[var(--border-hair)] text-[var(--ink-muted)]">
@@ -1288,7 +1598,9 @@ export default function UserAuditStudioPage() {
                       </button>
                     </div>
                     {falsifierErr && (
-                      <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{falsifierErr}</p>
+                      <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">
+                        {falsifierErr}
+                      </p>
                     )}
                     {falsifierResult && (
                       <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">
@@ -1302,6 +1614,50 @@ export default function UserAuditStudioPage() {
           )}
         </main>
       </div>
+
+      {/* Permanent Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-audit-title"
+        >
+          <div className="w-full max-w-[420px] bg-[var(--bg-surface)] border border-[var(--border-elevated)] p-6 space-y-4">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--status-crimson)]">
+              CONFIRM PERMANENT DELETION
+            </p>
+            <h2
+              id="delete-audit-title"
+              className="font-display text-[28px] leading-[1.1] text-[var(--ink-primary)]"
+            >
+              Delete &ldquo;{deleteTarget.name}&rdquo;?
+            </h2>
+            <p className="text-[13px] leading-[1.6] text-[var(--ink-secondary)]">
+              This will permanently delete this audit workspace, along with all imported
+              interviews, claims, and saved audit results. This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={deleteBusy}
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 border border-[var(--border-elevated)] text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] rounded-[2px] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteBusy}
+                onClick={() => void handleConfirmDeleteWorkspace()}
+                className="px-4 py-2 bg-[var(--status-crimson)] text-white text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50"
+              >
+                {deleteBusy ? "Deleting…" : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

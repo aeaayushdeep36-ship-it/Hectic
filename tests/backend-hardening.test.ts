@@ -15,6 +15,9 @@ import { getProvider, type Completion, type Provider } from "../providers";
 import { seedDatabase } from "../db/seed-data";
 import { validateEmail } from "../lib/email-validation";
 import {
+  validateClaimDraftText,
+  validateClaimSubmission,
+  validateCsvFileMeta,
   validateMobileNumber,
   validatePasswordMatch,
   validatePersonName,
@@ -425,5 +428,36 @@ describe("account signup validation", () => {
       ok: false,
       reason: "Passwords do not match. Please re-enter the same password.",
     });
+  });
+
+  it("rejects non-CSV files and empty CSV files", () => {
+    expect(validateCsvFileMeta({ name: "notes.pdf", size: 1024, type: "application/pdf" })).toMatchObject({ ok: false });
+    expect(validateCsvFileMeta({ name: "empty.csv", size: 0, type: "text/csv" })).toMatchObject({ ok: false });
+    expect(validateCsvFileMeta({ name: "roster.csv", size: 2048, type: "text/csv" })).toEqual({ ok: true, reason: null });
+  });
+
+  it("rejects random/gibberish claim inputs with specific messages", () => {
+    expect(validateClaimDraftText("asdfghjkl")).toMatchObject({ ok: false });
+    expect(validateClaimDraftText("hi there")).toMatchObject({ ok: false });
+    expect(
+      validateClaimSubmission({
+        rawText: "Clinic buyers paid annual invoices after pilot",
+        population: "12345",
+        predicate: "paid annual invoice",
+        claimType: "theme",
+        observedK: "",
+        observedN: "",
+      }),
+    ).toMatchObject({ ok: false });
+    expect(
+      validateClaimSubmission({
+        rawText: "Clinic buyers paid annual invoices after pilot",
+        population: "Clinics",
+        predicate: "paid annual invoice",
+        claimType: "theme",
+        observedK: "",
+        observedN: "",
+      }),
+    ).toEqual({ ok: true, reason: null });
   });
 });
