@@ -233,38 +233,38 @@ function HomeContent() {
         {/* ── Band 1: Unboxed Hero (01 / 06) ──────────────────────────── */}
         <section
           id="hero"
-          className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-center mx-auto max-w-[1360px] px-8 lg:px-16 py-16"
+          className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-center mx-auto max-w-[1440px] px-6 lg:px-12 py-16"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-12">
             {/* Left (Cols 1-6) */}
             <div className="lg:col-span-6">
-              <p className="font-mono-tabular text-[12px] uppercase tracking-[0.14em] text-[#64748B] mb-6">
+              <p className="font-mono-tabular text-[13px] uppercase tracking-[0.14em] text-[#64748B] mb-6">
                 DETERMINISTIC EVIDENCE AUDIT
               </p>
 
-              <h1 className="font-display text-[clamp(3.25rem,5.4vw,4.75rem)] leading-[1.02] text-[#F5F6F8]">
+              <h1 className="font-display text-[clamp(3.75rem,6.4vw,5.75rem)] leading-[1.0] text-[#F5F6F8]">
                 Know what you
                 <br />
                 actually know.
               </h1>
 
-              <p className="mt-7 max-w-[44ch] text-[17px] leading-[1.55] text-[#9CA3AF]">
+              <p className="mt-7 max-w-[46ch] text-[19px] leading-[1.6] text-[#9CA3AF]">
                 Audit founder claims against real interview rosters with
                 deterministic math and verifiable proof.
               </p>
 
-              <div className="mt-10 flex flex-wrap items-center gap-7">
+              <div className="mt-10 flex flex-wrap items-center gap-8">
                 <button
                   type="button"
                   onClick={handleBeginAudit}
-                  className="px-6 py-3 bg-[#D4AF6A] text-[#08090B] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer transition-opacity"
+                  className="px-7 py-3.5 bg-[#D4AF6A] text-[#08090B] text-[14px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer transition-opacity"
                 >
                   Begin Audit
                 </button>
 
                 <Link
                   href={`/workspaces/${primarySlug}`}
-                  className="text-[13px] text-[#9CA3AF] hover:text-[#F5F6F8] no-underline transition-colors"
+                  className="text-[14px] text-[#9CA3AF] hover:text-[#F5F6F8] no-underline transition-colors"
                 >
                   Explore sample workspace →
                 </Link>
@@ -273,7 +273,7 @@ function HomeContent() {
 
             {/* Right (Cols 7-12): Live 4-Act HeroPipelineDemo Instrument */}
             <div className="lg:col-span-6 flex items-center justify-center lg:justify-end">
-              <HeroPipelineDemo />
+              <HeroPipelineDemo className="!max-w-[680px] min-h-[388px]" />
             </div>
           </div>
         </section>
