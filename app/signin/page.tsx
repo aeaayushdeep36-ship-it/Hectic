@@ -2,17 +2,20 @@
 
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   fetchSignInMethodsForEmail,
+  getAdditionalUserInfo,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { HecticLogo } from "@/components/HecticLogo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -40,9 +43,10 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const checkingGoogleRef = useRef(false);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !checkingGoogleRef.current) {
       router.replace("/audit");
     }
   }, [loading, user, router]);
@@ -56,10 +60,27 @@ export default function SignInPage() {
     setBusy(true);
     setError(null);
     setNotice(null);
+    checkingGoogleRef.current = true;
     try {
-      await signInWithPopup(auth, createGoogleProvider());
+      const cred = await signInWithPopup(auth, createGoogleProvider());
+      const info = getAdditionalUserInfo(cred);
+      if (info?.isNewUser) {
+        try {
+          await deleteUser(cred.user);
+        } catch {
+          await signOut(auth);
+        }
+        checkingGoogleRef.current = false;
+        setError(
+          "No account found for this Google email. Please create an account first before signing in with Google.",
+        );
+        setBusy(false);
+        return;
+      }
+      checkingGoogleRef.current = false;
       router.push("/audit");
     } catch (err) {
+      checkingGoogleRef.current = false;
       const msg = err instanceof Error ? err.message : "Google sign-in failed.";
       setError(msg.replace(/^Firebase:\s*/i, ""));
       setBusy(false);
@@ -222,8 +243,8 @@ export default function SignInPage() {
             </h1>
             <p className="mt-2 text-[12px] text-[var(--ink-secondary)]">
               {mode === "signup"
-                ? "Create an account with a permanent email and password, or continue with Google."
-                : "Sign in with the email and password you created."}
+                ? "Create an account with your name, mobile number, permanent email, and password."
+                : "Sign in with your registered email and password, or continue with Google."}
             </p>
           </div>
 
@@ -260,41 +281,45 @@ export default function SignInPage() {
           </div>
 
           <div className="p-8 space-y-6">
-            {/* Multicoloured Google Sign-In Bar */}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleGoogle()}
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-[#F5F6F8] text-[#0F172A] text-[13px] font-medium rounded-[2px] hover:bg-[#E5E7EB] cursor-pointer disabled:opacity-50 transition-colors"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
-                />
-              </svg>
-              <span>Sign in with Google</span>
-            </button>
+            {mode === "signin" && (
+              <>
+                {/* Multicoloured Google Sign-In Bar (Sign In only, registered accounts only) */}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleGoogle()}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-[#FFFFFF] text-[#0F172A] border border-[var(--border-elevated)] text-[13px] font-medium rounded-[2px] hover:bg-[#F3F4F6] cursor-pointer disabled:opacity-50 transition-colors"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
+                    />
+                  </svg>
+                  <span>Sign in with Google</span>
+                </button>
 
-            <div className="flex items-center gap-3">
-              <div className="h-[1px] flex-1 bg-[#1E222A]" />
-              <span className="font-mono-tabular text-[11px] uppercase text-[var(--ink-muted)]">
-                OR EMAIL &amp; PASSWORD
-              </span>
-              <div className="h-[1px] flex-1 bg-[#1E222A]" />
-            </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-[1px] flex-1 bg-[var(--border-hair)]" />
+                  <span className="font-mono-tabular text-[11px] uppercase text-[var(--ink-muted)]">
+                    OR EMAIL &amp; PASSWORD
+                  </span>
+                  <div className="h-[1px] flex-1 bg-[var(--border-hair)]" />
+                </div>
+              </>
+            )}
 
             <form onSubmit={(e) => void handleEmail(e)} className="space-y-4">
               {mode === "signup" && (
