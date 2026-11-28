@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValueEvent, useScroll, useSpring } from "framer-motion";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -72,12 +72,7 @@ function HomeContent() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { scrollY, scrollYProgress } = useScroll();
-  const progressScale = useSpring(scrollYProgress, {
-    stiffness: 140,
-    damping: 28,
-    restDelta: 0.001,
-  });
+  const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 40);
@@ -150,15 +145,13 @@ function HomeContent() {
     <div className="min-h-screen flex flex-col text-[#F5F6F8] overflow-x-clip">
       {/* ── Sticky Minimalist Header (h-20) ───────────────────────────── */}
       <header className="sticky top-0 z-40 h-20 bg-[#08090B]/85 backdrop-blur-md border-b border-white/[0.06]">
-        <div className="mx-auto h-full max-w-[1360px] px-8 lg:px-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 no-underline">
-            <HecticLogo size={28} />
-            <span className="font-display text-[22px] leading-none text-[#F5F6F8]">
-              Hectic
-            </span>
-          </Link>
+        <div className="mx-auto h-full max-w-[1440px] px-6 lg:px-10 grid grid-cols-3 items-center">
+          {/* Left: H Logo + Workspaces + Methodology */}
+          <nav className="flex items-center gap-6 justify-self-start" aria-label="Primary navigation">
+            <Link href="/" className="flex items-center no-underline shrink-0" aria-label="Hectic Home">
+              <HecticLogo size={28} />
+            </Link>
 
-          <nav className="flex items-center gap-7" aria-label="Primary navigation">
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
@@ -169,7 +162,7 @@ function HomeContent() {
                 Workspaces
               </button>
               {wsOpen && (
-                <div className="absolute right-0 top-full mt-3 w-64 bg-[#0E1014] border border-white/[0.08] rounded-[2px] z-50">
+                <div className="absolute left-0 top-full mt-3 w-64 bg-[#0E1014] border border-white/[0.08] rounded-[2px] z-50">
                   <Link
                     href="/audit"
                     onClick={() => setWsOpen(false)}
@@ -205,14 +198,18 @@ function HomeContent() {
             >
               Methodology
             </button>
+          </nav>
 
-            <Link
-              href={user ? "/audit#runs" : `/workspaces/${primarySlug}#runs`}
-              className="hidden sm:inline text-[13px] text-[#9CA3AF] hover:text-[#F5F6F8] no-underline transition-colors"
-            >
-              Audit Log
-            </Link>
+          {/* Center: HECTIC Wordmark */}
+          <Link
+            href="/"
+            className="justify-self-center font-display text-[28px] sm:text-[30px] leading-none tracking-[0.06em] text-[#F5F6F8] no-underline"
+          >
+            HECTIC
+          </Link>
 
+          {/* Right: Start Audit + Profile / Sign In */}
+          <div className="flex items-center gap-4 justify-self-end">
             <button
               type="button"
               onClick={handleBeginAudit}
@@ -226,14 +223,8 @@ function HomeContent() {
             </button>
 
             <AuthBar />
-          </nav>
+          </div>
         </div>
-
-        {/* 1px Champagne Gold Scroll-Progress Hairline */}
-        <motion.div
-          style={{ scaleX: progressScale, originX: 0 }}
-          className="absolute bottom-[-1px] left-0 right-0 h-[1px] bg-[#D4AF6A]"
-        />
       </header>
 
       <ChapterRail />
