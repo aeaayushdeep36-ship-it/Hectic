@@ -86,5 +86,32 @@ export const claimSchema = z.object({
   confirmed: z.boolean(),
 });
 
+/** Untrusted body of POST /claims. Length caps stop storage and token abuse. */
+export const createClaimInputSchema = z.object({
+  rawText: z.string().max(2000).default(""),
+  population: z.string().max(500).default(""),
+  predicate: z.string().max(1000).default(""),
+  kind: z
+    .enum([
+      "pain",
+      "frequency",
+      "willingness_to_pay",
+      "role_ownership",
+      "displacement",
+      "retention",
+      "comparative",
+    ])
+    .default("pain"),
+  claimType: z.enum(["theme", "prevalence"]).default("theme"),
+  claimedLevel: z.number().int().min(1).max(6).default(1),
+  observed: z
+    .object({ k: z.number().int().nonnegative(), n: z.number().int().positive() })
+    .refine((value) => value.k <= value.n, { message: "observed.k cannot exceed observed.n" })
+    .nullable()
+    .default(null),
+  precisionTolerance: z.number().positive().max(100).nullable().default(null),
+  ambiguityFlags: z.array(z.string().max(100)).max(20).default([]),
+});
+
 export const rosterFileSchema = z.array(evidenceRowSchema);
 export const claimsFileSchema = z.array(claimSchema);

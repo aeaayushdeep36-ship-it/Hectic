@@ -1,192 +1,128 @@
+@import url('https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap');
 @import "tailwindcss";
 
-:root {
-  /* Surface */
-  --paper: #f8fafc;
-  --surface: #ffffff;
-  --surface-sunk: #f1f5f9;
-
-  /* Ink */
-  --ink: #0f172a;
-  --ink-muted: #475569;
-  --ink-faint: #475569;
-
-  /* Structure */
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-
-  /* Signal — the gap */
-  --signal: #b91c1c;
-  --signal-bg: #fef2f2;
-  --signal-border: #fecaca;
-
-  /* Confirmed */
-  --confirm: #047857;
-  --confirm-bg: #ecfdf5;
-  --confirm-border: #a7f3d0;
-
-  /* Neutral finding */
-  --neutral: #475569;
-  --neutral-bg: #f1f5f9;
-
-  --font-ui: Inter, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+@theme inline {
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-sans: "Switzer", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
-* { box-sizing: border-box; }
+:root {
+  --bg-obsidian: #08090b;
+  --bg-obsidian-band: #0c0e13;
+  --bg-slate: #0e1014;
+  --bg-graphite: #15181f;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-hair: #1e222a;
+  --border-elevated: #262b35;
+  --ink-primary: #f5f6f8;
+  --ink-secondary: #9ca3af;
+  --ink-muted: #64748b;
+  --accent-gold: #d4af6a;
+  --status-emerald: #10b981;
+  --heatmap-1: #0f1d19;
+  --heatmap-2: #132b23;
+  --heatmap-3: #183d31;
+  --status-amber: #f59e0b;
+  --status-crimson: #ef4444;
+  --paper-statement: #f8f7f4;
+  --ink-statement: #0f172a;
+  --font-ui: "Switzer", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg-obsidian);
+  color: var(--ink-primary);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 
 body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
+  background-color: var(--bg-obsidian);
+  color: var(--ink-primary);
   font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 24px;
+  font-size: 14px;
+  line-height: 22px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 255, 255, 0.035), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 15% 20%, rgba(212, 175, 106, 0.025), transparent 65%);
+  background-attachment: fixed;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Display Serif: Cormorant Garamond reserved for display headlines (>= 28px) & wordmark */
+.font-display {
+  font-family: var(--font-cormorant), Georgia, serif !important;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+/* Data & Hashes Mono: Geist Mono with tabular numerals */
+.font-mono-tabular,
 .mono {
-  font-family: var(--font-mono);
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Consolas, monospace !important;
   font-variant-numeric: tabular-nums;
 }
 
-.label {
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-a { color: inherit; text-decoration-color: var(--border-strong); }
-a:hover { text-decoration-color: var(--ink); }
-
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 1px solid var(--accent-gold);
   outline-offset: 2px;
 }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: box-shadow 160ms ease;
-}
-.card:hover,
-.card:focus-within {
-  border-color: var(--border-strong);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-
-.sunk {
-  background: var(--surface-sunk);
-}
-
-.btn {
-  font: inherit;
-  font-size: 13px;
-  line-height: 20px;
-  padding: 7px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
-}
-.btn:hover:not(:disabled) { border-color: var(--ink); }
-.btn:disabled { color: var(--ink-faint); cursor: not-allowed; background: var(--surface-sunk); }
-.btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.btn-primary:hover:not(:disabled) { background: #2c3136; }
-.btn-danger { color: var(--signal); border-color: var(--signal-border); }
-
-.field {
-  font: inherit;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--ink);
-}
-
-/* Heatmap: three redundant signals for zero (dash + hatch + dashed border). */
-.cell {
-  border: 1px solid transparent;
-  border-radius: 10px;
-  text-align: center;
-  transition: border-color 80ms ease-out, transform 80ms ease-out;
-}
-.cell:hover { border-color: var(--ink-faint); transform: translateY(-1px); }
-.cell:focus-visible { outline-offset: -2px; }
-.cell-0 {
-  background: var(--signal-bg);
-  border: 1px dashed var(--signal-border);
-  color: var(--signal);
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 4px,
-    rgba(154, 52, 18, 0.11) 4px,
-    rgba(154, 52, 18, 0.11) 5px
-  );
-}
-.cell-1 { background: #e8efe9; border-color: #c7d8cb; }
-.cell-2 { background: #c3d9c8; border-color: #a6c4ad; }
-.cell-3 { background: #8fb99a; border-color: #6fa07d; }
-.cell-4 { background: var(--confirm); border-color: #065f46; color: #fff; }
-
-.badge {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 4px 9px;
-  border-radius: 4px;
-  font-size: 13px;
-  line-height: 20px;
-}
-.badge-confirm { background: var(--confirm-bg); border: 1px solid var(--confirm-border); color: var(--confirm); }
-.badge-signal { background: var(--signal-bg); border: 1px solid var(--signal-border); color: var(--signal); }
-.badge-neutral { background: var(--neutral-bg); border: 1px solid var(--border); color: var(--neutral); }
-
-@keyframes drawer-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.drawer { animation: drawer-in 180ms ease-out; }
-
-@keyframes skeleton-sheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.skeleton {
-  border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    var(--surface-sunk) 25%,
-    #e2e8f0 50%,
-    var(--surface-sunk) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-sheen 1.4s ease-in-out infinite;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--border-strong);
-  border-top-color: var(--confirm);
-  border-radius: 999px;
-  animation: spin 800ms linear infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
-/* Print: a one-page A4 artefact, no chrome, no JS. */
 @media print {
-  @page { size: A4; margin: 14mm; }
-  body { background: #fff; font-size: 11px; line-height: 16px; }
-  .no-print, nav, button { display: none !important; }
-  .card { border-color: #999; break-inside: avoid; }
-  .print-only { display: block !important; }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  html, body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    font-size: 11px;
+    line-height: 16px;
+  }
+  body::before {
+    display: none !important;
+  }
+  .no-print, nav, aside, button {
+    display: none !important;
+  }
+  .print-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
 }
-.print-only { display: none; }

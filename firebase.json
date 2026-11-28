@@ -1,0 +1,20 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Hectic",
+        "supportEmail": "aeaayushdeep36@gmail.com",
+        "authorizedRedirectUris": [
+          "https://hectic-auditor-2026.firebaseapp.com/__/auth/handler",
+          "https://hectic-web.pages.dev/__/auth/handler",
+          "https://63e4f36c.hectic-web.pages.dev/__/auth/handler",
+          "http://localhost:3000"
+        ]
+      }
+    }
+  }
+}

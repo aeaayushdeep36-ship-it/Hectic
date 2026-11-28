@@ -53,6 +53,8 @@ export interface PopulationSpec {
   readonly roles?: readonly Role[];
 }
 
+export type EvidencePolarity = "supports" | "contradicts";
+
 export interface EvidenceRow {
   readonly id: string;
   readonly orgId: string;
@@ -66,6 +68,10 @@ export interface EvidenceRow {
   readonly date: string;
   readonly durationMin: number | null;
   readonly notes: string;
+  /** Optional polarity for disconfirming evidence; defaults to "supports". */
+  readonly polarity?: EvidencePolarity;
+  /** Optional claim IDs this row bears on; absent means evaluated against all claims. */
+  readonly claimIds?: readonly string[];
 }
 
 export interface Claim {
@@ -99,6 +105,11 @@ export interface CoverageDiagnostics {
   readonly networkRows: number;
   readonly networkShare: number;
   readonly inPopulationNetworkRows: number;
+  /** Org-level bias diagnostics (counting unit = organisation, not row). */
+  readonly inPopulationNetworkOrgs?: number;
+  readonly networkOrgShare?: number;
+  readonly largestChannelOrgShare?: number;
+  readonly contradictingOrgs?: number;
 }
 
 /**
@@ -113,6 +124,8 @@ export interface VerdictInput {
   /** The in-population subset. Only this may set the level. */
   readonly inPopulationTypes: Readonly<Partial<Record<EvidenceLevel, number>>>;
   readonly inPopulationOrgs: number;
+  /** In-population organisations with contradicting evidence at or above L2. */
+  readonly contradictingOrgs?: number;
 }
 
 export interface Coverage {

@@ -23,7 +23,7 @@ export const EVIDENCE_LEVELS: readonly EvidenceLevelDef[] = [
     code: "internal",
     label: "internal",
     description: "Own-itch hypothesis or informal interest inside the company.",
-    source: "Pattyn, Dillen & Goetz (2026), Computers 15(8):535",
+    source: "Pattyn, Dillen & Goetz (2026), Computers 15(8):535 (exploratory, n = 16 startups)",
   },
   {
     level: 2,
@@ -110,8 +110,8 @@ export const THRESHOLDS: readonly ThresholdDef[] = [
     kind: "support",
     scope: "all",
     value: 3,
-    rationale: "A type resting on one or two organisations is an anecdote, not a pattern.",
-    source: "Wilson & Lilien (1992), 104 buying-centre decisions",
+    rationale: "Product heuristic: a type resting on one or two organisations is an anecdote, not a pattern (organisational unit of analysis).",
+    source: "Product heuristic; organisational unit grounded in Wilson, Lilien & Wilson (1991), 104 buying-centre decisions, and Wilson & Lilien (1992)",
   },
   {
     code: "WILSON_Z",

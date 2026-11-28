@@ -27,9 +27,21 @@ export function explain(claim: Claim, finding: Finding): string {
       return `${prefix} meets the claimed L${claim.claimedLevel}. ${precisionNote(verdict)}`.trim();
 
     case "IMPRECISE":
+      if (claim.claimType === "theme" && verdict.saturation === "insufficient") {
+        return `${prefix} reaches the claimed type, but thematic saturation is insufficient (fewer than 6 independent organisations).`;
+      }
+      if (claim.claimType === "prevalence" && !verdict.interval) {
+        return `${prefix} reaches the claimed type, but prevalence counts (k of n) are missing or exceed in-population organisations.`;
+      }
       return `${prefix} reaches the claimed type, but the ${formatInterval(verdict)} interval is too wide for the precision this claim asks for. ${precisionNote(verdict)}`.trim();
 
     case "DOWNGRADE":
+      if (verdict.level >= claim.claimedLevel && verdict.support < MIN_SUPPORT) {
+        return `${prefix} reaches L${claim.claimedLevel}, but rests on fewer than ${MIN_SUPPORT} independent organisations. ${action(verdict)}`;
+      }
+      if (verdict.level >= claim.claimedLevel) {
+        return `${prefix} is challenged by contradicting evidence in this population. ${action(verdict)}`;
+      }
       return `${prefix}, not L${claim.claimedLevel}. ${action(verdict)}`;
   }
 }

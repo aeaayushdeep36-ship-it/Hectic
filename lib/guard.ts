@@ -5,8 +5,8 @@
  * processing. The detector aliases a pair of capitalised tokens (with optional
  * title or particles), plus single names that appear in a naming context such
  * as "Priya said X" or "name: adi". It refuses to alias role prose such as
- * "Most managers said X" or acronyms such as GDPR. Emails, phones, IBANs and
- * URLs are redacted before names are scanned.
+ * "Most managers said X" or acronyms such as GDPR. Emails, phones, IBANs, card
+ * numbers and URLs are redacted before names are scanned.
  */
 
 export interface GuardResult {
@@ -15,8 +15,38 @@ export interface GuardResult {
   readonly injected: boolean;
 }
 
-const PATTERNS: ReadonlyArray<{ name: string; re: RegExp }> = [
+interface PatternSpec {
+  readonly name: string;
+  readonly re: RegExp;
+  /** Optional extra check on the matched text (for example a Luhn checksum). */
+  readonly accept?: (match: string) => boolean;
+}
+
+/** Luhn checksum, so ordinary long numbers are not mistaken for card numbers. */
+function passesLuhn(candidate: string): boolean {
+  const digits = candidate.replace(/\D/gu, "");
+  if (digits.length < 13 || digits.length > 19) return false;
+  let sum = 0;
+  let double = false;
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    let value = Number(digits[index]);
+    if (double) {
+      value *= 2;
+      if (value > 9) value -= 9;
+    }
+    sum += value;
+    double = !double;
+  }
+  return sum % 10 === 0;
+}
+
+const PATTERNS: ReadonlyArray<PatternSpec> = [
   { name: "EMAIL", re: /[\w.+-]+@[\w-]+\.[\w.]{2,}/giu },
+  {
+    // "jane [at] acme [dot] com" and "jane at acme dot com".
+    name: "EMAIL",
+    re: /\b[\w.+-]+\s*(?:\[at\]|\(at\)|\sat\s)\s*[\w-]+\s*(?:\[dot\]|\(dot\)|\sdot\s)\s*[a-z]{2,}\b/giu,
+  },
   {
     name: "IBAN",
     // Case-insensitive and space-tolerant: BE68 5390 0754 7034 and
@@ -25,12 +55,34 @@ const PATTERNS: ReadonlyArray<{ name: string; re: RegExp }> = [
     re: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){10,30}\b/giu,
   },
   {
+    // 13–19 digits with optional space/hyphen separators, confirmed by Luhn.
+    // Must run before PHONE, which would otherwise eat the first groups.
+    name: "CARD",
+    re: /(?<![\p{L}\d])(?:\d[ -]?){12,18}\d(?!\d)/gu,
+    accept: passesLuhn,
+  },
+  {
     name: "PHONE",
     // International or national numbers with separated groups. The lookbehind
     // prevents a match inside an alphanumeric code (for example an IBAN).
     re: /(?<![\p{L}\d])(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)[\s.-]?|\d{2,4}[\s.-])\d{3,4}[\s.-]\d{3,4}/giu,
   },
+  {
+    // French numbers: 06 12 34 56 78, 06.12.34.56.78, 0612345678, +33 6 12 34 56 78.
+    name: "PHONE",
+    re: /(?<![\p{L}\d])(?:\+33|0033|0)[\s.-]?[1-9](?:[\s.-]?\d{2}){4}(?!\d)/gu,
+  },
+  {
+    // Any other international number: +49 30 1234567, +447911123456.
+    name: "PHONE",
+    re: /(?<![\p{L}\d])\+\d{1,3}(?:[\s.-]?\d{1,4}){2,6}(?!\d)/gu,
+  },
   { name: "URL", re: /https?:\/\/\S+/giu },
+  {
+    // Scheme-less links that identify a person: www.* and social profiles.
+    name: "URL",
+    re: /(?<![\w@.])(?:www\.[\w-]+\.\S+|(?:[\w-]+\.)?(?:linkedin|twitter|facebook|instagram)\.com\/\S*|x\.com\/\S+)/giu,
+  },
 ];
 
 const INJECTION = [
@@ -224,10 +276,12 @@ export function guard(input: string): GuardResult {
 
   for (const pattern of PATTERNS) {
     pattern.re.lastIndex = 0;
-    const next = redacted.replace(pattern.re, `[${pattern.name}]`);
+    const next = redacted.replace(pattern.re, (match) =>
+      pattern.accept && !pattern.accept(match) ? match : `[${pattern.name}]`,
+    );
     if (next !== redacted) {
       redacted = next;
-      flags.push(pattern.name);
+      if (!flags.includes(pattern.name)) flags.push(pattern.name);
     }
   }
 
@@ -244,9 +298,10 @@ export function guard(input: string): GuardResult {
     redacted = withoutFormulas;
   }
 
-  const lower = input.toLowerCase();
+  // Collapse whitespace so "ignore   previous" matches the same needle.
+  const lower = input.toLowerCase().replace(/\s+/gu, " ");
   for (const needle of INJECTION) {
-    if (lower.includes(needle)) {
+    if (lower.includes(needle.toLowerCase().replace(/\s+/gu, " "))) {
       flags.push(`INJECTION:${needle}`);
     }
   }

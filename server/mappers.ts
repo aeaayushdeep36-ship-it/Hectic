@@ -50,6 +50,7 @@ export function relationshipToDb(relationship: Relationship): string {
 
 export function relationshipFromDb(value: string): Relationship {
   if (value === "stranger") return "cold";
+  if (value === "acquaintance") return "referral";
   return "founder_network";
 }
 

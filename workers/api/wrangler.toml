@@ -1,0 +1,7 @@
+name = "hectic-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+FIREBASE_PROJECT_ID = "hectic-auditor-2026"

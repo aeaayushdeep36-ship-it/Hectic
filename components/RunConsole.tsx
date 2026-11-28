@@ -1,17 +1,19 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { Check, Copy } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
-import type { RunView } from "../lib/dto";
+import { AuthBar } from "./AuthBar";
+import type { FindingView, RunView } from "../lib/dto";
+import { checkFalsifier } from "../lib/falsifier";
 import {
   DEFAULT_ANALYSIS_PROVIDER,
   MODEL_BY_PROVIDER,
   PROVIDER_OPTIONS,
   type ProviderIdOption,
 } from "../lib/provider-options";
-import { CheckpointDrawer } from "./CheckpointDrawer";
-import { FindingRow } from "./FindingRow";
 
-/** The wire format of the NDJSON stream. Kept local so no server code is bundled. */
 type StreamEvent =
   | { type: "progress"; step: string; detail: string; completed: number; total: number }
   | {
@@ -26,33 +28,112 @@ type StreamEvent =
     }
   | { type: "error"; message: string };
 
+const ACTIONS = [
+  { value: "downgrade", label: "Downgrade claim to verified level" },
+  { value: "fund_gap", label: "Fund gap with targeted interviews" },
+  { value: "accept_limitation", label: "Accept with written limitation" },
+] as const;
+
 export function RunConsole({
   initialRun,
   workspaceSlug,
+  workspaceName,
+  orgCount,
 }: {
   initialRun: RunView;
   workspaceSlug: string;
+  workspaceName?: string;
+  orgCount?: number;
 }) {
   const [run, setRun] = useState(initialRun);
-  const [openClaim, setOpenClaim] = useState<string | null>(null);
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(() => {
+    const firstOpen = initialRun.findings.find(
+      (f) => f.finding !== "SUPPORTED" && f.resolution === null,
+    );
+    return firstOpen?.claimId ?? null;
+  });
+  const [action, setAction] = useState<"downgrade" | "fund_gap" | "accept_limitation">("downgrade");
+  const [falsifier, setFalsifier] = useState("");
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const [recompute, setRecompute] = useState<{ identical: boolean; hash: string } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [streamStep, setStreamStep] = useState<number>(4);
   const [streamLog, setStreamLog] = useState<string[]>([]);
   const [provider, setProvider] = useState<ProviderIdOption>(DEFAULT_ANALYSIS_PROVIDER);
 
-  const unresolved = run.findings.filter((finding) => finding.resolution === null && finding.finding !== "SUPPORTED");
+  const unresolved = run.findings.filter(
+    (f) => f.resolution === null && f.finding !== "SUPPORTED",
+  );
+  const resolvedFindings = run.findings.filter((f) => f.resolution !== null);
+  const displayName = workspaceName ?? workspaceSlug;
+  const displayOrgs = orgCount ?? Math.max(0, ...run.findings.map((f) => f.breadth));
+
+  const falsifierCheck = checkFalsifier(falsifier);
+  const falsifierValid = falsifier.trim().length >= 40 && falsifierCheck.ok;
 
   async function refresh() {
     const response = await fetch(`/api/runs/${run.id}`, { cache: "no-store" });
-    const body = (await response.json()) as { run: RunView };
-    setRun(body.run);
+    if (!response.ok) return;
+    const body = (await response.json()) as { run?: RunView };
+    if (body.run) {
+      setRun(body.run);
+      const nextOpen = body.run.findings.find(
+        (f) => f.finding !== "SUPPORTED" && f.resolution === null,
+      );
+      setSelectedClaimId(nextOpen?.claimId ?? null);
+    }
+  }
+
+  async function copyHash() {
+    const digest = (run.findingHash || run.inputHash).replace(/^sha256:/, "");
+    try {
+      await navigator.clipboard.writeText(digest);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard unavailable
+    }
+  }
+
+  async function submitResolution() {
+    if (!selectedClaimId || !falsifierValid) return;
+    setBusy(true);
+    setResolveError(null);
+    const activeFinding = run.findings.find((f) => f.claimId === selectedClaimId);
+    try {
+      const response = await fetch(`/api/runs/${run.id}/resolutions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          claimId: selectedClaimId,
+          action,
+          targetLevel: action === "downgrade" ? (activeFinding?.level ?? null) : null,
+          falsifier: falsifier.trim(),
+          note: null,
+        }),
+      });
+      const body = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setResolveError(body.error ?? "RESOLUTION_REJECTED");
+      } else {
+        setFalsifier("");
+        await refresh();
+      }
+    } catch {
+      setResolveError("NETWORK_ERROR");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function doStream() {
     setStreaming(true);
-    setStreamLog(["Connecting to the agent stream…"]);
+    setStreamStep(1);
+    setStreamLog(["Connecting to agent stream…"]);
     try {
       const response = await fetch(`/api/workspaces/${workspaceSlug}/runs/stream`, {
         method: "POST",
@@ -74,28 +155,37 @@ export function RunConsole({
           if (!line.trim()) continue;
           const event = JSON.parse(line) as StreamEvent;
           if (event.type === "progress") {
-            setStreamLog((current) => [
-              ...current,
+            if (event.step === "formalise") setStreamStep(2);
+            else if (event.step === "tag" || event.step === "explain") setStreamStep(3);
+            else if (event.step === "compose") setStreamStep(4);
+            setStreamLog((cur) => [
+              ...cur,
               `${event.step} — ${event.detail} (${event.completed}/${event.total})`,
             ]);
           } else if (event.type === "done") {
-            setStreamLog((current) => [
-              ...current,
-              `Done · ${event.providerId} · ${event.callCount} calls · ${event.cacheHits} cache hits · ${event.latencyMs} ms`,
+            setStreamStep(4);
+            setStreamLog((cur) => [
+              ...cur,
+              `Done · ${event.providerId} · ${event.callCount} calls · ${event.latencyMs}ms`,
               `Finding hash ${event.findingHash}`,
             ]);
             const refreshed = await fetch(`/api/runs/${event.runId}`, { cache: "no-store" });
-            const body = (await refreshed.json()) as { run: RunView };
-            setRun(body.run);
+            if (refreshed.ok) {
+              const body = (await refreshed.json()) as { run?: RunView };
+              if (body.run) {
+                setRun(body.run);
+                window.history.replaceState(null, "", `/runs/${event.runId}`);
+              }
+            }
           } else {
-            setStreamLog((current) => [...current, `Error — ${event.message}`]);
+            setStreamLog((cur) => [...cur, `Error — ${event.message}`]);
           }
         }
       }
-    } catch (error) {
-      setStreamLog((current) => [
-        ...current,
-        `Error — ${error instanceof Error ? error.message : "STREAM_FAILED"}`,
+    } catch (err) {
+      setStreamLog((cur) => [
+        ...cur,
+        `Error — ${err instanceof Error ? err.message : "STREAM_FAILED"}`,
       ]);
     } finally {
       setStreaming(false);
@@ -126,7 +216,9 @@ export function RunConsole({
       const gate = await fetch(`/api/runs/${run.id}/export`, { cache: "no-store" });
       if (gate.status === 422) {
         const body = (await gate.json()) as { unresolved: string[] };
-        setExportError(`UNRESOLVED_FINDINGS: ${body.unresolved.length}`);
+        setExportError(
+          `Resolve ${body.unresolved.length} blocking checkpoint${body.unresolved.length === 1 ? "" : "s"} before exporting.`,
+        );
         setBusy(false);
         return;
       }
@@ -138,128 +230,414 @@ export function RunConsole({
     }
   }
 
-  const active = run.findings.find((finding) => finding.claimId === openClaim);
+  const pipelineSteps = [
+    { num: 1, label: "01 ROSTER" },
+    { num: 2, label: "02 FORMALISER" },
+    { num: 3, label: "03 ENGINE v1.0.0" },
+    { num: 4, label: "04 CHECKPOINT" },
+  ];
+
+  const activeFalsifierDisplay =
+    resolvedFindings.at(-1)?.resolution?.falsifier ??
+    (falsifierValid ? falsifier.trim() : null);
 
   return (
-    <div>
-      <div className="card mb-6 flex flex-wrap items-center justify-between gap-4 p-4">
-        <div>
-          <p className="label">Run</p>
-          <p className="mono mt-1 text-[13px]">
-            {run.status} · {run.providerId}/{run.modelId}
-          </p>
-          <p className="mono text-[12px] text-[var(--ink-muted)]">hash {run.findingHash}</p>
-          <p className="mono text-[12px] text-[var(--ink-muted)]">
-            input {run.inputHash} · {run.costEur.toFixed(2)} EUR · {run.callCount} calls
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
-            Provider
-            <select
-              className="field mono"
-              aria-label="Provider"
-              value={provider}
-              onChange={(event) => setProvider(event.target.value as ProviderIdOption)}
-              disabled={streaming || busy}
+    <div className="min-h-screen flex flex-col bg-[#07080A] text-[#F5F6F8]">
+      {/* ── Top Header Bar (Image 4) ──────────────────────────────────── */}
+      <header className="no-print border-b border-[#1E222A] bg-[#07080A] px-6 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Breadcrumb */}
+          <nav className="font-mono-tabular text-[12px] text-[#7D8CA3]" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-[#9CA3AF] no-underline">
+              Workspaces
+            </Link>
+            <span className="mx-1.5">/</span>
+            <Link
+              href={`/workspaces/${workspaceSlug}`}
+              className="hover:text-[#9CA3AF] no-underline"
             >
-              {PROVIDER_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" className="btn" onClick={() => void doStream()} disabled={streaming || busy}>
-            {streaming ? "Running agents…" : "Run agents with live status"}
-          </button>
-          <button type="button" className="btn" onClick={doRecompute} disabled={busy}>
-            {busy ? "Working…" : "Recompute with another provider"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={doExport}
-            disabled={busy || unresolved.length > 0}
-            title={unresolved.length > 0 ? `${unresolved.length} unresolved findings` : undefined}
-          >
-            Export statement
-          </button>
-          <a className="btn" href={`/runs/${run.id}/recruiting`}>
-            Recruiting brief
-          </a>
-          <a className="btn" href={`/api/workspaces/${workspaceSlug}/events`}>
-            Audit log
-          </a>
-        </div>
-      </div>
+              {displayName}
+            </Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-[#9CA3AF]">{run.id}</span>
+          </nav>
 
-      {streamLog.length > 0 ? (
-        <section className="card mb-6 p-4" aria-live="polite" aria-label="Agent progress">
-          <p className="label mb-2">Live agent status</p>
-          <ol className="mono max-h-56 space-y-1 overflow-y-auto text-[12px] text-[var(--ink-muted)]">
-            {streamLog.map((line, index) => (
-              <li key={`${index}-${line}`}>{line}</li>
-            ))}
-          </ol>
-          <p className="mt-2 text-[12px] text-[var(--ink-faint)]">
-            Numbers are computed by the pure engine before these steps; no model produces a level, count or verdict.
-          </p>
-        </section>
-      ) : null}
-
-      {recompute ? (
-        <div className="card mb-6 border-[var(--confirm-border)] bg-[var(--confirm-bg)] p-4">
-          <p className="mono text-[13px] text-[var(--confirm)]">
-            {recompute.identical ? "IDENTICAL" : "DIVERGED"} · {recompute.hash}
-          </p>
-          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
-            The provider changed; the finding hash did not. No number is produced by a model.
-          </p>
-        </div>
-      ) : null}
-
-      {unresolved.length > 0 ? (
-        <p className="mb-4 text-[14px] text-[var(--signal)]">
-          {unresolved.length} of {run.findings.length} claims have no resolution. Export is blocked.
-        </p>
-      ) : (
-        <p className="mb-4 text-[14px] text-[var(--confirm)]">
-          All claims resolved. Export is available.
-        </p>
-      )}
-
-      {exportError ? (
-        <p className="mono mb-4 text-[13px] text-[var(--signal)]" role="alert">
-          {exportError}
-        </p>
-      ) : null}
-
-      <ol className="space-y-4">
-        {run.findings.map((finding) => (
-          <li key={finding.claimId}>
-            <FindingRow
-              finding={finding}
-              onResolve={
-                finding.finding === "SUPPORTED" || finding.resolution
-                  ? undefined
-                  : () => setOpenClaim(finding.claimId)
-              }
+          {/* 4-Step Pipeline Trace */}
+          <div className="relative hidden md:flex items-center gap-4 pb-1">
+            {pipelineSteps.map((step, idx) => {
+              const active = step.num === streamStep;
+              return (
+                <div key={step.num} className="flex items-center gap-4">
+                  {idx > 0 && <span className="w-5 h-[1px] bg-[#262B35]" aria-hidden="true" />}
+                  <span
+                    className={`font-mono-tabular text-[11px] tracking-[0.06em] ${
+                      active ? "text-[#D4AF6A]" : "text-[#7D8CA3]"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: streamStep / 4 }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              style={{ originX: 0 }}
+              className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#D4AF6A]"
             />
-            {active?.claimId === finding.claimId ? (
-              <CheckpointDrawer
-                runId={run.id}
-                finding={active}
-                onClose={() => setOpenClaim(null)}
-                onResolved={() => {
-                  setOpenClaim(null);
-                  void refresh();
-                }}
-              />
-            ) : null}
-          </li>
-        ))}
-      </ol>
+          </div>
+
+          {/* EXPORT PDF + Auth */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={busy || unresolved.length > 0}
+              onClick={() => void doExport()}
+              title={
+                unresolved.length > 0
+                  ? `${unresolved.length} blocking checkpoint(s) remaining`
+                  : "Export verified statement"
+              }
+              className="px-4 py-1.5 border border-[#D4AF6A] text-[#D4AF6A] font-mono-tabular text-[11px] tracking-[0.06em] rounded-[2px] hover:bg-[#15181F] disabled:opacity-40 cursor-pointer transition-colors"
+            >
+              EXPORT PDF
+            </button>
+            <AuthBar compact />
+          </div>
+        </div>
+      </header>
+
+      {/* ── Main Split (62% Left Porcelain Sheet / 38% Right Inspector) ── */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12">
+        {/* Left 62% (7 cols) — Warm Porcelain Print-Ready Statement */}
+        <div className="lg:col-span-7 p-6 sm:p-10 bg-[#07080A] flex flex-col items-center justify-start">
+          <article className="print-sheet w-full max-w-[680px] bg-[#F8F7F4] text-[#0F172A] px-10 py-12 rounded-none flex flex-col justify-between min-h-[540px]">
+            <div>
+              <h1 className="font-display text-[36px] leading-[1.08] text-[#0F172A]">
+                Evidence Statement
+              </h1>
+              <p className="mt-2 text-[13px] text-[#475569]">
+                {displayName} · {displayOrgs} independent organisation{displayOrgs === 1 ? "" : "s"}
+              </p>
+
+              {/* Crisp Swiss Hairline Table */}
+              <div className="mt-8 border-t border-[#0F172A] divide-y divide-[#CBD5E1]">
+                {run.findings.length === 0 ? (
+                  <p className="py-8 text-[13px] text-[#475569]">
+                    No confirmed claims were audited in this run.
+                  </p>
+                ) : (
+                  run.findings.map((finding, idx) => (
+                    <StatementClaimRow
+                      key={finding.claimId}
+                      index={idx + 1}
+                      finding={finding}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Verification Footer — single 1px Champagne Gold rule, no 3D seal */}
+            <footer className="mt-12 pt-4 border-t border-[#D4AF6A]">
+              <p className="font-mono-tabular text-[11px] text-[#475569]">
+                SHA-256 {(run.findingHash || run.inputHash).replace(/^sha256:/, "")} · ENGINE 1.0.0
+              </p>
+            </footer>
+          </article>
+        </div>
+
+        {/* Right 38% (5 cols) — Smoked Slate Inspector */}
+        <aside className="no-print lg:col-span-5 bg-[#0E1014] border-t lg:border-t-0 lg:border-l border-[#1E222A] divide-y divide-[#1E222A] flex flex-col">
+          {/* 1. CRYPTOGRAPHIC DIGEST */}
+          <section className="p-6">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3] mb-3">
+              CRYPTOGRAPHIC DIGEST
+            </p>
+            <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-[#07080A] border border-[#262B35] rounded-[2px]">
+              <span className="font-mono-tabular text-[12px] text-[#9CA3AF] truncate">
+                {(run.findingHash || run.inputHash).replace(/^sha256:/, "")}
+              </span>
+              <button
+                type="button"
+                onClick={() => void copyHash()}
+                aria-label="Copy cryptographic digest"
+                className="text-[#7D8CA3] hover:text-[#F5F6F8] cursor-pointer shrink-0 transition-colors"
+              >
+                {copied ? <Check size={14} className="text-[#10B981]" /> : <Copy size={14} />}
+              </button>
+            </div>
+            <p className="sr-only">hash {run.findingHash}</p>
+          </section>
+
+          {/* 2. ENGINE METADATA */}
+          <section className="p-6">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3] mb-3">
+              ENGINE METADATA
+            </p>
+            <dl className="space-y-2 text-[13px]">
+              <div className="flex items-center justify-between">
+                <dt className="text-[#9CA3AF]">Engine:</dt>
+                <dd className="font-mono-tabular text-[#F5F6F8]">1.0.0</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-[#9CA3AF]">Thresholds:</dt>
+                <dd className="font-mono-tabular text-[#F5F6F8]">2026-11-24</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-[#9CA3AF]">Provider:</dt>
+                <dd className="font-mono-tabular text-[#9CA3AF]">
+                  {run.providerId}/{run.modelId}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          {/* 3. BLOCKING CHECKPOINT */}
+          <section className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3]">
+                BLOCKING CHECKPOINT
+              </p>
+              <span
+                className={`font-mono-tabular text-[11px] ${
+                  unresolved.length === 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                }`}
+              >
+                {unresolved.length === 0
+                  ? "ALL CLEAR"
+                  : `${unresolved.length} BLOCKING`}
+              </span>
+            </div>
+
+            {unresolved.length === 0 && resolvedFindings.length === 0 ? (
+              <p className="text-[13px] text-[#10B981]">
+                All claims supported. Export is available.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {run.findings
+                  .filter((f) => f.finding !== "SUPPORTED")
+                  .map((finding) => {
+                    const isResolved = finding.resolution !== null;
+                    const isSelected = selectedClaimId === finding.claimId;
+                    return (
+                      <label
+                        key={finding.claimId}
+                        className={`flex items-start gap-3 text-[13px] cursor-pointer ${
+                          isResolved ? "text-[#9CA3AF]" : "text-[#F5F6F8]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isResolved || isSelected}
+                          disabled={isResolved}
+                          onChange={() =>
+                            setSelectedClaimId(isSelected ? null : finding.claimId)
+                          }
+                          className="mt-1 h-4 w-4 rounded-[2px] border border-[#262B35] bg-[#07080A] accent-[#D4AF6A]"
+                        />
+                        <span className="leading-[1.4]">
+                          {isResolved
+                            ? `${finding.claimText} (${finding.resolution?.action})`
+                            : `Resolve ${finding.finding.toLowerCase().replace("_", " ")}: ${finding.claimText}`}
+                        </span>
+                      </label>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Inline Resolution Form when an unresolved checkpoint is selected */}
+            {selectedClaimId && (
+              <div className="mt-4 pt-4 border-t border-[#1E222A] space-y-3">
+                <select
+                  aria-label="Resolution action"
+                  value={action}
+                  onChange={(e) =>
+                    setAction(e.target.value as "downgrade" | "fund_gap" | "accept_limitation")
+                  }
+                  className="w-full px-3 py-1.5 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                >
+                  {ACTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+
+                <textarea
+                  rows={2}
+                  aria-label="This claim dies if"
+                  value={falsifier}
+                  onChange={(e) => setFalsifier(e.target.value)}
+                  placeholder="If fewer than 3 of 10 clinics prepay within 14 days, downgrade claim."
+                  className="w-full px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                />
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono-tabular text-[11px] text-[#7D8CA3]">
+                    {falsifier.trim().length}/40 chars
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy || !falsifierValid}
+                    onClick={() => void submitResolution()}
+                    className="px-3.5 py-1.5 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 disabled:opacity-40 cursor-pointer transition-opacity"
+                  >
+                    {busy ? "Saving…" : "Confirm resolution"}
+                  </button>
+                </div>
+
+                {resolveError && (
+                  <p className="font-mono-tabular text-[11px] text-[#EF4444]" role="alert">
+                    {resolveError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {exportError && (
+              <p className="mt-3 font-mono-tabular text-[11px] text-[#EF4444]" role="alert">
+                {exportError}
+              </p>
+            )}
+          </section>
+
+          {/* 4. FALSIFIER CHECK */}
+          <section className="p-6">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3] mb-2">
+              FALSIFIER CHECK
+            </p>
+            {activeFalsifierDisplay ? (
+              <p className="text-[13px] leading-[1.55] text-[#9CA3AF]">
+                Observable rule verified:{" "}
+                <span className="text-[#F5F6F8]">{activeFalsifierDisplay}</span>
+              </p>
+            ) : falsifier.trim().length > 0 ? (
+              <p className="text-[12px] text-[#F59E0B]">
+                {falsifier.trim().length < 40
+                  ? "Requires at least 40 characters."
+                  : falsifierCheck.reason}
+              </p>
+            ) : (
+              <p className="text-[13px] leading-[1.55] text-[#7D8CA3]">
+                Select a blocking checkpoint above and enter an observable condition
+                (if/when/unless + numeric threshold) to unlock PDF export.
+              </p>
+            )}
+          </section>
+
+          {/* 5. DETERMINISM & AGENT CONTROLS */}
+          <section className="p-6 mt-auto space-y-3 bg-[#07080A]/40">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label="Provider"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value as ProviderIdOption)}
+                disabled={streaming || busy}
+                className="px-2.5 py-1.5 bg-[#07080A] border border-[#262B35] rounded-[2px] font-mono-tabular text-[11px] text-[#F5F6F8]"
+              >
+                {PROVIDER_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => void doStream()}
+                disabled={streaming || busy}
+                className="px-3 py-1.5 border border-[#262B35] bg-[#0E1014] text-[#F5F6F8] text-[11px] rounded-[2px] hover:bg-[#15181F] cursor-pointer disabled:opacity-40 transition-colors"
+              >
+                {streaming ? "Streaming…" : "Run agents"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void doRecompute()}
+                disabled={busy || streaming}
+                className="px-3 py-1.5 border border-[#262B35] bg-[#0E1014] text-[#F5F6F8] text-[11px] rounded-[2px] hover:bg-[#15181F] cursor-pointer disabled:opacity-40 transition-colors"
+              >
+                Recompute
+              </button>
+            </div>
+
+            {recompute && (
+              <p
+                className={`font-mono-tabular text-[11px] ${
+                  recompute.identical ? "text-[#10B981]" : "text-[#EF4444]"
+                }`}
+              >
+                {recompute.identical ? "IDENTICAL" : "DIVERGED"} · {recompute.hash}
+              </p>
+            )}
+
+            {streamLog.length > 0 && (
+              <ol
+                className="max-h-28 overflow-y-auto font-mono-tabular text-[11px] text-[#9CA3AF] space-y-0.5 pt-2 border-t border-[#1E222A]"
+                aria-live="polite"
+              >
+                {streamLog.map((line, i) => (
+                  <li key={`${i}-${line}`}>{line}</li>
+                ))}
+              </ol>
+            )}
+
+            <div className="flex items-center gap-4 pt-1 font-mono-tabular text-[11px] text-[#7D8CA3]">
+              <Link href={`/runs/${run.id}/recruiting`} className="hover:text-[#F5F6F8] no-underline">
+                Recruiting brief →
+              </Link>
+              <a href={`/api/workspaces/${workspaceSlug}/events`} className="hover:text-[#F5F6F8] no-underline">
+                Audit log JSON →
+              </a>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function StatementClaimRow({
+  index,
+  finding,
+}: {
+  index: number;
+  finding: FindingView;
+}) {
+  const num = String(index).padStart(2, "0");
+  const isSupported = finding.finding === "SUPPORTED" || finding.resolution !== null;
+  const statusLabel =
+    finding.finding === "SUPPORTED"
+      ? "Supported"
+      : finding.resolution !== null
+        ? "Resolved"
+        : "Blocked";
+
+  return (
+    <div className="py-3.5 grid grid-cols-12 items-baseline gap-2 text-[13px]">
+      <div className="col-span-6 text-[#0F172A] truncate" title={finding.claimText}>
+        <span className="font-mono-tabular mr-2">{num} ·</span>
+        {finding.claimText}
+      </div>
+      <div className="col-span-2 font-mono-tabular text-[#0F172A]">
+        · L{finding.level}
+      </div>
+      <div className="col-span-2 font-mono-tabular text-[#0F172A]">
+        {finding.interval
+          ? `· 95% CI [${finding.interval[0].toFixed(2)}, ${finding.interval[1].toFixed(2)}]`
+          : `· ${finding.support} org${finding.support === 1 ? "" : "s"}`}
+      </div>
+      <div
+        className={`col-span-2 text-right font-medium ${
+          isSupported ? "text-[#0B534D]" : "text-[#991B1B]"
+        }`}
+      >
+        · {statusLabel}
+      </div>
     </div>
   );
 }

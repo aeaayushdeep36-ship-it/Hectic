@@ -261,9 +261,10 @@ export function getProvider(
     case "ollama":
       return new OpenAiCompatibleProvider(
         "ollama",
-        ALLOWED.ollama,
+        modelId || process.env.OLLAMA_MODEL || ALLOWED.ollama,
         process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1",
         null,
+        { jsonMode: false },
       );
     case "openrouter":
       // The key stays server-side. Only the provider id crosses the client boundary.

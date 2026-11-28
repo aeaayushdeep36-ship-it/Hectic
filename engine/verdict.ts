@@ -1,7 +1,7 @@
 /**
  * The verdict model. Deterministic from first principles.
  *
- *   level       highest evidence TYPE present in the claim's population
+ *   level       highest customer evidence TYPE present in the claim's population
  *   support     independent in-population ORGS at that type
  *   precision   saturation (theme) or Wilson interval (prevalence)
  *   binding     the single change that raises the verdict
@@ -41,9 +41,12 @@ function round2(value: number): number {
 
 /** 95% Wilson score interval. Deterministic, exact, no model involved. */
 export function wilson(k: number, n: number, z: number = WILSON_Z): Interval {
-  if (n === 0) return [0, 1, 1];
+  if (!Number.isFinite(n) || !Number.isFinite(k) || !Number.isFinite(z) || n <= 0) {
+    return [0, 1, 1];
+  }
 
-  const p = k / n;
+  const clampedK = Math.max(0, Math.min(n, k));
+  const p = clampedK / n;
   const d = 1 + (z * z) / n;
   const centre = p + (z * z) / (2 * n);
   const margin = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
@@ -52,6 +55,19 @@ export function wilson(k: number, n: number, z: number = WILSON_Z): Interval {
   const hi = Math.min(1, (centre + margin) / d);
 
   return [round2(lo), round2(hi), round2(hi - lo)];
+}
+
+/** Exact worst-case one-sided error from point estimate `k / n` before rounding. */
+function wilsonMaxError(k: number, n: number, z: number = WILSON_Z): number {
+  if (!Number.isFinite(n) || !Number.isFinite(k) || n <= 0) return 1;
+  const clampedK = Math.max(0, Math.min(n, k));
+  const p = clampedK / n;
+  const d = 1 + (z * z) / n;
+  const centre = p + (z * z) / (2 * n);
+  const margin = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
+  const lo = Math.max(0, (centre - margin) / d);
+  const hi = Math.min(1, (centre + margin) / d);
+  return Math.max(p - lo, hi - p);
 }
 
 /** Thematic completeness of stated evidence, not prevalence precision. */
@@ -69,6 +85,7 @@ export function toVerdictInput(coverage: Coverage, claim: Claim): VerdictInput {
     types: coverage.allOrgsByLevel,
     inPopulationTypes: coverage.orgsByLevel,
     inPopulationOrgs: coverage.inPopulationOrgs,
+    contradictingOrgs: coverage.diagnostics.contradictingOrgs ?? 0,
   };
 }
 
@@ -95,13 +112,14 @@ export function selectBinding(
   // More of the same kind of interview does not unlock the next type.
   if (verdict.level >= 4 && verdict.support < MIN_SUPPORT) return "support";
 
+  // F-03: Check inPopulationTypes (never out-of-population input.types) so
+  // out-of-population evidence at `next` never deadlocks binding to null.
   if (verdict.level < 6) {
     const next = nextTarget(verdict.level);
-    if ((input.types[next] ?? 0) === 0) return "type";
+    if ((input.inPopulationTypes[next] ?? 0) === 0) return "type";
     return null;
   }
 
-  if (verdict.support < MIN_SUPPORT) return "support";
   return null;
 }
 
@@ -109,8 +127,11 @@ export function computeVerdict(input: VerdictInput): Verdict {
   const applicable: Partial<Record<EvidenceLevel, number>> = {};
 
   if (input.inPopulationOrgs > 0) {
-    for (const [level, count] of Object.entries(input.inPopulationTypes)) {
-      if ((count ?? 0) > 0) applicable[Number(level) as EvidenceLevel] = count;
+    for (const [levelKey, count] of Object.entries(input.inPopulationTypes)) {
+      const lvl = Number(levelKey) as EvidenceLevel;
+      // F-01: L5 is contingent investor commitment and never validates a customer claim.
+      if (lvl === 5) continue;
+      if ((count ?? 0) > 0) applicable[lvl] = count;
     }
   }
 
@@ -124,7 +145,14 @@ export function computeVerdict(input: VerdictInput): Verdict {
   if (level <= 2) saturation = saturationRung(breadth);
 
   let interval: Interval | null = null;
-  if (input.claimType === "prevalence" && input.observed && input.inPopulationOrgs > 0) {
+  // F-04: Never compute a Wilson interval from an observed sample larger than
+  // the actual in-population organisations in the roster.
+  if (
+    input.claimType === "prevalence" &&
+    input.observed &&
+    input.inPopulationOrgs > 0 &&
+    input.observed.n <= input.inPopulationOrgs
+  ) {
     interval = wilson(input.observed.k, input.observed.n);
   }
 
@@ -167,9 +195,12 @@ export function applyFix(input: VerdictInput, verdict: Verdict): VerdictInput {
       };
     }
     case "support": {
-      const missing = MIN_SUPPORT - (inPopulationTypes[verdict.level] ?? 0);
+      const missing = Math.max(0, MIN_SUPPORT - (inPopulationTypes[verdict.level] ?? 0));
       types[verdict.level] = (types[verdict.level] ?? 0) + missing;
-      inPopulationTypes[verdict.level] = MIN_SUPPORT;
+      inPopulationTypes[verdict.level] = Math.max(
+        MIN_SUPPORT,
+        inPopulationTypes[verdict.level] ?? 0,
+      );
       return {
         ...input,
         types,
@@ -189,19 +220,41 @@ export function classifyFinding(
   verdict: Verdict,
   coverage: Coverage,
 ): FindingKind {
+  // F-06: Contradicting in-population organisations block an unchallenged pass.
+  if ((coverage.diagnostics.contradictingOrgs ?? 0) > 0) {
+    return "DOWNGRADE";
+  }
   if (coverage.inPopulationOrgs === 0 && coverage.distinctOrgs > 0) {
     return "WRONG_POPULATION";
   }
   if (coverage.distinctOrgs === 0) return "UNTOUCHED";
+
   if (verdict.level < claim.claimedLevel) return "DOWNGRADE";
 
+  // F-02: Enforce MIN_SUPPORT across all levels — a single anecdote org never passes.
+  if (verdict.support < MIN_SUPPORT) return "DOWNGRADE";
+
+  // F-02: Qualitative theme claims at L2 require at least basic saturation (>= 6 orgs).
   if (
-    claim.claimType === "prevalence" &&
-    verdict.interval &&
-    claim.precisionTolerance !== null &&
-    verdict.interval[2] / 2 > claim.precisionTolerance
+    claim.claimType === "theme" &&
+    verdict.level <= 2 &&
+    verdict.saturation === "insufficient"
   ) {
     return "IMPRECISE";
+  }
+
+  // F-04: Prevalence claims require valid observed counts bound to inPopulationOrgs
+  // and must pass worst-case asymmetric Wilson error check.
+  if (claim.claimType === "prevalence") {
+    if (!claim.observed || claim.observed.n > coverage.inPopulationOrgs) {
+      return "IMPRECISE";
+    }
+    if (claim.precisionTolerance !== null) {
+      const maxErr = wilsonMaxError(claim.observed.k, claim.observed.n);
+      if (maxErr > claim.precisionTolerance) {
+        return "IMPRECISE";
+      }
+    }
   }
 
   return "SUPPORTED";
@@ -220,4 +273,3 @@ export function buildFinding(
     evidenceElsewhere: coverage.totalRows - coverage.inPopulationRows,
   };
 }
-

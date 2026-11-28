@@ -12,6 +12,8 @@ const PATTERNS = [
   { name: "Google", re: /AIza[0-9A-Za-z_-]{20,}/g },
   { name: "Groq", re: /gsk_[A-Za-z0-9]{20,}/g },
   { name: "Slack", re: /xoxb-[0-9A-Za-z-]{20,}/g },
+  // Newer Google API key format (starts with "AQ."); the AIza pattern misses it.
+  { name: "Google (AQ.)", re: /\bAQ\.[A-Za-z0-9_-]{30,}/g },
 ];
 
 const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], {

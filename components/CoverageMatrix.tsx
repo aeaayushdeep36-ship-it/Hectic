@@ -55,47 +55,74 @@ export function CoverageMatrix({ matrix }: { matrix: MatrixView }) {
   }
 
   if (matrix.segments.length === 0) {
-    return <div className="card p-6 text-sm text-[var(--ink-muted)]">No roster evidence yet.</div>;
+    return (
+      <div
+        className="text-sm text-[var(--ink-muted)] py-10 text-center"
+        style={{ border: "1px solid var(--border)" }}
+      >
+        No roster evidence yet. Upload a roster to populate the coverage matrix.
+      </div>
+    );
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="p-6 border-b border-[var(--border)]">
-        <h2 className="text-xl font-semibold tracking-tight text-[var(--ink)]">
-          Who was in the room?
-        </h2>
-        <p className="text-sm text-[var(--ink-muted)] mt-1">
-          Each cell counts interviews and the distinct organisations behind them. The empty cell is
-          the finding.
-        </p>
-      </div>
-
+    <div style={{ border: "1px solid var(--border)", borderRadius: "2px", overflow: "hidden" }}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse" aria-label="Evidence coverage matrix">
           <caption className="sr-only">Evidence coverage by segment and role</caption>
           <thead>
-            <tr className="bg-[var(--paper)] text-[11px] uppercase tracking-wider border-b border-[var(--border)] text-[var(--ink-muted)]">
-              <th scope="col" className="px-6 py-4 font-semibold text-[var(--ink)]">
+            <tr
+              style={{
+                background: "var(--cream-dark)",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <th
+                scope="col"
+                className="px-6 py-4"
+                style={{ fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-muted)", fontWeight: 600 }}
+              >
                 Segment
               </th>
               {columns.map((role) => (
                 <th
                   key={role}
                   scope="col"
-                  className="px-6 py-4 font-semibold text-center border-l border-[var(--border)]"
+                  className="px-5 py-4 text-center"
+                  style={{
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--ink-muted)",
+                    fontWeight: 600,
+                    borderLeft: "1px solid var(--border)",
+                  }}
                 >
                   <span>{role}</span>
-                  <span className="block text-[10px] font-normal normal-case tracking-normal text-[var(--ink-faint)]">
+                  <span
+                    className="block font-normal normal-case"
+                    style={{ fontSize: "10px", letterSpacing: "0", color: "var(--ink-faint)", marginTop: "2px" }}
+                  >
                     {ROLE_ALIASES[role] ?? "Additional"}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {matrix.segments.map((segment) => (
-              <tr key={segment} className="hover:bg-[var(--paper)]">
-                <th scope="row" className="px-6 py-4 font-medium text-[var(--ink)] text-left">
+          <tbody>
+            {matrix.segments.map((segment, i) => (
+              <tr
+                key={segment}
+                style={{
+                  borderTop: i > 0 ? "1px solid var(--border)" : "none",
+                }}
+                className="hover:bg-[var(--cream-dark)] transition-colors"
+              >
+                <th
+                  scope="row"
+                  className="px-6 py-4 text-left"
+                  style={{ fontWeight: 500, color: "var(--ink)", fontSize: "14px" }}
+                >
                   <span className="block max-w-[28ch] truncate" title={segment}>
                     {segment}
                   </span>
@@ -125,17 +152,25 @@ export function CoverageMatrix({ matrix }: { matrix: MatrixView }) {
         <div
           id="coverage-cell-tooltip"
           role="tooltip"
-          className="pointer-events-none fixed z-50 w-max max-w-[18rem] -translate-x-1/2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] p-3 text-left"
-          style={{ left: active.left, top: active.top }}
+          className="pointer-events-none fixed z-50 w-max max-w-[18rem] -translate-x-1/2"
+          style={{
+            left: active.left,
+            top: active.top,
+            background: "var(--cream)",
+            border: "1px solid var(--border-strong)",
+            borderRadius: "2px",
+            padding: "12px 16px",
+            boxShadow: "0 4px 16px rgba(26,26,24,0.12)",
+          }}
         >
           <p className="label">
             {active.segment} · {ROLE_ALIASES[active.role] ?? active.role}
           </p>
-          <p className="mono mt-1 text-[12px] leading-5 text-[var(--ink)]">
+          <p className="mono mt-1 text-[var(--ink)]" style={{ fontSize: "12px", lineHeight: "20px" }}>
             {active.aliases.slice(0, 6).join(", ")}
             {active.aliases.length > 6 ? ` +${active.aliases.length - 6} more` : ""}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--ink-muted)]">Contributing aliases</p>
+          <p className="mt-1 text-[var(--ink-muted)]" style={{ fontSize: "11px" }}>Contributing aliases</p>
         </div>
       ) : null}
     </div>

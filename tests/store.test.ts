@@ -58,6 +58,7 @@ describe("the database-backed checkpoint", () => {
     expect(exportGate(run.id)).toEqual({
       ok: false,
       unresolved: [run.findings[0]!.claimId],
+      empty: false,
     });
     expect(() => markExported(run.id)).toThrow(UnresolvedFindingsError);
   });

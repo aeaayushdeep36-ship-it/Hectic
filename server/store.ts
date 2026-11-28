@@ -4,7 +4,7 @@
  */
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { db } from "../db/client";
+import { db, sqlite } from "../db/client";
 import {
   claimThresholds,
   claims,
@@ -84,49 +84,100 @@ function loadClaims(workspaceId: string): Claim[] {
     .map(toClaim);
 }
 
+function workspaceStatsFor(workspaceId: string) {
+  const claimCount = db
+    .select({ id: claims.id })
+    .from(claims)
+    .where(eq(claims.workspaceId, workspaceId))
+    .all().length;
+  const evidenceRows = db
+    .select({ id: evidence.id, orgRef: evidence.orgRef })
+    .from(evidence)
+    .where(eq(evidence.workspaceId, workspaceId))
+    .all();
+  const runCount = db
+    .select({ id: runs.id })
+    .from(runs)
+    .where(eq(runs.workspaceId, workspaceId))
+    .all().length;
+  return {
+    claimCount,
+    evidenceCount: evidenceRows.length,
+    orgCount: new Set(evidenceRows.map((row) => row.orgRef)).size,
+    runCount,
+  };
+}
+
 export function listWorkspaces(): WorkspaceView[] {
   let all = db.select().from(workspaces).all();
   // A fresh clone has no rows. Seed the four synthetic demos on first use so
   // `npm run dev` alone still shows the product.
   if (all.length === 0) {
-    seedDatabase();
+    sqlite.transaction(() => {
+      if (db.select({ id: workspaces.id }).from(workspaces).all().length === 0) {
+        seedDatabase();
+      }
+    })();
     all = db.select().from(workspaces).all();
   }
-  return all.map((workspace) => {
-    const claimCount =
-      db
-        .select({ id: claims.id })
-        .from(claims)
-        .where(eq(claims.workspaceId, workspace.id))
-        .all().length;
-    const evidenceRows = db
-      .select({ id: evidence.id, orgRef: evidence.orgRef })
-      .from(evidence)
-      .where(eq(evidence.workspaceId, workspace.id))
-      .all();
-    const runCount =
-      db
-        .select({ id: runs.id })
-        .from(runs)
-        .where(eq(runs.workspaceId, workspace.id))
-        .all().length;
 
-    return {
-      id: workspace.id,
-      slug: workspace.slug,
-      name: workspace.name,
-      contextNote: workspace.contextNote,
-      isDemo: workspace.isDemo,
-      claimCount,
-      evidenceCount: evidenceRows.length,
-      orgCount: new Set(evidenceRows.map((row) => row.orgRef)).size,
-      runCount,
-    };
-  });
+  const claimCounts = new Map<string, number>();
+  for (const row of db.select({ workspaceId: claims.workspaceId }).from(claims).all()) {
+    claimCounts.set(row.workspaceId, (claimCounts.get(row.workspaceId) ?? 0) + 1);
+  }
+
+  const evidenceCounts = new Map<string, number>();
+  const orgsByWorkspace = new Map<string, Set<string>>();
+  for (const row of db
+    .select({ workspaceId: evidence.workspaceId, orgRef: evidence.orgRef })
+    .from(evidence)
+    .all()) {
+    evidenceCounts.set(row.workspaceId, (evidenceCounts.get(row.workspaceId) ?? 0) + 1);
+    let orgs = orgsByWorkspace.get(row.workspaceId);
+    if (!orgs) {
+      orgs = new Set<string>();
+      orgsByWorkspace.set(row.workspaceId, orgs);
+    }
+    orgs.add(row.orgRef);
+  }
+
+  const runCounts = new Map<string, number>();
+  for (const row of db.select({ workspaceId: runs.workspaceId }).from(runs).all()) {
+    runCounts.set(row.workspaceId, (runCounts.get(row.workspaceId) ?? 0) + 1);
+  }
+
+  return all.map((workspace) => ({
+    id: workspace.id,
+    slug: workspace.slug,
+    name: workspace.name,
+    contextNote: workspace.contextNote,
+    isDemo: workspace.isDemo,
+    claimCount: claimCounts.get(workspace.id) ?? 0,
+    evidenceCount: evidenceCounts.get(workspace.id) ?? 0,
+    orgCount: orgsByWorkspace.get(workspace.id)?.size ?? 0,
+    runCount: runCounts.get(workspace.id) ?? 0,
+  }));
 }
 
 export function getWorkspace(slug: string): WorkspaceView | null {
-  return listWorkspaces().find((workspace) => workspace.slug === slug) ?? null;
+  let workspace = loadWorkspace(slug);
+  if (!workspace && db.select({ id: workspaces.id }).from(workspaces).all().length === 0) {
+    sqlite.transaction(() => {
+      if (db.select({ id: workspaces.id }).from(workspaces).all().length === 0) {
+        seedDatabase();
+      }
+    })();
+    workspace = loadWorkspace(slug);
+  }
+  if (!workspace) return null;
+  return {
+    id: workspace.id,
+    slug: workspace.slug,
+    name: workspace.name,
+    contextNote: workspace.contextNote,
+    isDemo: workspace.isDemo,
+    ...workspaceStatsFor(workspace.id),
+  };
 }
 
 export interface ImportEvidenceResult {
@@ -145,6 +196,12 @@ export interface ImportEvidenceResult {
  * not the upload.
  */
 export function importEvidence(slug: string, csv: string): ImportEvidenceResult {
+  // One transaction: a failure midway rolls the whole import back instead of
+  // leaving a half-imported roster (and it is far faster than per-row commits).
+  return sqlite.transaction(() => importEvidenceInner(slug, csv))();
+}
+
+function importEvidenceInner(slug: string, csv: string): ImportEvidenceResult {
   const workspace = loadWorkspace(slug);
   if (!workspace) throw new Error(`Unknown workspace: ${slug}`);
   if (Buffer.byteLength(csv, "utf8") > 2_000_000) {
@@ -163,8 +220,23 @@ export function importEvidence(slug: string, csv: string): ImportEvidenceResult 
   let injections = 0;
   const rejected = [...errors];
 
+function isValidDateInput(raw: string): boolean {
+  if (!Number.isFinite(Date.parse(raw))) return false;
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!isoMatch) return true;
+  const year = Number(isoMatch[1]);
+  const month = Number(isoMatch[2]);
+  const day = Number(isoMatch[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+}
+
   for (const [index, row] of rows.entries()) {
-    if (!Number.isFinite(Date.parse(row.date))) {
+    if (!isValidDateInput(row.date)) {
       rejected.push({ line: index + 2, message: "Invalid date" });
       continue;
     }
@@ -314,6 +386,31 @@ function hydrateRun(run: typeof runs.$inferSelect): RunView {
         .all()
     : [];
 
+  const claimIds = findingRows.map((finding) => finding.claimId);
+  const thresholdRows =
+    claimIds.length > 0
+      ? db
+          .select()
+          .from(claimThresholds)
+          .where(inArray(claimThresholds.claimId, claimIds))
+          .all()
+      : [];
+  const thresholdsByClaim = new Map<string, ThresholdView[]>();
+  for (const row of thresholdRows) {
+    const list = thresholdsByClaim.get(row.claimId) ?? [];
+    list.push({
+      id: row.id,
+      code: row.code,
+      kind: row.kind,
+      value: row.overridden && row.overrideValue !== null ? row.overrideValue : row.requiredValue,
+      rationale: row.rationale,
+      source: row.sourceRef,
+      scope: row.scope,
+      overridden: row.overridden,
+    });
+    thresholdsByClaim.set(row.claimId, list);
+  }
+
   const findings: FindingView[] = findingRows.map((row) => {
     const claim = claimById.get(row.claimId);
     const resolution = resolutionRows.find((item) => item.claimId === row.claimId);
@@ -343,7 +440,7 @@ function hydrateRun(run: typeof runs.$inferSelect): RunView {
             resolvedAt: resolution.resolvedAt,
           }
         : null,
-      thresholds: thresholdDefinitions(row.claimId),
+      thresholds: thresholdsByClaim.get(row.claimId) ?? [],
       trace: {
         population: claim?.population ?? "UNSPECIFIED",
         predicate: claim?.predicate ?? row.claimId,
@@ -423,76 +520,78 @@ export function createRun(
   providerId = "mock",
   modelId = "mock-v1",
 ): RunView {
-  const workspace = loadWorkspace(slug);
-  if (!workspace) throw new Error(`Unknown workspace: ${slug}`);
+  return sqlite.transaction(() => {
+    const workspace = loadWorkspace(slug);
+    if (!workspace) throw new Error(`Unknown workspace: ${slug}`);
 
-  const { findings, coverageByClaim, claimRows, domain } = compute(workspace.id);
-  const inputHash = verdictHash({ claims: claimRows, evidence: domain });
-  const findingHash = verdictHash(findings);
-  const unresolved = findings.filter((finding) => finding.kind !== "SUPPORTED");
+    const { findings, coverageByClaim, claimRows, domain } = compute(workspace.id);
+    const inputHash = verdictHash({ claims: claimRows, evidence: domain });
+    const findingHash = verdictHash(findings);
+    const unresolved = findings.filter((finding) => finding.kind !== "SUPPORTED");
 
-  const runId = nanoid();
-  const startedAt = Date.now();
-  db.insert(runs)
-    .values({
-      id: runId,
-      workspaceId: workspace.id,
-      status: unresolved.length > 0 ? "BLOCKED" : "RESOLVED",
-      engineVersion: ENGINE_VERSION,
-      thresholdVersion: THRESHOLD_VERSION,
-      inputHash,
-      findingHash,
-      providerId,
-      modelId,
-      startedAt,
-      finishedAt: startedAt,
-      costEur: 0,
-      callCount: 0,
-    })
-    .run();
-
-  for (const finding of findings) {
-    const claim = claimRows.find((item) => item.id === finding.claimId);
-    if (!claim) continue;
-    const coverage = coverageByClaim.get(claim.id);
-    db.insert(runFindings)
+    const runId = nanoid();
+    const startedAt = Date.now();
+    db.insert(runs)
       .values({
-        id: nanoid(),
-        runId,
-        claimId: claim.id,
-        level: finding.verdict.level,
-        support: finding.verdict.support,
-        breadth: finding.verdict.breadth,
-        saturation: finding.verdict.saturation,
-        intervalJson: finding.verdict.interval
-          ? JSON.stringify(finding.verdict.interval)
-          : null,
-        finding: finding.kind,
-        bindingCode: finding.verdict.binding,
-        coverageJson: JSON.stringify(coverage ?? {}),
-        diagnosticsJson: JSON.stringify(coverage?.diagnostics ?? {}),
-        explanation: explain(claim, finding),
-      })
-      .run();
-  }
-
-  db.insert(events)
-    .values({
-      id: nanoid(),
-      workspaceId: workspace.id,
-      runId,
-      type: "run.analysed",
-      payloadJson: JSON.stringify({
+        id: runId,
+        workspaceId: workspace.id,
+        status: unresolved.length > 0 ? "BLOCKED" : "RESOLVED",
+        engineVersion: ENGINE_VERSION,
+        thresholdVersion: THRESHOLD_VERSION,
+        inputHash,
+        findingHash,
         providerId,
         modelId,
-        findingHash,
-        unresolved: unresolved.length,
-      }),
-      createdAt: startedAt,
-    })
-    .run();
+        startedAt,
+        finishedAt: startedAt,
+        costEur: 0,
+        callCount: 0,
+      })
+      .run();
 
-  return hydrateRun(db.select().from(runs).where(eq(runs.id, runId)).get()!);
+    for (const finding of findings) {
+      const claim = claimRows.find((item) => item.id === finding.claimId);
+      if (!claim) continue;
+      const coverage = coverageByClaim.get(claim.id);
+      db.insert(runFindings)
+        .values({
+          id: nanoid(),
+          runId,
+          claimId: claim.id,
+          level: finding.verdict.level,
+          support: finding.verdict.support,
+          breadth: finding.verdict.breadth,
+          saturation: finding.verdict.saturation,
+          intervalJson: finding.verdict.interval
+            ? JSON.stringify(finding.verdict.interval)
+            : null,
+          finding: finding.kind,
+          bindingCode: finding.verdict.binding,
+          coverageJson: JSON.stringify(coverage ?? {}),
+          diagnosticsJson: JSON.stringify(coverage?.diagnostics ?? {}),
+          explanation: explain(claim, finding),
+        })
+        .run();
+    }
+
+    db.insert(events)
+      .values({
+        id: nanoid(),
+        workspaceId: workspace.id,
+        runId,
+        type: "run.analysed",
+        payloadJson: JSON.stringify({
+          providerId,
+          modelId,
+          findingHash,
+          unresolved: unresolved.length,
+        }),
+        createdAt: startedAt,
+      })
+      .run();
+
+    return hydrateRun(db.select().from(runs).where(eq(runs.id, runId)).get()!);
+  })();
 }
 
 export function addResolution(
@@ -504,46 +603,70 @@ export function addResolution(
   note: string | null,
 ): RunView {
   const trimmed = falsifier.trim();
+  if (trimmed.length < 40) {
+    throw new Error("A falsifier must be at least 40 characters.");
+  }
   const validated = checkFalsifier(trimmed);
   if (!validated.ok) {
     throw new Error(validated.reason ?? "FALSIFIER_NOT_OBSERVABLE");
   }
-  const run = db.select().from(runs).where(eq(runs.id, runId)).get();
-  if (!run) throw new Error(`Unknown run: ${runId}`);
+  if (targetLevel !== null && (!Number.isInteger(targetLevel) || targetLevel < 1 || targetLevel > 6)) {
+    throw new Error("INVALID_TARGET_LEVEL");
+  }
 
-  db.insert(resolutions)
-    .values({
-      id: nanoid(),
-      runId,
-      claimId,
-      action,
-      targetLevel,
-      falsifier: trimmed,
-      note,
-      resolvedAt: Date.now(),
-    })
-    .run();
+  return sqlite.transaction(() => {
+    const run = db.select().from(runs).where(eq(runs.id, runId)).get();
+    if (!run) throw new Error(`Unknown run: ${runId}`);
 
-  const remaining = unresolvedClaimIds(runId);
-  db.update(runs)
-    .set({
-      status: remaining.length === 0 ? "RESOLVED" : "BLOCKED",
-    })
-    .where(eq(runs.id, runId))
-    .run();
+    // The claim must be one of this run's findings, and be resolved only once.
+    const finding = db
+      .select({ id: runFindings.id })
+      .from(runFindings)
+      .where(and(eq(runFindings.runId, runId), eq(runFindings.claimId, claimId)))
+      .get();
+    if (!finding) throw new Error("UNKNOWN_FINDING");
+    const existing = db
+      .select({ id: resolutions.id })
+      .from(resolutions)
+      .where(and(eq(resolutions.runId, runId), eq(resolutions.claimId, claimId)))
+      .get();
+    if (existing) throw new Error("ALREADY_RESOLVED");
 
-  db.insert(events)
-    .values({
-      id: nanoid(),
-      workspaceId: run.workspaceId,
-      runId,
-      type: "checkpoint.resolved",
-      payloadJson: JSON.stringify({ claimId, action, remaining: remaining.length }),
-      createdAt: Date.now(),
-    })
-    .run();
+    const now = Date.now();
+    db.insert(resolutions)
+      .values({
+        id: nanoid(),
+        runId,
+        claimId,
+        action,
+        targetLevel,
+        falsifier: trimmed,
+        note,
+        resolvedAt: now,
+      })
+      .run();
 
-  return getRun(runId)!;
+    const remaining = unresolvedClaimIds(runId);
+    db.update(runs)
+      .set({
+        status: remaining.length === 0 ? "RESOLVED" : "BLOCKED",
+      })
+      .where(eq(runs.id, runId))
+      .run();
+
+    db.insert(events)
+      .values({
+        id: nanoid(),
+        workspaceId: run.workspaceId,
+        runId,
+        type: "checkpoint.resolved",
+        payloadJson: JSON.stringify({ claimId, action, remaining: remaining.length }),
+        createdAt: now,
+      })
+      .run();
+
+    return getRun(runId)!;
+  })();
 }
 
 function unresolvedClaimIds(runId: string): string[] {
@@ -564,28 +687,44 @@ function unresolvedClaimIds(runId: string): string[] {
   return rows.map((row) => row.claimId);
 }
 
-export function exportGate(runId: string): { ok: boolean; unresolved: string[] } {
+export function exportGate(runId: string): { ok: boolean; unresolved: string[]; empty: boolean } {
   const unresolved = unresolvedClaimIds(runId);
-  return { ok: unresolved.length === 0, unresolved };
+  // A run with no findings certifies nothing, so it must never export as
+  // "verified".
+  const findingCount = db
+    .select({ id: runFindings.id })
+    .from(runFindings)
+    .where(eq(runFindings.runId, runId))
+    .all().length;
+  return {
+    ok: unresolved.length === 0 && findingCount > 0,
+    unresolved,
+    empty: findingCount === 0,
+  };
 }
 
 export function markExported(runId: string): RunView {
-  const gate = exportGate(runId);
-  if (!gate.ok) throw new UnresolvedFindingsError(gate.unresolved);
+  return sqlite.transaction(() => {
+    const run = db.select().from(runs).where(eq(runs.id, runId)).get();
+    if (!run) {
+      throw new Error("UNKNOWN_RUN");
+    }
+    const gate = exportGate(runId);
+    if (!gate.ok) throw new UnresolvedFindingsError(gate.unresolved);
 
-  const run = db.select().from(runs).where(eq(runs.id, runId)).get()!;
-  db.update(runs).set({ status: "EXPORTED" }).where(eq(runs.id, runId)).run();
-  db.insert(events)
-    .values({
-      id: nanoid(),
-      workspaceId: run.workspaceId,
-      runId,
-      type: "export.created",
-      payloadJson: JSON.stringify({ findingHash: run.findingHash }),
-      createdAt: Date.now(),
-    })
-    .run();
-  return getRun(runId)!;
+    db.update(runs).set({ status: "EXPORTED" }).where(eq(runs.id, runId)).run();
+    db.insert(events)
+      .values({
+        id: nanoid(),
+        workspaceId: run.workspaceId,
+        runId,
+        type: "export.created",
+        payloadJson: JSON.stringify({ findingHash: run.findingHash }),
+        createdAt: Date.now(),
+      })
+      .run();
+    return getRun(runId)!;
+  })();
 }
 
 /**
@@ -710,55 +849,98 @@ export interface CreateClaimInput {
 }
 
 export function createClaim(slug: string, input: CreateClaimInput): ClaimView {
-  const workspace = loadWorkspace(slug);
-  if (!workspace) throw new Error(`Unknown workspace: ${slug}`);
+  if (input.rawText.trim().length === 0) {
+    throw new Error("A claim with no text cannot be confirmed.");
+  }
   if (input.population.trim().length === 0) {
     throw new Error("A claim with no population cannot be confirmed.");
+  }
+  if (input.predicate.trim().length === 0) {
+    throw new Error("A claim with no predicate cannot be confirmed.");
   }
   if (!Number.isInteger(input.claimedLevel) || input.claimedLevel < 1 || input.claimedLevel > 6) {
     throw new Error("Claimed level must be L1–L6.");
   }
-  const existing = db
-    .select({ ordinal: claims.ordinal })
-    .from(claims)
-    .where(eq(claims.workspaceId, workspace.id))
-    .all();
-  const ordinal = existing.length === 0 ? 0 : Math.max(...existing.map((row) => row.ordinal)) + 1;
-  const claimId = nanoid();
-  const now = Date.now();
+  if (input.observed) {
+    const { k, n } = input.observed;
+    if (!Number.isInteger(k) || !Number.isInteger(n) || k < 0 || n <= 0 || k > n) {
+      throw new Error("Observed counts must satisfy 0 <= k <= n and n > 0.");
+    }
+  }
+  if (
+    input.precisionTolerance !== null &&
+    (!Number.isFinite(input.precisionTolerance) || input.precisionTolerance <= 0)
+  ) {
+    throw new Error("Precision tolerance must be a positive number.");
+  }
 
-  db.insert(claims)
-    .values({
-      id: claimId,
-      workspaceId: workspace.id,
-      ordinal,
-      rawText: input.rawText,
-      population: input.population,
-      populationSpec: JSON.stringify({}),
-      predicate: input.predicate,
-      kind: input.kind,
-      claimType: input.claimType,
-      claimedLevel: input.claimedLevel,
-      observedK: input.observed?.k ?? null,
-      observedN: input.observed?.n ?? null,
-      precisionTolerance: input.precisionTolerance,
-      ambiguityFlags: JSON.stringify(input.ambiguityFlags ?? []),
-      confirmedAt: now,
-      createdAt: now,
-    })
-    .run();
+  return sqlite.transaction(() => {
+    const workspace = loadWorkspace(slug);
+    if (!workspace) throw new Error(`Unknown workspace: ${slug}`);
 
-  db.insert(events)
-    .values({
-      id: nanoid(),
-      workspaceId: workspace.id,
-      type: "claim.confirmed",
-      payloadJson: JSON.stringify({ claimId, source: "formalisation-ui" }),
-      createdAt: now,
-    })
-    .run();
+    const existing = db
+      .select({ ordinal: claims.ordinal })
+      .from(claims)
+      .where(eq(claims.workspaceId, workspace.id))
+      .all();
+    const ordinal = existing.length === 0 ? 0 : Math.max(...existing.map((row) => row.ordinal)) + 1;
+    const claimId = nanoid();
+    const now = Date.now();
 
-  return listClaims(slug).find((claim) => claim.id === claimId)!;
+    db.insert(claims)
+      .values({
+        id: claimId,
+        workspaceId: workspace.id,
+        ordinal,
+        rawText: input.rawText,
+        population: input.population,
+        populationSpec: JSON.stringify({}),
+        predicate: input.predicate,
+        kind: input.kind,
+        claimType: input.claimType,
+        claimedLevel: input.claimedLevel,
+        observedK: input.observed?.k ?? null,
+        observedN: input.observed?.n ?? null,
+        precisionTolerance: input.precisionTolerance,
+        ambiguityFlags: JSON.stringify(input.ambiguityFlags ?? []),
+        confirmedAt: now,
+        createdAt: now,
+      })
+      .run();
+
+    const newClaim = toClaim(
+      db.select().from(claims).where(eq(claims.id, claimId)).get()!,
+    );
+    const { domain: existingEvidence } = loadEvidence(workspace.id);
+    for (const row of existingEvidence) {
+      db.insert(evidenceClaimTags)
+        .values({
+          id: contentHash([row.id, claimId]),
+          evidenceId: row.id,
+          claimId,
+          bearsOn: true,
+          polarity: "supports",
+          inPopulation: isInPopulation(row, newClaim),
+          populationMatchProducer: "rule",
+          producer: "human",
+          createdAt: now,
+        })
+        .onConflictDoNothing()
+        .run();
+    }
+
+    db.insert(events)
+      .values({
+        id: nanoid(),
+        workspaceId: workspace.id,
+        type: "claim.confirmed",
+        payloadJson: JSON.stringify({ claimId, source: "formalisation-ui" }),
+        createdAt: now,
+      })
+      .run();
+
+    return listClaims(slug).find((claim) => claim.id === claimId)!;
+  })();
 }
 
 /** Aggregate "who was in the room" matrix across every interview in a workspace. */

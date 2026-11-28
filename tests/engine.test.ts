@@ -182,15 +182,13 @@ describe("properties", () => {
     fc.assert(
       fc.property(inputArb, (input) => {
         const verdict = computeVerdict(input);
-        if (input.inPopulationOrgs === 0) {
+        const customerEntries = Object.entries(input.inPopulationTypes).filter(
+          ([level, count]) => Number(level) !== 5 && (count ?? 0) > 0,
+        );
+        if (input.inPopulationOrgs === 0 || customerEntries.length === 0) {
           return verdict.level === 1 && verdict.support === 0;
         }
-        const max = Math.max(
-          0,
-          ...Object.entries(input.inPopulationTypes)
-            .filter(([, count]) => (count ?? 0) > 0)
-            .map(([level]) => Number(level)),
-        );
+        const max = Math.max(0, ...customerEntries.map(([level]) => Number(level)));
         return verdict.level === max;
       }),
       { numRuns: 500, seed: 20261124 },
@@ -201,12 +199,15 @@ describe("properties", () => {
     fc.assert(
       fc.property(inputArb, (input) => {
         const verdict = computeVerdict(input);
-        if (input.inPopulationOrgs === 0) {
+        const customerEntries = Object.entries(input.inPopulationTypes).filter(
+          ([level, count]) => Number(level) !== 5 && (count ?? 0) > 0,
+        );
+        if (input.inPopulationOrgs === 0 || customerEntries.length === 0) {
           return verdict.support === 0 && verdict.breadth === 0;
         }
         const atLevel = input.inPopulationTypes[verdict.level] ?? 0;
-        const total = Object.values(input.inPopulationTypes).reduce<number>(
-          (sum, count) => sum + (count ?? 0),
+        const total = customerEntries.reduce<number>(
+          (sum, [, count]) => sum + (count ?? 0),
           0,
         );
         return verdict.support === atLevel && verdict.breadth === total;

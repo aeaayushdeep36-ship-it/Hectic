@@ -25,6 +25,8 @@ export interface AgentOptions {
   readonly retry?: RetryOptions;
 }
 
+const SCHEMA_VERSION = "claimProposalSchema.v1";
+
 const KIND_ALIASES: Readonly<Record<string, string>> = {
   "willingness to pay": "willingness_to_pay",
   "willingness-to-pay": "willingness_to_pay",
@@ -33,10 +35,22 @@ const KIND_ALIASES: Readonly<Record<string, string>> = {
   "role ownership": "role_ownership",
 };
 
+const PREVALENCE_SIGNAL =
+  /(?:\b(?:most|majority|half|percent|every|share|proportion|rate)\b|\d+\s*%|\d+\s*(?:of|out of)\s*\d+)/i;
+
 function normaliseKind(value: unknown): unknown {
   if (typeof value !== "string") return value;
   const key = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
   return KIND_ALIASES[key] ?? key;
+}
+
+function cleanTruncate(text: string, maxLen = 400): string {
+  if (text.length <= maxLen) return text;
+  const sliced = text.slice(0, maxLen);
+  const lastSentence = Math.max(sliced.lastIndexOf(". "), sliced.lastIndexOf("! "), sliced.lastIndexOf("? "));
+  if (lastSentence >= maxLen * 0.5) return sliced.slice(0, lastSentence + 1).trim();
+  const lastSpace = sliced.lastIndexOf(" ");
+  return (lastSpace >= maxLen * 0.5 ? sliced.slice(0, lastSpace) : sliced).trim();
 }
 
 export interface FormaliseResult {
@@ -55,28 +69,25 @@ export async function formalise(
   const checked = guard(rawText);
   const safeText = checked.redacted;
   const system = readSystemPrompt("claim-formaliser", PROMPT_VERSION);
-  const user = wrapUserContent(
-    JSON.stringify({
-      rawText: safeText,
-      schema: {
-        rawText: "string",
-        population: "string",
-        predicate: "string",
-        kind: "enum",
-        claimType: "theme | prevalence",
-        rationale: "string",
-        ambiguityFlags: "string[]",
-      },
-    }),
-  );
-  const key = cacheKey(["A1", PROMPT_VERSION, provider.id, provider.modelId, safeText]);
+  const basePayload = {
+    rawText: safeText,
+    schema: {
+      rawText: "string",
+      population: "string",
+      predicate: "string",
+      kind: "enum",
+      claimType: "theme | prevalence",
+      rationale: "string",
+      ambiguityFlags: "string[]",
+    },
+  };
+  const key = cacheKey(["A1", PROMPT_VERSION, SCHEMA_VERSION, provider.id, provider.modelId, safeText]);
 
-  const tryParse = (text: string): ClaimProposal | null => {
+  const tryParse = (
+    text: string,
+  ): { proposal: ClaimProposal | null; issues: string } => {
     try {
       const parsed = parseModelJson(text);
-      // The raw sentence is server-owned input, not something a model must echo.
-      // Some open models also emit snake_case aliases; normalise both here rather
-      // than turning a usable proposal into a schema fallback.
       const record =
         parsed && typeof parsed === "object" && !Array.isArray(parsed)
           ? (parsed as Record<string, unknown>)
@@ -92,42 +103,81 @@ export async function formalise(
                 : record.claimType ?? record.claim_type,
             ambiguityFlags: record.ambiguityFlags ?? record.ambiguity_flags,
             ...(typeof record.rationale === "string"
-              ? { rationale: record.rationale.slice(0, 400) }
+              ? { rationale: cleanTruncate(record.rationale, 400) }
               : {}),
           }
         : parsed;
       const candidate = claimProposalSchema.safeParse(candidateValue);
-      return candidate.success ? candidate.data : null;
+      if (candidate.success) {
+        const expectedPrevalence = PREVALENCE_SIGNAL.test(safeText);
+        const heuristicClaimType = expectedPrevalence ? "prevalence" : "theme";
+        const flags = [...candidate.data.ambiguityFlags];
+        if (
+          candidate.data.claimType !== heuristicClaimType &&
+          !flags.includes("claimType_disagreement")
+        ) {
+          flags.push("claimType_disagreement");
+        }
+        return {
+          proposal: { ...candidate.data, ambiguityFlags: flags },
+          issues: "",
+        };
+      }
+      const issues = candidate.error.issues
+        .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
+        .slice(0, 4)
+        .join("; ");
+      return { proposal: null, issues };
     } catch {
-      return null;
+      return { proposal: null, issues: "malformed JSON" };
     }
   };
 
   const cached = getCached(key);
   if (cached !== undefined) {
-    const proposal = tryParse(cached);
+    const { proposal } = tryParse(cached);
     if (proposal) {
-      return { proposal, injection: checked.injected, flags: checked.flags, usedProvider: true, fallbackReason: null };
+      return {
+        proposal,
+        injection: checked.injected,
+        flags: checked.flags,
+        usedProvider: true,
+        fallbackReason: null,
+      };
     }
   }
 
   let fallbackReason: string | null = null;
-  // Live providers occasionally emit one unusable body (empty object, prose or
-  // a truncated object). Re-ask once inside the same bounded retry policy; the
-  // Zod schema still decides what is acceptable, and the template remains the
-  // fallback if the second body is unusable too.
+  let lastIssues = "";
+
+  // Re-ask once with the specific Zod validation error so low-temperature models
+  // can self-correct instead of repeating the identical invalid JSON.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
+      const user = wrapUserContent(
+        JSON.stringify(
+          attempt === 0 || !lastIssues
+            ? basePayload
+            : { ...basePayload, repairHint: `Previous response failed schema validation: ${lastIssues}` },
+        ),
+      );
       const completion = await completeWithRetry(provider, system, user, options.retry);
       if (!completion.ok) {
         fallbackReason = `PROVIDER_${completion.errorCode ?? "ERROR"}`;
         break;
       }
-      const proposal = tryParse(completion.text);
+      const { proposal, issues } = tryParse(completion.text);
       if (proposal) {
         putCached(key, completion.text);
-        return { proposal, injection: checked.injected, flags: checked.flags, usedProvider: true, fallbackReason: null };
+        return {
+          proposal,
+          injection: checked.injected,
+          flags: checked.flags,
+          usedProvider: true,
+          fallbackReason: null,
+        };
       }
+      lastIssues = issues;
       fallbackReason = "SCHEMA_INVALID";
     } catch (error) {
       fallbackReason = error instanceof Error ? error.message.slice(0, 60) : "PROVIDER_THREW";

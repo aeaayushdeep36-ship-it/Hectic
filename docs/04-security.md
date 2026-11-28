@@ -179,6 +179,27 @@ Local app, so the risk is accidental, not adversarial:
 
 ---
 
+## 11b. Implementation status (security audit, November 2026)
+
+The audit found gaps between this document and the code. Status after remediation:
+
+| Control | Status |
+|---|---|
+| Cross-site / DNS-rebinding protection | Implemented in `lib/http.ts` `checkRequest()`: loopback `Host` allowlist (`HECTIC_ALLOWED_HOSTS` extends it), cross-site `Sec-Fetch-Site` and foreign `Origin` refused, JSON content type required on body routes. Called by every API route. |
+| Authentication | **Not implemented.** The app is single-user and local. Do not expose it on a network; run it bound to loopback. Add auth before any shared deployment. |
+| Rate limiting | Implemented per process for real providers only (10 analyses/min, 30 formalisations/min). The per-run call budget is enforced in `agents/relevance.ts`. A mock-provider run is free and unlimited. |
+| Body validation | Zod (`createClaimInputSchema`), length caps, safe JSON parsing, 413 on oversize. |
+| Error disclosure | `publicError()` hides database internals from clients. |
+| Redaction | Added French and compact international phones, Luhn-checked card numbers, obfuscated emails and scheme-less profile URLs. Claim text and resolution notes are now redacted before storage. Name detection stays heuristic: it is a documented limitation. |
+| Export gate | A run with no findings can no longer be exported as verified. Resolutions must reference a finding of that run and can be filed once. |
+| Draft watermark | Now prints. Previously hidden by `no-print`. |
+| Security headers | CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` in `next.config.ts`. Scripts need `'unsafe-inline'` because of the Next.js runtime; `'unsafe-eval'` is dev only. |
+| Secret scan | Added the newer Google `AQ.` key format. |
+| CI | Least-privilege token and `npm audit --omit=dev --audit-level=high`. |
+| Not done | Logger redaction and the ESLint import/`dangerouslySetInnerHTML` rules described above. No code uses `dangerouslySetInnerHTML` today. |
+
+---
+
 ## 12. Responsible AI disclosures (required by the brief)
 
 Ship these as `RESPONSIBLE_AI.md`, and mirror the key points on the project page.

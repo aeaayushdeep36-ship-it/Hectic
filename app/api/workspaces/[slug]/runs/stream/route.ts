@@ -6,8 +6,18 @@
  * See node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md
  * for the supported ReadableStream response pattern.
  */
+import {
+  checkRequest,
+  isMetered,
+  isRateLimited,
+  payloadTooLarge,
+  publicError,
+  readJsonObject,
+  tooManyRequests,
+} from "../../../../../../lib/http";
 import { parseProviderSelection } from "../../../../../../lib/provider-options";
 import { runAgentPipeline, type AgentPipelineEvent } from "../../../../../../server/agent-pipeline";
+import { getWorkspace } from "../../../../../../server/store";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +26,23 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ slug: string }> },
 ) {
+  const refused = checkRequest(request, { json: true });
+  if (refused) return refused;
+
   const { slug } = await context.params;
-  const body = await request.json().catch(() => ({}));
+  const body = await readJsonObject(request);
+  if (body === null) return payloadTooLarge();
+
   const selection = parseProviderSelection(body);
   if (!selection) {
     return NextResponse.json({ error: "INVALID_PROVIDER_SELECTION" }, { status: 400 });
+  }
+  // The pipeline makes many provider calls per run: cap real-provider runs.
+  if (isMetered(selection.providerId) && isRateLimited("analysis", 10)) {
+    return tooManyRequests();
+  }
+  if (!getWorkspace(slug)) {
+    return NextResponse.json({ error: "UNKNOWN_WORKSPACE" }, { status: 404 });
   }
   const encoder = new TextEncoder();
 
@@ -35,7 +57,7 @@ export async function POST(
       } catch (error) {
         const event: AgentPipelineEvent = {
           type: "error",
-          message: error instanceof Error ? error.message : "PIPELINE_FAILED",
+          message: publicError(error, "PIPELINE_FAILED"),
         };
         send(event);
       } finally {

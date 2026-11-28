@@ -1,0 +1,415 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required, immutable, must equal userId)
+    //   - email: string (optional, valid email, max 254 chars)
+    //   - displayName: string (optional, 1..100 chars)
+    //   - firstName: string or null (optional, max 80 chars)
+    //   - lastName: string or null (optional, max 80 chars)
+    //   - mobileNumber: string or null (optional, max 32 chars)
+    //   - photoURL: string (optional, valid http/https URL, max 500 chars)
+    //   - createdAt: timestamp or int (required, immutable)
+    //   - updatedAt: timestamp or int (optional)
+    //
+    // Collection: workspaces
+    // Document ID: {workspaceId}
+    // Fields:
+    //   - ownerId: string (required, immutable, must equal request.auth.uid on create)
+    //   - slug: string (required, 1..120 chars)
+    //   - name: string (required, 1..200 chars)
+    //   - contextNote: string or null (optional, max 5000 chars)
+    //   - isDemo: bool (required, immutable, must be false on client create)
+    //   - createdAt: timestamp or int (required, immutable)
+    //   - archivedAt: timestamp, int, or null (optional)
+    //
+    // Subcollection: workspaces/{workspaceId}/claims
+    // Document ID: {claimId}
+    // Fields:
+    //   - workspaceId: string (required, immutable, must equal parent workspaceId)
+    //   - ordinal: int (required, 0..10000)
+    //   - rawText: string (required, 1..5000 chars)
+    //   - population: string (required, 1..1000 chars)
+    //   - populationSpec: string (max 2000 chars) or map (keys in ['segments', 'roles']) (required)
+    //   - predicate: string (required, 1..2000 chars)
+    //   - kind: string (required, enum: pain, frequency, willingness_to_pay, role_ownership, displacement, retention, comparative)
+    //   - claimType: string (required, enum: theme, prevalence)
+    //   - claimedLevel: int (required, 1..6)
+    //   - observedK: int or null (optional, >= 0)
+    //   - observedN: int or null (optional, >= 0)
+    //   - precisionTolerance: number or null (optional, 0..1)
+    //   - proposedByAgent: int or bool (optional)
+    //   - modelProposal: string or null (optional, max 10000 chars)
+    //   - humanEditDiff: string or null (optional, max 10000 chars)
+    //   - ambiguityFlags: string (max 5000 chars), list (max 50 items), or null (optional)
+    //   - confirmedAt: timestamp, int, or null (optional)
+    //   - createdAt: timestamp or int (required, immutable)
+    //
+    // Subcollection: workspaces/{workspaceId}/evidence
+    // Document ID: {evidenceId}
+    // Fields:
+    //   - workspaceId: string (required, immutable, must equal parent workspaceId)
+    //   - alias: string (required, 1..200 chars)
+    //   - interviewedAt: timestamp, int, or string (max 64 chars) (required)
+    //   - role: string (required, enum: economic, technical, user, influencer, none)
+    //   - orgRef: string (required, 1..200 chars)
+    //   - segment: string (required, 1..200 chars)
+    //   - sourceChannel: string (required, 1..200 chars)
+    //   - relationship: string (required, enum: founder_network, referral, cold, unknown)
+    //   - evidenceType: string (required, enum: L1_internal, L2_stated, L3_concept, L4_commitment, L5_investment, L6_payment)
+    //   - durationMin: int or null (optional, 0..1440)
+    //   - notesRaw: string or null (optional, max 50000 chars)
+    //   - notesRedacted: string or null (optional, max 50000 chars)
+    //   - importBatch: string or null (optional, max 200 chars)
+    //   - createdAt: timestamp or int (required, immutable)
+    //
+    // Subcollection: workspaces/{workspaceId}/runs
+    // Document ID: {runId}
+    // Fields:
+    //   - workspaceId: string (required, immutable, must equal parent workspaceId)
+    //   - status: string (required, enum: DRAFT, ANALYSED, BLOCKED, RESOLVED, EXPORTED, FAILED)
+    //   - engineVersion: string (required, 1..64 chars)
+    //   - thresholdVersion: string (required, 1..64 chars)
+    //   - inputHash: string (required, 1..128 chars)
+    //   - findingHash: string or null (optional, max 128 chars)
+    //   - providerId: string or null (optional, max 100 chars)
+    //   - modelId: string or null (optional, max 200 chars)
+    //   - startedAt: timestamp or int (required, immutable)
+    //   - finishedAt: timestamp, int, or null (optional)
+    //   - costEur: number (required, 0..10000)
+    //   - callCount: int (required, 0..10000)
+    //
+    // Subcollection: workspaces/{workspaceId}/events
+    // Document ID: {eventId}
+    // Fields:
+    //   - workspaceId: string (required, immutable, must equal parent workspaceId)
+    //   - runId: string or null (optional, max 128 chars)
+    //   - type: string (required, 1..100 chars)
+    //   - payloadJson: string (required, max 50000 chars)
+    //   - createdAt: timestamp or int (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isNonEmptyString(val, maxLen) {
+      return val is string && val.size() >= 1 && val.size() <= maxLen;
+    }
+
+    function isOptionalNullableString(data, field, maxLen) {
+      return !(field in data) ||
+        data[field] == null ||
+        (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() <= 254 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+        url.size() <= 500 &&
+        (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isTimestampOrEpoch(val) {
+      return val is timestamp || (val is int && val >= 0);
+    }
+
+    function isOptionalNullableTimestampOrEpoch(data, field) {
+      return !(field in data) ||
+        data[field] == null ||
+        isTimestampOrEpoch(data[field]);
+    }
+
+    // Parent workspace helpers
+    function workspacePath(workspaceId) {
+      return /databases/$(database)/documents/workspaces/$(workspaceId);
+    }
+
+    function workspaceExists(workspaceId) {
+      return exists(workspacePath(workspaceId));
+    }
+
+    function isParentWorkspaceOwner(workspaceId) {
+      return isAuthenticated() &&
+        workspaceExists(workspaceId) &&
+        get(workspacePath(workspaceId)).data.ownerId == request.auth.uid;
+    }
+
+    function isParentWorkspaceDemo(workspaceId) {
+      return isAuthenticated() &&
+        workspaceExists(workspaceId) &&
+        get(workspacePath(workspaceId)).data.isDemo == true;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data, userId) {
+      return hasOnlyAllowedFields([
+          'uid', 'email', 'displayName', 'firstName', 'lastName',
+          'mobileNumber', 'photoURL', 'createdAt', 'updatedAt'
+        ]) &&
+        hasRequiredFields(['uid', 'createdAt']) &&
+        data.uid is string &&
+        data.uid == userId &&
+        isTimestampOrEpoch(data.createdAt) &&
+        (!( 'email' in data ) || data.email == null || isValidEmail(data.email)) &&
+        isOptionalNullableString(data, 'displayName', 100) &&
+        isOptionalNullableString(data, 'firstName', 80) &&
+        isOptionalNullableString(data, 'lastName', 80) &&
+        isOptionalNullableString(data, 'mobileNumber', 32) &&
+        (!( 'photoURL' in data ) || data.photoURL == null || isValidUrl(data.photoURL)) &&
+        isOptionalNullableTimestampOrEpoch(data, 'updatedAt');
+    }
+
+    function isValidWorkspace(data) {
+      return hasOnlyAllowedFields([
+          'ownerId', 'slug', 'name', 'contextNote', 'isDemo', 'createdAt', 'archivedAt'
+        ]) &&
+        hasRequiredFields(['ownerId', 'slug', 'name', 'isDemo', 'createdAt']) &&
+        isNonEmptyString(data.ownerId, 128) &&
+        isNonEmptyString(data.slug, 120) &&
+        isNonEmptyString(data.name, 200) &&
+        isOptionalNullableString(data, 'contextNote', 5000) &&
+        data.isDemo is bool &&
+        isTimestampOrEpoch(data.createdAt) &&
+        isOptionalNullableTimestampOrEpoch(data, 'archivedAt');
+    }
+
+    function isValidPopulationSpec(spec) {
+      return (spec is string && spec.size() <= 2000) ||
+        (spec is map &&
+          spec.keys().hasOnly(['segments', 'roles']) &&
+          (!('segments' in spec) || (spec.segments is list && spec.segments.size() <= 50)) &&
+          (!('roles' in spec) || (spec.roles is list && spec.roles.size() <= 10)));
+    }
+
+    function isValidClaim(data, workspaceId) {
+      return hasOnlyAllowedFields([
+          'workspaceId', 'ordinal', 'rawText', 'population', 'populationSpec',
+          'predicate', 'kind', 'claimType', 'claimedLevel', 'observedK',
+          'observedN', 'precisionTolerance', 'proposedByAgent', 'modelProposal',
+          'humanEditDiff', 'ambiguityFlags', 'confirmedAt', 'createdAt'
+        ]) &&
+        hasRequiredFields([
+          'workspaceId', 'ordinal', 'rawText', 'population', 'populationSpec',
+          'predicate', 'kind', 'claimType', 'claimedLevel', 'createdAt'
+        ]) &&
+        data.workspaceId == workspaceId &&
+        data.ordinal is int && data.ordinal >= 0 && data.ordinal <= 10000 &&
+        isNonEmptyString(data.rawText, 5000) &&
+        isNonEmptyString(data.population, 1000) &&
+        isValidPopulationSpec(data.populationSpec) &&
+        isNonEmptyString(data.predicate, 2000) &&
+        data.kind in [
+          'pain', 'frequency', 'willingness_to_pay', 'role_ownership',
+          'displacement', 'retention', 'comparative'
+        ] &&
+        data.claimType in ['theme', 'prevalence'] &&
+        data.claimedLevel is int && data.claimedLevel >= 1 && data.claimedLevel <= 6 &&
+        (!('observedK' in data) || data.observedK == null || (data.observedK is int && data.observedK >= 0 && data.observedK <= 1000000)) &&
+        (!('observedN' in data) || data.observedN == null || (data.observedN is int && data.observedN >= 0 && data.observedN <= 1000000)) &&
+        (!('precisionTolerance' in data) || data.precisionTolerance == null || (data.precisionTolerance is number && data.precisionTolerance >= 0 && data.precisionTolerance <= 1)) &&
+        (!('proposedByAgent' in data) || data.proposedByAgent is bool || (data.proposedByAgent is int && data.proposedByAgent in [0, 1])) &&
+        isOptionalNullableString(data, 'modelProposal', 10000) &&
+        isOptionalNullableString(data, 'humanEditDiff', 10000) &&
+        (!('ambiguityFlags' in data) || data.ambiguityFlags == null ||
+          (data.ambiguityFlags is string && data.ambiguityFlags.size() <= 5000) ||
+          (data.ambiguityFlags is list && data.ambiguityFlags.size() <= 50)) &&
+        isOptionalNullableTimestampOrEpoch(data, 'confirmedAt') &&
+        isTimestampOrEpoch(data.createdAt);
+    }
+
+    function isValidEvidence(data, workspaceId) {
+      return hasOnlyAllowedFields([
+          'workspaceId', 'alias', 'interviewedAt', 'role', 'orgRef', 'segment',
+          'sourceChannel', 'relationship', 'evidenceType', 'durationMin',
+          'notesRaw', 'notesRedacted', 'importBatch', 'createdAt'
+        ]) &&
+        hasRequiredFields([
+          'workspaceId', 'alias', 'interviewedAt', 'role', 'orgRef', 'segment',
+          'sourceChannel', 'relationship', 'evidenceType', 'createdAt'
+        ]) &&
+        data.workspaceId == workspaceId &&
+        isNonEmptyString(data.alias, 200) &&
+        (isTimestampOrEpoch(data.interviewedAt) || isNonEmptyString(data.interviewedAt, 64)) &&
+        data.role in ['economic', 'technical', 'user', 'influencer', 'none'] &&
+        isNonEmptyString(data.orgRef, 200) &&
+        isNonEmptyString(data.segment, 200) &&
+        isNonEmptyString(data.sourceChannel, 200) &&
+        data.relationship in ['founder_network', 'referral', 'cold', 'unknown'] &&
+        data.evidenceType in [
+          'L1_internal', 'L2_stated', 'L3_concept',
+          'L4_commitment', 'L5_investment', 'L6_payment'
+        ] &&
+        (!('durationMin' in data) || data.durationMin == null || (data.durationMin is int && data.durationMin >= 0 && data.durationMin <= 1440)) &&
+        isOptionalNullableString(data, 'notesRaw', 50000) &&
+        isOptionalNullableString(data, 'notesRedacted', 50000) &&
+        isOptionalNullableString(data, 'importBatch', 200) &&
+        isTimestampOrEpoch(data.createdAt);
+    }
+
+    function isValidRun(data, workspaceId) {
+      return hasOnlyAllowedFields([
+          'workspaceId', 'status', 'engineVersion', 'thresholdVersion',
+          'inputHash', 'findingHash', 'providerId', 'modelId',
+          'startedAt', 'finishedAt', 'costEur', 'callCount'
+        ]) &&
+        hasRequiredFields([
+          'workspaceId', 'status', 'engineVersion', 'thresholdVersion',
+          'inputHash', 'startedAt', 'costEur', 'callCount'
+        ]) &&
+        data.workspaceId == workspaceId &&
+        data.status in ['DRAFT', 'ANALYSED', 'BLOCKED', 'RESOLVED', 'EXPORTED', 'FAILED'] &&
+        isNonEmptyString(data.engineVersion, 64) &&
+        isNonEmptyString(data.thresholdVersion, 64) &&
+        isNonEmptyString(data.inputHash, 128) &&
+        isOptionalNullableString(data, 'findingHash', 128) &&
+        isOptionalNullableString(data, 'providerId', 100) &&
+        isOptionalNullableString(data, 'modelId', 200) &&
+        isTimestampOrEpoch(data.startedAt) &&
+        isOptionalNullableTimestampOrEpoch(data, 'finishedAt') &&
+        data.costEur is number && data.costEur >= 0 && data.costEur <= 10000 &&
+        data.callCount is int && data.callCount >= 0 && data.callCount <= 10000;
+    }
+
+    function isValidEvent(data, workspaceId) {
+      return hasOnlyAllowedFields([
+          'workspaceId', 'runId', 'type', 'payloadJson', 'createdAt'
+        ]) &&
+        hasRequiredFields(['workspaceId', 'type', 'payloadJson', 'createdAt']) &&
+        data.workspaceId == workspaceId &&
+        isOptionalNullableString(data, 'runId', 128) &&
+        isNonEmptyString(data.type, 100) &&
+        data.payloadJson is string && data.payloadJson.size() <= 50000 &&
+        isTimestampOrEpoch(data.createdAt);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // User profile documents: strictly owner-only (protects PII such as email)
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        uidUnchanged() &&
+        isValidUser(request.resource.data, userId);
+      allow update: if isOwner(userId) &&
+        uidNotModified() &&
+        isValidUser(request.resource.data, userId) &&
+        areImmutableFieldsUnchanged(['uid', 'createdAt']);
+      allow delete: if isOwner(userId);
+    }
+
+    // Workspaces: owner has full CRUD; authenticated users may read demo workspaces
+    match /workspaces/{workspaceId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.ownerId == request.auth.uid || resource.data.isDemo == true);
+      allow create: if isAuthenticated() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.isDemo == false &&
+        isValidWorkspace(request.resource.data);
+      allow update: if isAuthenticated() &&
+        resource.data.ownerId == request.auth.uid &&
+        isValidWorkspace(request.resource.data) &&
+        areImmutableFieldsUnchanged(['ownerId', 'createdAt', 'isDemo']);
+      allow delete: if isAuthenticated() &&
+        resource.data.ownerId == request.auth.uid;
+
+      // Claims subcollection
+      match /claims/{claimId} {
+        allow read: if isParentWorkspaceOwner(workspaceId) || isParentWorkspaceDemo(workspaceId);
+        allow create: if isParentWorkspaceOwner(workspaceId) &&
+          isValidClaim(request.resource.data, workspaceId);
+        allow update: if isParentWorkspaceOwner(workspaceId) &&
+          isValidClaim(request.resource.data, workspaceId) &&
+          areImmutableFieldsUnchanged(['workspaceId', 'createdAt']);
+        allow delete: if isParentWorkspaceOwner(workspaceId);
+      }
+
+      // Evidence subcollection
+      match /evidence/{evidenceId} {
+        allow read: if isParentWorkspaceOwner(workspaceId) || isParentWorkspaceDemo(workspaceId);
+        allow create: if isParentWorkspaceOwner(workspaceId) &&
+          isValidEvidence(request.resource.data, workspaceId);
+        allow update: if isParentWorkspaceOwner(workspaceId) &&
+          isValidEvidence(request.resource.data, workspaceId) &&
+          areImmutableFieldsUnchanged(['workspaceId', 'createdAt']);
+        allow delete: if isParentWorkspaceOwner(workspaceId);
+      }
+
+      // Runs subcollection
+      match /runs/{runId} {
+        allow read: if isParentWorkspaceOwner(workspaceId) || isParentWorkspaceDemo(workspaceId);
+        allow create: if isParentWorkspaceOwner(workspaceId) &&
+          isValidRun(request.resource.data, workspaceId);
+        allow update: if isParentWorkspaceOwner(workspaceId) &&
+          isValidRun(request.resource.data, workspaceId) &&
+          areImmutableFieldsUnchanged(['workspaceId', 'startedAt']);
+        allow delete: if isParentWorkspaceOwner(workspaceId);
+      }
+
+      // Events subcollection
+      match /events/{eventId} {
+        allow read: if isParentWorkspaceOwner(workspaceId) || isParentWorkspaceDemo(workspaceId);
+        allow create: if isParentWorkspaceOwner(workspaceId) &&
+          isValidEvent(request.resource.data, workspaceId);
+        allow update: if isParentWorkspaceOwner(workspaceId) &&
+          isValidEvent(request.resource.data, workspaceId) &&
+          areImmutableFieldsUnchanged(['workspaceId', 'createdAt']);
+        allow delete: if isParentWorkspaceOwner(workspaceId);
+      }
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

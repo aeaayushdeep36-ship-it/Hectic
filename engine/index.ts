@@ -9,7 +9,7 @@ import { buildCoverage } from "./coverage";
 import { buildFinding } from "./verdict";
 import type { Finding } from "../lib/types";
 
-export { buildCoverage, isInPopulation } from "./coverage";
+export { buildCoverage, isInPopulation, recommendNextCells } from "./coverage";
 export {
   applyFix,
   buildFinding,
@@ -40,8 +40,12 @@ export {
 export function audit(
   evidence: readonly EvidenceRow[],
   claims: readonly Claim[],
+  claimEvidence?: ReadonlyMap<string, readonly EvidenceRow[]>,
 ): Finding[] {
   return claims
     .filter((claim) => claim.confirmed)
-    .map((claim) => buildFinding(claim, buildCoverage(evidence, claim)));
+    .map((claim) => {
+      const scoped = claimEvidence?.get(claim.id) ?? evidence;
+      return buildFinding(claim, buildCoverage(scoped, claim));
+    });
 }

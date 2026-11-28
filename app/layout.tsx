@@ -1,22 +1,32 @@
 import type { Metadata } from "next";
-import "@fontsource/inter/400.css";
-import "@fontsource/inter/500.css";
-import "@fontsource/inter/600.css";
-import "@fontsource/inter/700.css";
+import { Cormorant_Garamond, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "../components/AuthProvider";
 import { HydrationMarker } from "../components/HydrationMarker";
 import { QueryProvider } from "../components/QueryProvider";
-import { Sidebar } from "../components/Sidebar";
 import { WorkspaceNavProvider } from "../components/WorkspaceNavContext";
 import type { SidebarWorkspace } from "../lib/workspace-nav";
 import { listRuns, listWorkspaces } from "../server/store";
 import "./globals.css";
 
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Hectic | Evidence Coverage Auditor",
+  title: "Hectic | Deterministic Evidence Auditor",
   description: "Know what you actually know. Audit your founder evidence.",
 };
 
-/** Real rows from the store, mapped for the sidebar and the dashboard. */
 function workspaceNav(): readonly SidebarWorkspace[] {
   return listWorkspaces().map((workspace) => ({
     name: workspace.name,
@@ -33,16 +43,15 @@ export default function RootLayout({
   const workspaces = workspaceNav();
 
   return (
-    <html lang="en">
-      <body className="bg-[var(--paper)] min-h-screen flex">
+    <html lang="en" className={`${cormorant.variable} ${geistMono.variable}`}>
+      <body className="min-h-screen bg-[#08090B] text-[#F5F6F8] antialiased">
         <QueryProvider>
-          <HydrationMarker />
-          <WorkspaceNavProvider workspaces={workspaces}>
-            <Sidebar workspaces={workspaces} />
-            <main className="flex-1 min-w-0 overflow-y-auto">
-              <div className="mx-auto max-w-5xl px-6 py-12 lg:px-12">{children}</div>
-            </main>
-          </WorkspaceNavProvider>
+          <AuthProvider>
+            <HydrationMarker />
+            <WorkspaceNavProvider workspaces={workspaces}>
+              {children}
+            </WorkspaceNavProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

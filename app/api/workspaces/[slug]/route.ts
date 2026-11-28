@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkRequest } from "../../../../lib/http";
 import {
   getWorkspace,
   listClaims,
@@ -9,9 +10,12 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ slug: string }> },
 ) {
+  const refused = checkRequest(request);
+  if (refused) return refused;
+
   const { slug } = await context.params;
   const workspace = getWorkspace(slug);
   if (!workspace) {
