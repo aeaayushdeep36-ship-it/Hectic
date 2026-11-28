@@ -17,6 +17,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { AuthPromptModal } from "@/components/AuthPromptModal";
 import { HecticLogo } from "@/components/HecticLogo";
 import { ChapterRail } from "@/components/home/chapter-rail";
+import { HeroPipelineDemo } from "@/components/home/HeroPipelineDemo";
 import { LenisProvider, useLenis } from "@/components/home/lenis-provider";
 import { MethodologyBand } from "@/components/home/methodology-band";
 import { PipelineBand } from "@/components/home/pipeline-band";
@@ -243,20 +244,20 @@ function HomeContent() {
           id="hero"
           className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-center mx-auto max-w-[1360px] px-8 lg:px-16 py-16"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-16">
-            {/* Left (Cols 1-7) */}
-            <div className="lg:col-span-7">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-10">
+            {/* Left (Cols 1-6) */}
+            <div className="lg:col-span-6">
               <p className="font-mono-tabular text-[12px] uppercase tracking-[0.14em] text-[#64748B] mb-6">
                 DETERMINISTIC EVIDENCE AUDIT
               </p>
 
-              <h1 className="font-display text-[clamp(3.5rem,6vw,5.25rem)] leading-[1.02] text-[#F5F6F8]">
+              <h1 className="font-display text-[clamp(3.25rem,5.4vw,4.75rem)] leading-[1.02] text-[#F5F6F8]">
                 Know what you
                 <br />
                 actually know.
               </h1>
 
-              <p className="mt-7 max-w-[46ch] text-[18px] leading-[1.55] text-[#9CA3AF]">
+              <p className="mt-7 max-w-[44ch] text-[17px] leading-[1.55] text-[#9CA3AF]">
                 Audit founder claims against real interview rosters with
                 deterministic math and verifiable proof.
               </p>
@@ -279,61 +280,9 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Right (Cols 8-12): Floating Freely in Open Space, NO Outer Box */}
-            <div className="lg:col-span-5 space-y-7">
-              <p className="font-display text-[28px] leading-snug text-[#10B981]">
-                L6 Payment · 3 orgs · Supported
-              </p>
-
-              {/* Delicate 1px Wilson 95% CI range line */}
-              <div>
-                <p className="font-mono-tabular text-[12px] text-[#F5F6F8] text-right mb-2.5 pr-6">
-                  [0.44, 1.00]
-                </p>
-                <div className="relative h-5 flex items-center">
-                  <div className="w-full h-[1px] bg-white/20" />
-                  <div className="absolute left-0 top-1 bottom-1 w-[1px] bg-white/30" />
-                  <div className="absolute right-0 top-1 bottom-1 w-[1px] bg-white/30" />
-                  <div className="absolute left-[44%] right-0 h-[1px] bg-[#D4AF6A]/80" />
-                  <div className="absolute left-[78%] h-2.5 w-2.5 bg-[#D4AF6A] rounded-none" />
-                </div>
-              </div>
-
-              {/* Subtle tabular precision/coverage matrix */}
-              <div className="font-mono-tabular text-[11px] text-[#9CA3AF] opacity-60 space-y-1.5 pt-2">
-                <div className="grid grid-cols-6 gap-2 text-right">
-                  <span className="text-left" />
-                  <span>03</span>
-                  <span>120</span>
-                  <span>0.435</span>
-                  <span>0.983</span>
-                  <span>1.000</span>
-                </div>
-                <div className="grid grid-cols-6 gap-2 text-right">
-                  <span className="text-left">Org</span>
-                  <span>03</span>
-                  <span>156</span>
-                  <span>0.862</span>
-                  <span>0.357</span>
-                  <span>0.986</span>
-                </div>
-                <div className="grid grid-cols-6 gap-2 text-right">
-                  <span className="text-left">Sup</span>
-                  <span>09</span>
-                  <span>163</span>
-                  <span>0.300</span>
-                  <span>0.363</span>
-                  <span>0.988</span>
-                </div>
-                <div className="grid grid-cols-6 gap-2 text-right">
-                  <span className="text-left">Net</span>
-                  <span>27</span>
-                  <span>350</span>
-                  <span>0.869</span>
-                  <span>0.336</span>
-                  <span>0.970</span>
-                </div>
-              </div>
+            {/* Right (Cols 7-12): Live 4-Act HeroPipelineDemo Instrument */}
+            <div className="lg:col-span-6 flex items-center justify-center lg:justify-end">
+              <HeroPipelineDemo />
             </div>
           </div>
         </section>
@@ -350,17 +299,147 @@ function HomeContent() {
                 <br />
                 validation.
               </h2>
+
+              <div className="mt-10 border-l-2 border-[#D4AF6A] pl-5">
+                <p className="font-display text-[44px] leading-none text-[#F5F6F8] m-0">
+                  11 → 2
+                </p>
+                <p className="mt-3 text-[13px] leading-[1.55] text-[#9CA3AF] max-w-[26ch]">
+                  Interviews across two companies equal two independent units of proof.
+                </p>
+              </div>
             </div>
 
             <div className="lg:col-span-8 space-y-12">
-              {PROBLEM_ROWS.map((item) => (
-                <div key={item.title} className="pb-10 relative">
-                  <h3 className="text-[17px] font-medium text-[#F5F6F8]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2.5 text-[15px] leading-[1.65] text-[#9CA3AF] max-w-[58ch]">
-                    {item.body}
-                  </p>
+              {PROBLEM_ROWS.map((item, idx) => (
+                <div
+                  key={item.title}
+                  className="pb-11 relative grid grid-cols-1 md:grid-cols-12 gap-6 items-center"
+                >
+                  <div className="md:col-span-7 flex items-start gap-5">
+                    <span className="font-mono-tabular text-[12px] text-[#64748B] pt-1 shrink-0">
+                      0{idx + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-[17px] font-medium text-[#F5F6F8]">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2.5 text-[14px] leading-[1.65] text-[#9CA3AF]">
+                        {item.body}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Micro-Diagram */}
+                  <div className="md:col-span-5 flex md:justify-end">
+                    {idx === 0 && (
+                      <div className="flex flex-col items-end">
+                        <svg
+                          viewBox="0 0 180 68"
+                          className="w-[180px] h-[68px]"
+                          aria-hidden="true"
+                        >
+                          {/* Bracketed clusters */}
+                          <path
+                            d="M 10 6 H 4 V 62 H 10 M 96 6 H 102 V 62 H 96"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.22)"
+                            strokeWidth="1"
+                          />
+                          {/* 6 top cluster dots */}
+                          {[20, 38, 56, 74, 29, 47].map((cx, dIdx) => (
+                            <circle
+                              key={`t-${dIdx}`}
+                              cx={cx}
+                              cy={dIdx < 4 ? 17 : 26}
+                              r="2.4"
+                              fill="#7D8CA3"
+                            />
+                          ))}
+                          {/* 5 bottom cluster dots */}
+                          {[20, 38, 56, 74, 47].map((cx, dIdx) => (
+                            <circle
+                              key={`b-${dIdx}`}
+                              cx={cx}
+                              cy={dIdx < 4 ? 44 : 53}
+                              r="2.4"
+                              fill="#7D8CA3"
+                            />
+                          ))}
+                          {/* Converging arrows */}
+                          <path
+                            d="M 108 22 C 128 22, 134 24, 152 24"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.28)"
+                            strokeWidth="1"
+                          />
+                          <path
+                            d="M 108 46 C 128 46, 134 44, 152 44"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.28)"
+                            strokeWidth="1"
+                          />
+                          <circle cx="162" cy="24" r="3.5" fill="#D4AF6A" />
+                          <circle cx="162" cy="44" r="3.5" fill="#D4AF6A" />
+                        </svg>
+                        <span className="font-mono-tabular text-[11px] text-[#9CA3AF] mt-1">
+                          11 rows → 2 orgs
+                        </span>
+                      </div>
+                    )}
+
+                    {idx === 1 && (
+                      <div className="flex items-center gap-4">
+                        <div className="relative font-mono-tabular text-[16px] text-[#475569] px-1">
+                          <span>78 / 100</span>
+                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[#64748B]/70 text-[24px] font-light">
+                            ×
+                          </span>
+                        </div>
+                        <div className="space-y-2.5 w-[112px]">
+                          {[
+                            { label: "LEVEL", pct: "56%", color: "#7D8CA3" },
+                            { label: "SUPPORT", pct: "72%", color: "#D4AF6A" },
+                            { label: "PRECISION", pct: "64%", color: "#10B981" },
+                          ].map((bar) => (
+                            <div key={bar.label}>
+                              <span className="block font-mono-tabular text-[9px] tracking-[0.08em] text-[#9CA3AF] mb-1">
+                                {bar.label}
+                              </span>
+                              <div className="h-[2.5px] w-full bg-white/10">
+                                <div
+                                  className="h-full"
+                                  style={{ width: bar.pct, backgroundColor: bar.color }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {idx === 2 && (
+                      <div className="flex items-center gap-5">
+                        <div className="w-[132px]">
+                          <p className="font-mono-tabular text-[12px] text-[#F5F6F8] text-center mb-2">
+                            [0.44, 1.00]
+                          </p>
+                          <div className="relative h-4 flex items-center">
+                            <div className="w-full h-[1px] bg-white/25" />
+                            <div className="absolute left-0 top-0.5 bottom-0.5 w-[1px] bg-white/35" />
+                            <div className="absolute right-0 top-0.5 bottom-0.5 w-[1px] bg-white/35" />
+                            <div className="absolute left-[44%] right-0 h-[1.5px] bg-[#D4AF6A]" />
+                            <span className="absolute left-[44%] h-1.5 w-1.5 rounded-full bg-[#D4AF6A] -translate-x-1/2" />
+                            <span className="absolute right-0 h-1.5 w-1.5 rounded-full bg-[#D4AF6A] translate-x-1/2" />
+                          </div>
+                        </div>
+                        <span className="font-mono-tabular text-[14px] text-[#475569]">
+                          100%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <motion.div
                     initial={{ scaleX: 0 }}
                     whileInView={{ scaleX: 1 }}
@@ -382,18 +461,73 @@ function HomeContent() {
         <MethodologyBand />
 
         {/* ── Band 5: Engineering & Trust Guarantees (05 / 06) ─────────── */}
-        <section id="guarantees" className="py-24 border-t border-white/[0.06]">
+        <section id="guarantees" className="py-32 border-t border-white/[0.06]">
           <div className="mx-auto max-w-[1360px] px-8 lg:px-16">
-            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.14em] text-[#64748B] mb-10">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.14em] text-[#64748B] mb-4">
               05 / GUARANTEES
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
-              {GUARANTEE_ITEMS.map((item) => (
-                <div key={item.title}>
-                  <h3 className="text-[16px] font-medium text-[#F5F6F8]">
+            <h2 className="font-display text-[clamp(2.25rem,3.8vw,3.25rem)] leading-[1.06] text-[#F5F6F8]">
+              Built to withstand diligence.
+            </h2>
+
+            <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-0 md:divide-x md:divide-white/[0.08]">
+              {GUARANTEE_ITEMS.map((item, idx) => (
+                <div
+                  key={item.title}
+                  className="md:px-10 first:md:pl-0 last:md:pr-0 flex flex-col"
+                >
+                  {/* Visual Strip */}
+                  <div className="min-h-[56px] flex items-center mb-6 pb-5 border-b border-white/[0.07]">
+                    {idx === 0 && (
+                      <div className="flex flex-wrap items-center gap-2 font-mono-tabular text-[12px]">
+                        <span className="text-[#9CA3AF]">sarah@acme.io</span>
+                        <span className="text-[#64748B]">→</span>
+                        <span className="inline-flex items-center gap-0.5">
+                          {Array.from({ length: 6 }).map((_, b) => (
+                            <span
+                              key={b}
+                              className="inline-block h-3.5 w-2 bg-[#475569]/70"
+                            />
+                          ))}
+                        </span>
+                        <span className="inline-block h-2 w-2 rounded-full bg-[#10B981] ml-1" />
+                        <span className="text-[#9CA3AF]">--no-llm</span>
+                      </div>
+                    )}
+
+                    {idx === 1 && (
+                      <div className="flex flex-wrap items-center gap-2 font-mono-tabular text-[12px]">
+                        <span className="text-[#9CA3AF]">v1.0.0 + 2026-11-24</span>
+                        <span className="text-[#D4AF6A]">→</span>
+                        <span className="text-[#E5E7EB]">sha256:e8d703</span>
+                      </div>
+                    )}
+
+                    {idx === 2 && (
+                      <div className="w-full flex flex-wrap items-center justify-between gap-3 font-mono-tabular">
+                        <span className="text-[12px] text-[#9CA3AF]">
+                          fast-check · 1,000 runs
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {["WILSON", "L5 EXCL", "MIN ≥ 3"].map((badge) => (
+                            <span
+                              key={badge}
+                              className="inline-flex flex-col items-center px-2 py-1 bg-[#0F1D19] border border-[#183D31] rounded-[2px] text-[9px] text-[#9CA3AF] leading-tight"
+                            >
+                              <span className="text-[#10B981] text-[10px]">✓</span>
+                              <span>{badge}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <h3 className="font-mono-tabular text-[14px] text-[#F5F6F8]">
+                    <span className="text-[#9CA3AF] mr-2">0{idx + 1} ·</span>
                     {item.title}
                   </h3>
-                  <p className="mt-2.5 text-[14px] leading-[1.65] text-[#9CA3AF]">
+                  <p className="mt-3 text-[14px] leading-[1.7] text-[#9CA3AF]">
                     {item.body}
                   </p>
                 </div>
