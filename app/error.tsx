@@ -11,16 +11,16 @@ export default function ErrorBoundary({
 }) {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center bg-[#07080A] text-[#F5F6F8] px-6 text-center"
+      className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg-canvas)] text-[var(--ink-primary)] px-6 text-center"
       role="alert"
     >
-      <p className="font-mono-tabular text-[11px] uppercase tracking-[0.14em] text-[#EF4444]">
+      <p className="font-mono-tabular text-[11px] uppercase tracking-[0.14em] text-[var(--status-crimson)]">
         SYSTEM ERROR
       </p>
-      <h2 className="mt-3 font-display text-[32px] text-[#F5F6F8]">
+      <h2 className="mt-3 font-display text-[32px] text-[var(--ink-primary)]">
         Could not load audit state
       </h2>
-      <p className="mt-2 max-w-[42ch] text-[13px] text-[#9CA3AF]">
+      <p className="mt-2 max-w-[42ch] text-[13px] text-[var(--ink-secondary)]">
         No evidence or ledger rows were modified.
         {error.digest ? ` Reference: ${error.digest}.` : ""}
       </p>
@@ -28,13 +28,13 @@ export default function ErrorBoundary({
         <button
           type="button"
           onClick={reset}
-          className="px-4 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] cursor-pointer"
+          className="px-4 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] cursor-pointer"
         >
           Try again
         </button>
         <Link
           href="/"
-          className="px-4 py-2 border border-[#262B35] text-[#F5F6F8] text-[12px] rounded-[2px] no-underline hover:bg-[#15181F]"
+          className="px-4 py-2 border border-[var(--border-elevated)] text-[var(--ink-primary)] text-[12px] rounded-[2px] no-underline hover:bg-[var(--bg-elevated)]"
         >
           Return home
         </Link>

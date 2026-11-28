@@ -342,7 +342,7 @@ export function RunConsole({
             </div>
 
             {/* Bottom Verification Footer — single 1px Champagne Gold rule, no 3D seal */}
-            <footer className="mt-12 pt-4 border-t border-[#D4AF6A]">
+            <footer className="mt-12 pt-4 border-t border-[var(--accent-graphic)]">
               <p className="font-mono-tabular text-[11px] text-[#475569]">
                 SHA-256 {(run.findingHash || run.inputHash).replace(/^sha256:/, "")} · ENGINE 1.0.0
               </p>
@@ -399,12 +399,12 @@ export function RunConsole({
           {/* 3. BLOCKING CHECKPOINT */}
           <section className="p-6">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3]">
+              <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)]">
                 BLOCKING CHECKPOINT
               </p>
               <span
                 className={`font-mono-tabular text-[11px] ${
-                  unresolved.length === 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                  unresolved.length === 0 ? "text-[var(--status-emerald)]" : "text-[var(--status-crimson)]"
                 }`}
               >
                 {unresolved.length === 0
@@ -414,7 +414,7 @@ export function RunConsole({
             </div>
 
             {unresolved.length === 0 && resolvedFindings.length === 0 ? (
-              <p className="text-[13px] text-[#10B981]">
+              <p className="text-[13px] text-[var(--status-emerald)]">
                 All claims supported. Export is available.
               </p>
             ) : (
@@ -428,7 +428,7 @@ export function RunConsole({
                       <label
                         key={finding.claimId}
                         className={`flex items-start gap-3 text-[13px] cursor-pointer ${
-                          isResolved ? "text-[#9CA3AF]" : "text-[#F5F6F8]"
+                          isResolved ? "text-[var(--ink-secondary)]" : "text-[var(--ink-primary)]"
                         }`}
                       >
                         <input
@@ -438,7 +438,7 @@ export function RunConsole({
                           onChange={() =>
                             setSelectedClaimId(isSelected ? null : finding.claimId)
                           }
-                          className="mt-1 h-4 w-4 rounded-[2px] border border-[#262B35] bg-[#07080A] accent-[#D4AF6A]"
+                          className="mt-1 h-4 w-4 rounded-[2px] border border-[var(--border-elevated)] bg-[var(--bg-canvas)] accent-[#D4AF6A]"
                         />
                         <span className="leading-[1.4]">
                           {isResolved
@@ -453,14 +453,14 @@ export function RunConsole({
 
             {/* Inline Resolution Form when an unresolved checkpoint is selected */}
             {selectedClaimId && (
-              <div className="mt-4 pt-4 border-t border-[#1E222A] space-y-3">
+              <div className="mt-4 pt-4 border-t border-[var(--border-hair)] space-y-3">
                 <select
                   aria-label="Resolution action"
                   value={action}
                   onChange={(e) =>
                     setAction(e.target.value as "downgrade" | "fund_gap" | "accept_limitation")
                   }
-                  className="w-full px-3 py-1.5 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                  className="w-full px-3 py-1.5 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
                 >
                   {ACTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -475,25 +475,25 @@ export function RunConsole({
                   value={falsifier}
                   onChange={(e) => setFalsifier(e.target.value)}
                   placeholder="If fewer than 3 of 10 clinics prepay within 14 days, downgrade claim."
-                  className="w-full px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                 />
 
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono-tabular text-[11px] text-[#7D8CA3]">
+                  <span className="font-mono-tabular text-[11px] text-[var(--ink-muted)]">
                     {falsifier.trim().length}/40 chars
                   </span>
                   <button
                     type="button"
                     disabled={busy || !falsifierValid}
                     onClick={() => void submitResolution()}
-                    className="px-3.5 py-1.5 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 disabled:opacity-40 cursor-pointer transition-opacity"
+                    className="px-3.5 py-1.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 disabled:opacity-40 cursor-pointer transition-opacity"
                   >
                     {busy ? "Saving…" : "Confirm resolution"}
                   </button>
                 </div>
 
                 {resolveError && (
-                  <p className="font-mono-tabular text-[11px] text-[#EF4444]" role="alert">
+                  <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]" role="alert">
                     {resolveError}
                   </p>
                 )}
@@ -501,7 +501,7 @@ export function RunConsole({
             )}
 
             {exportError && (
-              <p className="mt-3 font-mono-tabular text-[11px] text-[#EF4444]" role="alert">
+              <p className="mt-3 font-mono-tabular text-[11px] text-[var(--status-crimson)]" role="alert">
                 {exportError}
               </p>
             )}
@@ -509,22 +509,22 @@ export function RunConsole({
 
           {/* 4. FALSIFIER CHECK */}
           <section className="p-6">
-            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[#7D8CA3] mb-2">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.08em] text-[var(--ink-muted)] mb-2">
               FALSIFIER CHECK
             </p>
             {activeFalsifierDisplay ? (
-              <p className="text-[13px] leading-[1.55] text-[#9CA3AF]">
+              <p className="text-[13px] leading-[1.55] text-[var(--ink-secondary)]">
                 Observable rule verified:{" "}
-                <span className="text-[#F5F6F8]">{activeFalsifierDisplay}</span>
+                <span className="text-[var(--ink-primary)]">{activeFalsifierDisplay}</span>
               </p>
             ) : falsifier.trim().length > 0 ? (
-              <p className="text-[12px] text-[#F59E0B]">
+              <p className="text-[12px] text-[var(--status-amber)]">
                 {falsifier.trim().length < 40
                   ? "Requires at least 40 characters."
                   : falsifierCheck.reason}
               </p>
             ) : (
-              <p className="text-[13px] leading-[1.55] text-[#7D8CA3]">
+              <p className="text-[13px] leading-[1.55] text-[var(--ink-muted)]">
                 Select a blocking checkpoint above and enter an observable condition
                 (if/when/unless + numeric threshold) to unlock PDF export.
               </p>
@@ -532,14 +532,14 @@ export function RunConsole({
           </section>
 
           {/* 5. DETERMINISM & AGENT CONTROLS */}
-          <section className="p-6 mt-auto space-y-3 bg-[#07080A]/40">
+          <section className="p-6 mt-auto space-y-3 bg-[var(--bg-canvas)]/40">
             <div className="flex flex-wrap items-center gap-2">
               <select
                 aria-label="Provider"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value as ProviderIdOption)}
                 disabled={streaming || busy}
-                className="px-2.5 py-1.5 bg-[#07080A] border border-[#262B35] rounded-[2px] font-mono-tabular text-[11px] text-[#F5F6F8]"
+                className="px-2.5 py-1.5 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] font-mono-tabular text-[11px] text-[var(--ink-primary)]"
               >
                 {PROVIDER_OPTIONS.map((opt) => (
                   <option key={opt.id} value={opt.id}>
@@ -552,7 +552,7 @@ export function RunConsole({
                 type="button"
                 onClick={() => void doStream()}
                 disabled={streaming || busy}
-                className="px-3 py-1.5 border border-[#262B35] bg-[#0E1014] text-[#F5F6F8] text-[11px] rounded-[2px] hover:bg-[#15181F] cursor-pointer disabled:opacity-40 transition-colors"
+                className="px-3 py-1.5 border border-[var(--border-elevated)] bg-[var(--bg-surface)] text-[var(--ink-primary)] text-[11px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer disabled:opacity-40 transition-colors"
               >
                 {streaming ? "Streaming…" : "Run agents"}
               </button>
@@ -561,7 +561,7 @@ export function RunConsole({
                 type="button"
                 onClick={() => void doRecompute()}
                 disabled={busy || streaming}
-                className="px-3 py-1.5 border border-[#262B35] bg-[#0E1014] text-[#F5F6F8] text-[11px] rounded-[2px] hover:bg-[#15181F] cursor-pointer disabled:opacity-40 transition-colors"
+                className="px-3 py-1.5 border border-[var(--border-elevated)] bg-[var(--bg-surface)] text-[var(--ink-primary)] text-[11px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer disabled:opacity-40 transition-colors"
               >
                 Recompute
               </button>
@@ -570,7 +570,7 @@ export function RunConsole({
             {recompute && (
               <p
                 className={`font-mono-tabular text-[11px] ${
-                  recompute.identical ? "text-[#10B981]" : "text-[#EF4444]"
+                  recompute.identical ? "text-[var(--status-emerald)]" : "text-[var(--status-crimson)]"
                 }`}
               >
                 {recompute.identical ? "IDENTICAL" : "DIVERGED"} · {recompute.hash}
@@ -579,7 +579,7 @@ export function RunConsole({
 
             {streamLog.length > 0 && (
               <ol
-                className="max-h-28 overflow-y-auto font-mono-tabular text-[11px] text-[#9CA3AF] space-y-0.5 pt-2 border-t border-[#1E222A]"
+                className="max-h-28 overflow-y-auto font-mono-tabular text-[11px] text-[var(--ink-secondary)] space-y-0.5 pt-2 border-t border-[var(--border-hair)]"
                 aria-live="polite"
               >
                 {streamLog.map((line, i) => (
@@ -588,11 +588,11 @@ export function RunConsole({
               </ol>
             )}
 
-            <div className="flex items-center gap-4 pt-1 font-mono-tabular text-[11px] text-[#7D8CA3]">
-              <Link href={`/runs/${run.id}/recruiting`} className="hover:text-[#F5F6F8] no-underline">
+            <div className="flex items-center gap-4 pt-1 font-mono-tabular text-[11px] text-[var(--ink-muted)]">
+              <Link href={`/runs/${run.id}/recruiting`} className="hover:text-[var(--ink-primary)] no-underline">
                 Recruiting brief →
               </Link>
-              <a href={`/api/workspaces/${workspaceSlug}/events`} className="hover:text-[#F5F6F8] no-underline">
+              <a href={`/api/workspaces/${workspaceSlug}/events`} className="hover:text-[var(--ink-primary)] no-underline">
                 Audit log JSON →
               </a>
             </div>

@@ -165,28 +165,28 @@ export function WorkspaceDashboardClient({
         <nav className="flex-1 px-3 py-2 space-y-0.5" aria-label="Workspace navigation">
           <a
             href="#overview"
-            className="flex items-center gap-2.5 px-3 py-2 bg-[#15181F] text-[#F5F6F8] text-[13px] rounded-[2px] no-underline"
+            className="flex items-center gap-2.5 px-3 py-2 bg-[var(--bg-elevated)] text-[var(--ink-primary)] text-[13px] rounded-[2px] no-underline"
           >
-            <LayoutGrid size={16} strokeWidth={1.5} className="text-[#9CA3AF]" />
+            <LayoutGrid size={16} strokeWidth={1.5} className="text-[var(--ink-secondary)]" />
             Overview
           </a>
           <a
             href="#coverage"
-            className="flex items-center gap-2.5 px-3 py-2 text-[#9CA3AF] hover:text-[#F5F6F8] hover:bg-[#15181F] text-[13px] rounded-[2px] no-underline transition-colors"
+            className="flex items-center gap-2.5 px-3 py-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] text-[13px] rounded-[2px] no-underline transition-colors"
           >
             <ShieldCheck size={16} strokeWidth={1.5} />
             Coverage
           </a>
           <a
             href="#claims"
-            className="flex items-center gap-2.5 px-3 py-2 text-[#9CA3AF] hover:text-[#F5F6F8] hover:bg-[#15181F] text-[13px] rounded-[2px] no-underline transition-colors"
+            className="flex items-center gap-2.5 px-3 py-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] text-[13px] rounded-[2px] no-underline transition-colors"
           >
             <FileText size={16} strokeWidth={1.5} />
             Claims
           </a>
           <a
             href="#runs"
-            className="flex items-center gap-2.5 px-3 py-2 text-[#9CA3AF] hover:text-[#F5F6F8] hover:bg-[#15181F] text-[13px] rounded-[2px] no-underline transition-colors"
+            className="flex items-center gap-2.5 px-3 py-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] text-[13px] rounded-[2px] no-underline transition-colors"
           >
             <Users size={16} strokeWidth={1.5} />
             Runs
@@ -194,7 +194,7 @@ export function WorkspaceDashboardClient({
           {latestRun ? (
             <Link
               href={`/runs/${latestRun.id}`}
-              className="flex items-center gap-2.5 px-3 py-2 text-[#9CA3AF] hover:text-[#F5F6F8] hover:bg-[#15181F] text-[13px] rounded-[2px] no-underline transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] text-[13px] rounded-[2px] no-underline transition-colors"
             >
               <ScrollText size={16} strokeWidth={1.5} />
               Statement
@@ -203,7 +203,7 @@ export function WorkspaceDashboardClient({
             <button
               type="button"
               onClick={() => void triggerRunAudit()}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-[#9CA3AF] hover:text-[#F5F6F8] hover:bg-[#15181F] text-[13px] rounded-[2px] text-left cursor-pointer transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] text-[13px] rounded-[2px] text-left cursor-pointer transition-colors"
             >
               <ScrollText size={16} strokeWidth={1.5} />
               Statement
@@ -211,8 +211,8 @@ export function WorkspaceDashboardClient({
           )}
         </nav>
 
-        <div className="px-5 py-4 border-t border-[#1E222A]">
-          <p className="font-mono-tabular text-[11px] text-[#7D8CA3]">
+        <div className="px-5 py-4 border-t border-[var(--border-hair)]">
+          <p className="font-mono-tabular text-[11px] text-[var(--ink-muted)]">
             v1.0.0 · Deterministic
           </p>
         </div>
@@ -308,7 +308,7 @@ export function WorkspaceDashboardClient({
             </div>
 
             {matrix.segments.length === 0 ? (
-              <div className="py-12 border border-[#1E222A] text-center font-mono-tabular text-[12px] text-[#7D8CA3]">
+              <div className="py-12 border border-[var(--border-hair)] text-center font-mono-tabular text-[12px] text-[var(--ink-muted)]">
                 No interview evidence yet. Use Import CSV to add rows.
               </div>
             ) : (
@@ -316,11 +316,11 @@ export function WorkspaceDashboardClient({
                 <table className="w-full border-collapse text-left" aria-label="Coverage matrix">
                   <thead>
                     <tr>
-                      <th className="py-2.5 pr-4 text-[12px] font-normal text-[#9CA3AF]" />
+                      <th className="py-2.5 pr-4 text-[12px] font-normal text-[var(--ink-secondary)]" />
                       {ROLE_COLUMNS.map((col) => (
                         <th
                           key={col.key}
-                          className="py-2.5 px-3 text-center text-[12px] font-normal text-[#9CA3AF] border-b border-[#1E222A]"
+                          className="py-2.5 px-3 text-center text-[12px] font-normal text-[var(--ink-secondary)] border-b border-[var(--border-hair)]"
                         >
                           {col.label}
                         </th>
@@ -332,7 +332,7 @@ export function WorkspaceDashboardClient({
                       <tr key={segment}>
                         <th
                           scope="row"
-                          className="py-3 pr-4 text-[13px] font-normal text-[#9CA3AF] whitespace-nowrap"
+                          className="py-3 pr-4 text-[13px] font-normal text-[var(--ink-secondary)] whitespace-nowrap"
                         >
                           {segment}
                         </th>
@@ -346,7 +346,7 @@ export function WorkspaceDashboardClient({
                             <td
                               key={col.key}
                               title={cell.aliases.join(", ")}
-                              className={`border border-[#1E222A] px-3 py-4 text-center font-mono-tabular text-[12px] transition-colors ${heatmapClass(cell.orgs)}`}
+                              className={`border border-[var(--border-hair)] px-3 py-4 text-center font-mono-tabular text-[12px] transition-colors ${heatmapClass(cell.orgs)}`}
                             >
                               {cell.rows === 0 ? (
                                 "—"
@@ -369,7 +369,7 @@ export function WorkspaceDashboardClient({
           {/* Right 4 Columns — Evidence Ladder & Sample Integrity */}
           <div className="xl:col-span-4 p-6 flex flex-col justify-between">
             <div>
-              <h2 className="text-[15px] font-medium text-[#F5F6F8] mb-5">
+              <h2 className="text-[15px] font-medium text-[var(--ink-primary)] mb-5">
                 Evidence Ladder
               </h2>
 
@@ -379,7 +379,7 @@ export function WorkspaceDashboardClient({
                   const pct = count === 0 ? 0 : Math.max(8, Math.round((count / maxLadder) * 100));
                   return (
                     <div key={level} className="grid grid-cols-12 items-center gap-3">
-                      <span className="col-span-5 text-[12px] text-[#9CA3AF]">
+                      <span className="col-span-5 text-[12px] text-[var(--ink-secondary)]">
                         {label}
                       </span>
                       <div className="col-span-7 h-[3px] bg-[#1E222A] overflow-hidden">
@@ -388,7 +388,7 @@ export function WorkspaceDashboardClient({
                           animate={{ scaleX: pct / 100 }}
                           transition={{ type: "spring", stiffness: 320, damping: 32 }}
                           style={{ originX: 0 }}
-                          className="h-full bg-[#D4AF6A]"
+                          className="h-full bg-[var(--accent-graphic)]"
                         />
                       </div>
                     </div>
@@ -403,8 +403,8 @@ export function WorkspaceDashboardClient({
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between text-[12px] mb-1.5">
-                  <span className="text-[#9CA3AF]">Independent Orgs:</span>
-                  <span className="font-mono-tabular text-[#F5F6F8]">
+                  <span className="text-[var(--ink-secondary)]">Independent Orgs:</span>
+                  <span className="font-mono-tabular text-[var(--ink-primary)]">
                     {integrity.independentOrgs}/{integrity.totalInterviews} ({indepPct}%)
                   </span>
                 </div>
@@ -414,15 +414,15 @@ export function WorkspaceDashboardClient({
                     animate={{ scaleX: indepPct / 100 }}
                     transition={{ type: "spring", stiffness: 320, damping: 32 }}
                     style={{ originX: 0 }}
-                    className="h-full bg-[#D4AF6A]"
+                    className="h-full bg-[var(--accent-graphic)]"
                   />
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between text-[12px] mb-1.5">
-                  <span className="text-[#9CA3AF]">Founder Network:</span>
-                  <span className="font-mono-tabular text-[#F5F6F8]">
+                  <span className="text-[var(--ink-secondary)]">Founder Network:</span>
+                  <span className="font-mono-tabular text-[var(--ink-primary)]">
                     {integrity.networkPct}%
                   </span>
                 </div>
@@ -432,15 +432,15 @@ export function WorkspaceDashboardClient({
                     animate={{ scaleX: integrity.networkPct / 100 }}
                     transition={{ type: "spring", stiffness: 320, damping: 32 }}
                     style={{ originX: 0 }}
-                    className="h-full bg-[#D4AF6A]"
+                    className="h-full bg-[var(--accent-graphic)]"
                   />
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between text-[12px] mb-1.5">
-                  <span className="text-[#9CA3AF]">Top Channel:</span>
-                  <span className="font-mono-tabular text-[#F5F6F8]">
+                  <span className="text-[var(--ink-secondary)]">Top Channel:</span>
+                  <span className="font-mono-tabular text-[var(--ink-primary)]">
                     {integrity.topChannelPct}%
                   </span>
                 </div>
@@ -450,7 +450,7 @@ export function WorkspaceDashboardClient({
                     animate={{ scaleX: integrity.topChannelPct / 100 }}
                     transition={{ type: "spring", stiffness: 320, damping: 32 }}
                     style={{ originX: 0 }}
-                    className="h-full bg-[#D4AF6A]"
+                    className="h-full bg-[var(--accent-graphic)]"
                   />
                 </div>
               </div>
@@ -459,17 +459,17 @@ export function WorkspaceDashboardClient({
         </section>
 
         {/* Lower Full-Width Section — Claims & Verdicts */}
-        <section id="claims" className="p-6 border-b border-[#1E222A] flex-1">
-          <h2 className="text-[15px] font-medium text-[#F5F6F8] mb-4">
+        <section id="claims" className="p-6 border-b border-[var(--border-hair)] flex-1">
+          <h2 className="text-[15px] font-medium text-[var(--ink-primary)] mb-4">
             Claims &amp; Verdicts
           </h2>
 
           {claims.length === 0 ? (
-            <div className="py-8 border-t border-[#1E222A] font-mono-tabular text-[12px] text-[#7D8CA3]">
+            <div className="py-8 border-t border-[var(--border-hair)] font-mono-tabular text-[12px] text-[var(--ink-muted)]">
               No claims confirmed yet. Click Add Claim to formalise a belief.
             </div>
           ) : (
-            <div className="border-t border-[#1E222A] divide-y divide-[#1E222A]">
+            <div className="border-t border-[var(--border-hair)] divide-y divide-[var(--border-hair)]">
               {claims.map((claim) => {
                 const finding = findingsByClaim.get(claim.id);
                 const statusLabel = !finding
@@ -480,12 +480,12 @@ export function WorkspaceDashboardClient({
                       ? "Imprecise"
                       : "Blocked";
                 const statusColor = !finding
-                  ? "text-[#7D8CA3]"
+                  ? "text-[var(--ink-muted)]"
                   : finding.finding === "SUPPORTED"
-                    ? "text-[#10B981]"
+                    ? "text-[var(--status-emerald)]"
                     : finding.finding === "IMPRECISE"
-                      ? "text-[#F59E0B]"
-                      : "text-[#EF4444]";
+                      ? "text-[var(--status-amber)]"
+                      : "text-[var(--status-crimson)]";
 
                 const satSegments =
                   finding?.saturation === "meaning"
@@ -502,13 +502,13 @@ export function WorkspaceDashboardClient({
                 return (
                   <div
                     key={claim.id}
-                    className="py-4 grid grid-cols-1 lg:grid-cols-12 items-center gap-4 hover:bg-[#15181F]/60 px-2 -mx-2 transition-colors"
+                    className="py-4 grid grid-cols-1 lg:grid-cols-12 items-center gap-4 hover:bg-[var(--bg-elevated)]/60 px-2 -mx-2 transition-colors"
                   >
                     <div className="lg:col-span-7 flex flex-wrap items-baseline gap-2.5 min-w-0">
-                      <span className="font-mono-tabular text-[11px] uppercase text-[#7D8CA3] shrink-0">
+                      <span className="font-mono-tabular text-[11px] uppercase text-[var(--ink-muted)] shrink-0">
                         {claim.claimType} · L{claim.claimedLevel} ·
                       </span>
-                      <span className="text-[13px] text-[#F5F6F8] truncate">
+                      <span className="text-[13px] text-[var(--ink-primary)] truncate">
                         {claim.rawText}
                       </span>
                     </div>
@@ -535,7 +535,7 @@ export function WorkspaceDashboardClient({
                         </div>
                       ) : (
                         <div>
-                          <div className="flex justify-end font-mono-tabular text-[11px] text-[#9CA3AF] mb-1">
+                          <div className="flex justify-end font-mono-tabular text-[11px] text-[var(--ink-secondary)] mb-1">
                             {finding?.interval
                               ? `[${lo.toFixed(2)}, ${hi.toFixed(2)}]`
                               : "No k/n"}
@@ -553,15 +553,15 @@ export function WorkspaceDashboardClient({
                                     width: `${Math.max(2, (hi - lo) * 100)}%`,
                                     originX: 0,
                                   }}
-                                  className="absolute h-[1px] bg-[#D4AF6A]"
+                                  className="absolute h-[1px] bg-[var(--accent-graphic)]"
                                 />
                                 <div
                                   style={{ left: `${lo * 100}%` }}
-                                  className="absolute top-0.5 bottom-0.5 w-[1px] bg-[#D4AF6A]"
+                                  className="absolute top-0.5 bottom-0.5 w-[1px] bg-[var(--accent-graphic)]"
                                 />
                                 <div
                                   style={{ left: `${Math.min(99, hi * 100)}%` }}
-                                  className="absolute top-0.5 bottom-0.5 w-[1px] bg-[#D4AF6A]"
+                                  className="absolute top-0.5 bottom-0.5 w-[1px] bg-[var(--accent-graphic)]"
                                 />
                               </>
                             )}
@@ -579,21 +579,21 @@ export function WorkspaceDashboardClient({
         {/* Bottom Footer Strip — Latest Run */}
         <footer
           id="runs"
-          className="px-6 py-3 bg-[#07080A] flex items-center justify-between"
+          className="px-6 py-3 bg-[var(--bg-canvas)] flex items-center justify-between"
         >
           {latestRun ? (
             <Link
               href={`/runs/${latestRun.id}`}
-              className="font-mono-tabular text-[12px] text-[#7D8CA3] hover:text-[#F5F6F8] no-underline transition-colors"
+              className="font-mono-tabular text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink-primary)] no-underline transition-colors"
             >
-              Latest Run · <span className="text-[#9CA3AF]">{latestRun.id}</span> ·{" "}
+              Latest Run · <span className="text-[var(--ink-secondary)]">{latestRun.id}</span> ·{" "}
               {latestRun.findingHash} ·{" "}
-              <span className={latestRun.status === "BLOCKED" ? "text-[#EF4444]" : "text-[#10B981]"}>
+              <span className={latestRun.status === "BLOCKED" ? "text-[var(--status-crimson)]" : "text-[var(--status-emerald)]"}>
                 {latestRun.status}
               </span>
             </Link>
           ) : (
-            <span className="font-mono-tabular text-[12px] text-[#7D8CA3]">
+            <span className="font-mono-tabular text-[12px] text-[var(--ink-muted)]">
               No audit runs recorded yet.
             </span>
           )}

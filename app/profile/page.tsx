@@ -16,6 +16,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AuthBar } from "@/components/AuthBar";
 import { useAuth } from "@/components/AuthProvider";
 import { HecticLogo } from "@/components/HecticLogo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { createGoogleProvider, getFirebaseDb } from "@/lib/firebase";
 
 export default function ProfilePage() {
@@ -70,8 +71,8 @@ export default function ProfilePage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07080A] text-[#F5F6F8]">
-        <p className="font-mono-tabular text-[12px] text-[#7D8CA3]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+        <p className="font-mono-tabular text-[12px] text-[var(--ink-muted)]">
           LOADING PROFILE…
         </p>
       </div>
@@ -170,29 +171,32 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07080A] text-[#F5F6F8]">
-      <header className="h-16 border-b border-[#1E222A] px-8 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      <header className="h-16 border-b border-[var(--border-hair)] px-8 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-3 no-underline">
             <HecticLogo size={28} />
-            <span className="font-display text-[24px] leading-none text-[#F5F6F8]">
+            <span className="font-display text-[24px] leading-none text-[var(--ink-primary)]">
               Hectic
             </span>
           </Link>
           <Link
             href="/audit"
-            className="font-mono-tabular text-[12px] text-[#D4AF6A] hover:text-[#F5F6F8] no-underline transition-colors"
+            className="font-mono-tabular text-[12px] text-[var(--accent-text)] hover:text-[var(--ink-primary)] no-underline transition-colors"
           >
             My Audits
           </Link>
           <Link
             href="/workspaces/clean"
-            className="font-mono-tabular text-[12px] text-[#9CA3AF] hover:text-[#F5F6F8] no-underline transition-colors"
+            className="font-mono-tabular text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] no-underline transition-colors"
           >
             Sample Demo
           </Link>
         </div>
-        <AuthBar />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <AuthBar />
+        </div>
       </header>
 
       <main className="flex-1 mx-auto w-full max-w-[760px] px-6 py-14 space-y-8">
@@ -200,32 +204,32 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-[#0E1014] border border-[#1E222A] rounded-none"
+          className="bg-[var(--bg-surface)] border border-[var(--border-hair)] rounded-none"
         >
           {/* Identity Header */}
-          <div className="p-8 border-b border-[#1E222A] flex flex-wrap items-center justify-between gap-6">
+          <div className="p-8 border-b border-[var(--border-hair)] flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-5">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={displayName}
                   referrerPolicy="no-referrer"
-                  className="h-16 w-16 object-cover rounded-[2px] border border-[#262B35]"
+                  className="h-16 w-16 object-cover rounded-[2px] border border-[var(--border-elevated)]"
                 />
               ) : (
-                <span className="flex h-16 w-16 items-center justify-center bg-[#D4AF6A] text-[#07080A] font-display text-[26px] rounded-[2px]">
+                <span className="flex h-16 w-16 items-center justify-center bg-[var(--cta-bg)] text-[var(--cta-text)] font-display text-[26px] rounded-[2px]">
                   {initials}
                 </span>
               )}
               <div>
-                <p className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[#7D8CA3]">
+                <p className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
                   USER PROFILE
                 </p>
-                <h1 className="mt-1 font-display text-[32px] leading-[1.08] text-[#F5F6F8]">
+                <h1 className="mt-1 font-display text-[32px] leading-[1.08] text-[var(--ink-primary)]">
                   {displayName}
                 </h1>
                 {user.email && (
-                  <p className="mt-1 font-mono-tabular text-[12px] text-[#9CA3AF]">
+                  <p className="mt-1 font-mono-tabular text-[12px] text-[var(--ink-secondary)]">
                     {user.email}
                   </p>
                 )}
@@ -238,7 +242,7 @@ export default function ProfilePage() {
                 await signOut();
                 router.push("/");
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] text-[12px] font-medium rounded-[2px] hover:bg-[#3A181C] cursor-pointer transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] text-[var(--status-crimson)] text-[12px] font-medium rounded-[2px] hover:bg-[var(--status-crimson-bg)] cursor-pointer transition-colors"
             >
               <LogOut size={14} />
               Sign out
@@ -246,54 +250,54 @@ export default function ProfilePage() {
           </div>
 
           {/* Account Ledger */}
-          <dl className="divide-y divide-[#1E222A] text-[13px]">
+          <dl className="divide-y divide-[var(--border-hair)] text-[13px]">
             {profileExtra?.firstName && (
               <div className="px-8 py-4 flex items-center justify-between gap-4">
-                <dt className="text-[#9CA3AF]">First Name</dt>
-                <dd className="text-[#F5F6F8]">{profileExtra.firstName}</dd>
+                <dt className="text-[var(--ink-secondary)]">First Name</dt>
+                <dd className="text-[var(--ink-primary)]">{profileExtra.firstName}</dd>
               </div>
             )}
             {profileExtra?.lastName && (
               <div className="px-8 py-4 flex items-center justify-between gap-4">
-                <dt className="text-[#9CA3AF]">Last Name</dt>
-                <dd className="text-[#F5F6F8]">{profileExtra.lastName}</dd>
+                <dt className="text-[var(--ink-secondary)]">Last Name</dt>
+                <dd className="text-[var(--ink-primary)]">{profileExtra.lastName}</dd>
               </div>
             )}
             {profileExtra?.mobileNumber && (
               <div className="px-8 py-4 flex items-center justify-between gap-4">
-                <dt className="text-[#9CA3AF]">Mobile Number</dt>
-                <dd className="font-mono-tabular text-[#F5F6F8]">{profileExtra.mobileNumber}</dd>
+                <dt className="text-[var(--ink-secondary)]">Mobile Number</dt>
+                <dd className="font-mono-tabular text-[var(--ink-primary)]">{profileExtra.mobileNumber}</dd>
               </div>
             )}
             <div className="px-8 py-4 flex items-center justify-between gap-4">
-              <dt className="text-[#9CA3AF]">Provider</dt>
-              <dd className="font-mono-tabular text-[#F5F6F8]">{provider}</dd>
+              <dt className="text-[var(--ink-secondary)]">Provider</dt>
+              <dd className="font-mono-tabular text-[var(--ink-primary)]">{provider}</dd>
             </div>
             <div className="px-8 py-4 flex items-center justify-between gap-4">
-              <dt className="text-[#9CA3AF]">Email Verification</dt>
+              <dt className="text-[var(--ink-secondary)]">Email Verification</dt>
               <dd
                 className={`font-mono-tabular ${
-                  user.emailVerified ? "text-[#10B981]" : "text-[#F59E0B]"
+                  user.emailVerified ? "text-[var(--status-emerald)]" : "text-[var(--status-amber)]"
                 }`}
               >
                 {user.emailVerified ? "VERIFIED" : "UNVERIFIED"}
               </dd>
             </div>
             <div className="px-8 py-4 flex items-center justify-between gap-4">
-              <dt className="text-[#9CA3AF]">User ID (UID)</dt>
-              <dd className="font-mono-tabular text-[#9CA3AF] truncate max-w-[320px]">
+              <dt className="text-[var(--ink-secondary)]">User ID (UID)</dt>
+              <dd className="font-mono-tabular text-[var(--ink-secondary)] truncate max-w-[320px]">
                 {user.uid}
               </dd>
             </div>
             <div className="px-8 py-4 flex items-center justify-between gap-4">
-              <dt className="text-[#9CA3AF]">Account Created</dt>
-              <dd className="font-mono-tabular text-[#9CA3AF]">
+              <dt className="text-[var(--ink-secondary)]">Account Created</dt>
+              <dd className="font-mono-tabular text-[var(--ink-secondary)]">
                 {user.metadata.creationTime ?? "—"}
               </dd>
             </div>
             <div className="px-8 py-4 flex items-center justify-between gap-4">
-              <dt className="text-[#9CA3AF]">Last Sign-In</dt>
-              <dd className="font-mono-tabular text-[#9CA3AF]">
+              <dt className="text-[var(--ink-secondary)]">Last Sign-In</dt>
+              <dd className="font-mono-tabular text-[var(--ink-secondary)]">
                 {user.metadata.lastSignInTime ?? "—"}
               </dd>
             </div>
@@ -305,11 +309,11 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.24, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-[#0E1014] border border-[#1E222A] rounded-none"
+          className="bg-[var(--bg-surface)] border border-[var(--border-hair)] rounded-none"
         >
-          <div className="px-8 py-5 border-b border-[#1E222A] flex items-center gap-2.5">
-            <KeyRound size={15} className="text-[#D4AF6A]" />
-            <h2 className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[#F5F6F8]">
+          <div className="px-8 py-5 border-b border-[var(--border-hair)] flex items-center gap-2.5">
+            <KeyRound size={15} className="text-[var(--accent-text)]" />
+            <h2 className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--ink-primary)]">
               CHANGE PASSWORD
             </h2>
           </div>
@@ -320,7 +324,7 @@ export default function ProfilePage() {
                 <div>
                   <label
                     htmlFor="current-password"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     Current Password
                   </label>
@@ -331,13 +335,13 @@ export default function ProfilePage() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="new-password"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     New Password
                   </label>
@@ -349,13 +353,13 @@ export default function ProfilePage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min. 6 chars"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="confirm-password"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     Confirm New
                   </label>
@@ -367,7 +371,7 @@ export default function ProfilePage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat password"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -375,7 +379,7 @@ export default function ProfilePage() {
               {pwError && (
                 <div
                   role="alert"
-                  className="px-3.5 py-2.5 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[11px]"
+                  className="px-3.5 py-2.5 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] text-[var(--status-crimson)] font-mono-tabular text-[11px]"
                 >
                   {pwError}
                 </div>
@@ -384,7 +388,7 @@ export default function ProfilePage() {
               {pwSuccess && (
                 <div
                   role="status"
-                  className="px-3.5 py-2.5 bg-[#0F1D19] border border-[#183D31] text-[#10B981] font-mono-tabular text-[11px]"
+                  className="px-3.5 py-2.5 bg-[var(--status-emerald-bg)] border border-[var(--status-emerald)] text-[var(--status-emerald)] font-mono-tabular text-[11px]"
                 >
                   {pwSuccess}
                 </div>
@@ -394,7 +398,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={pwBusy}
-                  className="px-5 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
+                  className="px-5 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
                 >
                   {pwBusy ? "Updating…" : "Update Password"}
                 </button>
@@ -402,7 +406,7 @@ export default function ProfilePage() {
             </form>
           ) : (
             <form onSubmit={(e) => void handleSetPasswordForOAuth(e)} className="p-8 space-y-4">
-              <p className="text-[13px] text-[#9CA3AF]">
+              <p className="text-[13px] text-[var(--ink-secondary)]">
                 This account was created with Google OAuth. Set an account password below to also
                 sign in with your email and password.
               </p>
@@ -410,7 +414,7 @@ export default function ProfilePage() {
                 <div>
                   <label
                     htmlFor="oauth-new-password"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     New Password
                   </label>
@@ -422,13 +426,13 @@ export default function ProfilePage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min. 6 chars"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="oauth-confirm-password"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     Confirm Password
                   </label>
@@ -440,7 +444,7 @@ export default function ProfilePage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat password"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -448,7 +452,7 @@ export default function ProfilePage() {
               {pwError && (
                 <div
                   role="alert"
-                  className="px-3.5 py-2.5 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[11px]"
+                  className="px-3.5 py-2.5 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] text-[var(--status-crimson)] font-mono-tabular text-[11px]"
                 >
                   {pwError}
                 </div>
@@ -457,7 +461,7 @@ export default function ProfilePage() {
               {pwSuccess && (
                 <div
                   role="status"
-                  className="px-3.5 py-2.5 bg-[#0F1D19] border border-[#183D31] text-[#10B981] font-mono-tabular text-[11px]"
+                  className="px-3.5 py-2.5 bg-[var(--status-emerald-bg)] border border-[var(--status-emerald)] text-[var(--status-emerald)] font-mono-tabular text-[11px]"
                 >
                   {pwSuccess}
                 </div>
@@ -467,7 +471,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={pwBusy}
-                  className="px-5 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
+                  className="px-5 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
                 >
                   {pwBusy ? "Saving…" : "Set Account Password"}
                 </button>

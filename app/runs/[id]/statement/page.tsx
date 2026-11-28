@@ -29,11 +29,11 @@ export default async function StatementPage({
   const sections = composeStatement(run);
 
   return (
-    <div className="min-h-screen bg-[#07080A] text-[#F5F6F8]">
-      <div className="no-print border-b border-[#1E222A] px-6 py-3.5 flex items-center justify-between">
+    <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      <div className="no-print border-b border-[var(--border-hair)] px-6 py-3.5 flex items-center justify-between">
         <Link
           href={`/runs/${id}`}
-          className="font-mono-tabular text-[12px] text-[#9CA3AF] hover:text-[#F5F6F8] no-underline"
+          className="font-mono-tabular text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] no-underline"
         >
           ← Back to Run {id}
         </Link>
@@ -44,7 +44,7 @@ export default async function StatementPage({
         {!gate.ok && (
           <div
             role="status"
-            className="mb-6 px-4 py-3 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[12px]"
+            className="mb-6 px-4 py-3 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] text-[var(--status-crimson)] font-mono-tabular text-[12px]"
           >
             DRAFT — NOT VERIFIED ·{" "}
             {gate.empty
@@ -112,7 +112,7 @@ export default async function StatementPage({
                     {run.findings
                       .filter((f) => f.resolution)
                       .map((finding) => (
-                        <div key={finding.claimId} className="border-l-2 border-[#D4AF6A] pl-4 py-1">
+                        <div key={finding.claimId} className="border-l-2 border-[var(--accent-graphic)] pl-4 py-1">
                           <p className="font-mono-tabular text-[11px] uppercase text-[#475569]">
                             {finding.claimId} · {finding.resolution!.action}
                           </p>
@@ -131,7 +131,7 @@ export default async function StatementPage({
             </p>
           )}
 
-          <footer className="mt-12 pt-4 border-t border-[#D4AF6A] text-[11px] text-[#475569]">
+          <footer className="mt-12 pt-4 border-t border-[var(--accent-graphic)] text-[11px] text-[#475569]">
             <p className="font-mono-tabular">
               SHA-256 {(run.findingHash || run.inputHash).replace(/^sha256:/, "")} · ENGINE 1.0.0
             </p>

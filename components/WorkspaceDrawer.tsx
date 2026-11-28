@@ -204,7 +204,7 @@ export function WorkspaceDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#07080A]/75"
+            className="fixed inset-0 bg-[var(--bg-canvas)]/75"
           />
 
           {/* Right Slide-Over Sheet (460px, 0px radius) */}
@@ -213,22 +213,22 @@ export function WorkspaceDrawer({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 w-[460px] max-w-full h-full bg-[#0E1014] border-l border-[#262B35] rounded-none flex flex-col"
+            className="relative z-10 w-[460px] max-w-full h-full bg-[var(--bg-surface)] border-l border-[var(--border-elevated)] rounded-none flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E222A]">
-              <h2 className="text-[14px] font-medium text-[#F5F6F8]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-hair)]">
+              <h2 className="text-[14px] font-medium text-[var(--ink-primary)]">
                 Import Roster &amp; Formalise Claim
               </h2>
               <div className="flex items-center gap-3">
-                <span className="font-mono-tabular text-[10px] uppercase tracking-[0.06em] px-2 py-0.5 bg-[#0F1D19] border border-[#183D31] text-[#10B981] rounded-[2px]">
+                <span className="font-mono-tabular text-[10px] uppercase tracking-[0.06em] px-2 py-0.5 bg-[var(--status-emerald-bg)] border border-[var(--status-emerald)] text-[var(--status-emerald)] rounded-[2px]">
                   PII REDACTED LOCALLY
                 </span>
                 <button
                   type="button"
                   onClick={onClose}
                   aria-label="Close drawer"
-                  className="text-[#9CA3AF] hover:text-[#F5F6F8] p-1 cursor-pointer transition-colors"
+                  className="text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] p-1 cursor-pointer transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -239,7 +239,7 @@ export function WorkspaceDrawer({
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
               {/* CSV Dropzone */}
               <div>
-                <p className="text-[12px] font-medium text-[#F5F6F8] mb-2.5">
+                <p className="text-[12px] font-medium text-[var(--ink-primary)] mb-2.5">
                   CSV Dropzone
                 </p>
                 <input
@@ -260,33 +260,33 @@ export function WorkspaceDrawer({
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileRef.current?.click(); }}
                   className={`py-10 px-4 border border-dashed rounded-none flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
                     isDragging
-                      ? "border-[#D4AF6A] bg-[#15181F]"
-                      : "border-[#D4AF6A]/65 bg-[#07080A] hover:bg-[#15181F]"
+                      ? "border-[var(--accent-graphic)] bg-[var(--bg-elevated)]"
+                      : "border-[var(--accent-graphic)]/65 bg-[var(--bg-canvas)] hover:bg-[var(--bg-elevated)]"
                   }`}
                 >
-                  <p className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
+                  <p className="text-[13px] text-[var(--ink-secondary)] flex items-center gap-2">
                     <span>
                       Drop interview CSV or{" "}
-                      <span className="text-[#D4AF6A] underline underline-offset-4">
+                      <span className="text-[var(--accent-text)] underline underline-offset-4">
                         browse files
                       </span>
                     </span>
-                    <Upload size={14} className="text-[#D4AF6A]" />
+                    <Upload size={14} className="text-[var(--accent-text)]" />
                   </p>
                   {preview && (
-                    <p className="mt-2 font-mono-tabular text-[11px] text-[#10B981]">
+                    <p className="mt-2 font-mono-tabular text-[11px] text-[var(--status-emerald)]">
                       {preview.fileName} · {preview.rowCount} rows ready
                     </p>
                   )}
                 </div>
 
                 {importError && (
-                  <p className="mt-2 font-mono-tabular text-[11px] text-[#EF4444]" role="alert">
+                  <p className="mt-2 font-mono-tabular text-[11px] text-[var(--status-crimson)]" role="alert">
                     {importError}
                   </p>
                 )}
                 {importStatus && (
-                  <p className="mt-2 font-mono-tabular text-[11px] text-[#10B981]" role="status">
+                  <p className="mt-2 font-mono-tabular text-[11px] text-[var(--status-emerald)]" role="status">
                     {importStatus}
                   </p>
                 )}
@@ -294,10 +294,10 @@ export function WorkspaceDrawer({
 
               {/* Parsed Preview Rows */}
               <div>
-                <p className="text-[12px] font-medium text-[#F5F6F8] mb-2">
+                <p className="text-[12px] font-medium text-[var(--ink-primary)] mb-2">
                   Import Interview Roster
                 </p>
-                <div className="border-t border-[#1E222A] divide-y divide-[#1E222A]">
+                <div className="border-t border-[var(--border-hair)] divide-y divide-[var(--border-hair)]">
                   {preview ? (
                     preview.rows.slice(0, 4).map((row, idx) => {
                       const org = row[headerIdx("orgId")] ?? row[1] ?? "org";
@@ -307,14 +307,14 @@ export function WorkspaceDrawer({
                       return (
                         <div
                           key={idx}
-                          className="py-2.5 font-mono-tabular text-[12px] text-[#9CA3AF] truncate"
+                          className="py-2.5 font-mono-tabular text-[12px] text-[var(--ink-secondary)] truncate"
                         >
-                          <span className="text-[#F5F6F8]">{org}</span> · {seg} · {role} · L{lvl}
+                          <span className="text-[var(--ink-primary)]">{org}</span> · {seg} · {role} · L{lvl}
                         </div>
                       );
                     })
                   ) : (
-                    <p className="py-3 font-mono-tabular text-[11px] text-[#7D8CA3]">
+                    <p className="py-3 font-mono-tabular text-[11px] text-[var(--ink-muted)]">
                       No file queued — upload a CSV above to preview redacted rows.
                     </p>
                   )}
@@ -326,14 +326,14 @@ export function WorkspaceDrawer({
               {/* Formalise Belief */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="drawer-belief" className="text-[12px] font-medium text-[#F5F6F8]">
+                  <label htmlFor="drawer-belief" className="text-[12px] font-medium text-[var(--ink-primary)]">
                     Formalise Belief
                   </label>
                   <button
                     type="button"
                     disabled={busy || sentence.trim().length < 3}
                     onClick={() => void formaliseSentence()}
-                    className="font-mono-tabular text-[11px] text-[#D4AF6A] hover:underline disabled:text-[#7D8CA3] disabled:no-underline cursor-pointer"
+                    className="font-mono-tabular text-[11px] text-[var(--accent-text)] hover:underline disabled:text-[var(--ink-muted)] disabled:no-underline cursor-pointer"
                   >
                     {busy ? "Parsing…" : "Formalise →"}
                   </button>
@@ -349,29 +349,29 @@ export function WorkspaceDrawer({
                     setClaimSaved(false);
                   }}
                   placeholder="e.g., Clinics will prepay €200/month for automated intake..."
-                  className="w-full px-3.5 py-2.5 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                 />
 
                 {proposal && (
                   <div className="mt-3 space-y-2.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono-tabular text-[11px] uppercase px-2 py-0.5 bg-[#15181F] border border-[#262B35] text-[#9CA3AF] rounded-[2px]">
+                      <span className="font-mono-tabular text-[11px] uppercase px-2 py-0.5 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] text-[var(--ink-secondary)] rounded-[2px]">
                         {proposal.claimType}
                       </span>
-                      <span className="font-mono-tabular text-[11px] px-2 py-0.5 bg-[#15181F] border border-[#262B35] text-[#9CA3AF] rounded-[2px]">
+                      <span className="font-mono-tabular text-[11px] px-2 py-0.5 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] text-[var(--ink-secondary)] rounded-[2px]">
                         Population: {proposal.population}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <label htmlFor="drawer-level" className="font-mono-tabular text-[11px] text-[#7D8CA3]">
+                      <label htmlFor="drawer-level" className="font-mono-tabular text-[11px] text-[var(--ink-muted)]">
                         Claimed Level
                       </label>
                       <select
                         id="drawer-level"
                         value={claimedLevel}
                         onChange={(e) => setClaimedLevel(e.target.value)}
-                        className="px-2 py-1 bg-[#07080A] border border-[#262B35] rounded-[2px] font-mono-tabular text-[11px] text-[#F5F6F8]"
+                        className="px-2 py-1 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] font-mono-tabular text-[11px] text-[var(--ink-primary)]"
                       >
                         {([1, 2, 3, 4, 5, 6] as const).map((lvl) => (
                           <option key={lvl} value={lvl}>
@@ -383,7 +383,7 @@ export function WorkspaceDrawer({
                         type="button"
                         onClick={() => void saveClaimIfNeeded()}
                         disabled={busy || claimSaved}
-                        className="ml-auto px-2.5 py-1 border border-[#262B35] rounded-[2px] text-[11px] text-[#F5F6F8] hover:bg-[#15181F] cursor-pointer disabled:opacity-50"
+                        className="ml-auto px-2.5 py-1 border border-[var(--border-elevated)] rounded-[2px] text-[11px] text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] cursor-pointer disabled:opacity-50"
                       >
                         {claimSaved ? "Saved ✓" : "Save Claim"}
                       </button>
@@ -392,7 +392,7 @@ export function WorkspaceDrawer({
                 )}
 
                 {claimError && (
-                  <p className="mt-2 font-mono-tabular text-[11px] text-[#EF4444]" role="alert">
+                  <p className="mt-2 font-mono-tabular text-[11px] text-[var(--status-crimson)]" role="alert">
                     {claimError}
                   </p>
                 )}
@@ -400,11 +400,11 @@ export function WorkspaceDrawer({
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-[#1E222A] flex items-center justify-end gap-3 bg-[#0E1014]">
+            <div className="px-6 py-4 border-t border-[var(--border-hair)] flex items-center justify-end gap-3 bg-[var(--bg-surface)]">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-[12px] text-[#9CA3AF] hover:text-[#F5F6F8] border border-[#262B35] rounded-[2px] cursor-pointer transition-colors"
+                className="px-4 py-2 text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] border border-[var(--border-elevated)] rounded-[2px] cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -412,7 +412,7 @@ export function WorkspaceDrawer({
                 type="button"
                 disabled={busy}
                 onClick={() => void runAudit()}
-                className="px-5 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
+                className="px-5 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
               >
                 {busy ? "Running…" : "Run Audit"}
               </button>

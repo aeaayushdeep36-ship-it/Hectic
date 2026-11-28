@@ -38,7 +38,7 @@ export function AuthPromptModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#07080A]/80"
+            className="fixed inset-0 bg-[var(--bg-canvas)]/80"
           />
 
           <motion.div
@@ -46,12 +46,12 @@ export function AuthPromptModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 w-full max-w-[420px] bg-[#0E1014] border border-[#262B35] rounded-none"
+            className="relative z-10 w-full max-w-[420px] bg-[var(--bg-surface)] border border-[var(--border-elevated)] rounded-none"
           >
-            <div className="px-6 py-4 border-b border-[#1E222A] flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-[var(--border-hair)] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Lock size={14} className="text-[#D4AF6A]" />
-                <span className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[#D4AF6A]">
+                <Lock size={14} className="text-[var(--accent-text)]" />
+                <span className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--accent-text)]">
                   SIGN IN REQUIRED
                 </span>
               </div>
@@ -59,17 +59,17 @@ export function AuthPromptModal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close prompt"
-                className="text-[#9CA3AF] hover:text-[#F5F6F8] cursor-pointer p-1"
+                className="text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] cursor-pointer p-1"
               >
                 <X size={15} />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
-              <h2 className="font-display text-[28px] leading-[1.1] text-[#F5F6F8]">
+              <h2 className="font-display text-[28px] leading-[1.1] text-[var(--ink-primary)]">
                 Sign in to continue
               </h2>
-              <p className="text-[13px] leading-[20px] text-[#9CA3AF]">
+              <p className="text-[13px] leading-[20px] text-[var(--ink-secondary)]">
                 You must create an account or sign in before you can {actionLabel}.
                 Your workspaces and audit statements are bound to your authenticated identity.
               </p>
@@ -78,13 +78,13 @@ export function AuthPromptModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-[12px] text-[#9CA3AF] hover:text-[#F5F6F8] border border-[#262B35] rounded-[2px] cursor-pointer transition-colors"
+                  className="px-4 py-2 text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] border border-[var(--border-elevated)] rounded-[2px] cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <Link
                   href="/signin"
-                  className="px-5 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 no-underline transition-opacity"
+                  className="px-5 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 no-underline transition-opacity"
                 >
                   Sign In / Create Account →
                 </Link>

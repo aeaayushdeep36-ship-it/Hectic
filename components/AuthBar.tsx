@@ -105,9 +105,9 @@ export function AuthBar({ compact = false }: { compact?: boolean }) {
                 href="/profile"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3.5 py-2 text-[12px] text-[#F5F6F8] hover:bg-[#15181F] no-underline transition-colors"
+                className="flex items-center gap-2.5 px-3.5 py-2 text-[12px] text-[var(--ink-primary)] hover:bg-[var(--bg-elevated)] no-underline transition-colors"
               >
-                <UserIcon size={14} className="text-[#9CA3AF]" />
+                <UserIcon size={14} className="text-[var(--ink-secondary)]" />
                 View profile
               </Link>
             </div>
@@ -121,7 +121,7 @@ export function AuthBar({ compact = false }: { compact?: boolean }) {
                   await signOut();
                   router.push("/");
                 }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[12px] font-medium text-[#EF4444] hover:bg-[#2A1215] cursor-pointer text-left transition-colors"
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[12px] font-medium text-[var(--status-crimson)] hover:bg-[var(--status-crimson-bg)] cursor-pointer text-left transition-colors"
               >
                 <LogOut size={14} />
                 Sign out

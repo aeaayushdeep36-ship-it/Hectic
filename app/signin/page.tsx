@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { HecticLogo } from "@/components/HecticLogo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   validateMobileNumber,
   validatePasswordMatch,
@@ -186,20 +187,23 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07080A] text-[#F5F6F8]">
-      <header className="h-16 border-b border-[#1E222A] px-8 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      <header className="h-16 border-b border-[var(--border-hair)] px-8 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 no-underline">
           <HecticLogo size={28} />
-          <span className="font-display text-[24px] leading-none text-[#F5F6F8]">
+          <span className="font-display text-[24px] leading-none text-[var(--ink-primary)]">
             Hectic
           </span>
         </Link>
-        <Link
-          href="/"
-          className="font-mono-tabular text-[12px] text-[#9CA3AF] hover:text-[#F5F6F8] no-underline transition-colors"
-        >
-          ← Back
-        </Link>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <Link
+            href="/"
+            className="font-mono-tabular text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] no-underline transition-colors"
+          >
+            ← Back
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
@@ -207,16 +211,16 @@ export default function SignInPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[440px] bg-[#0E1014] border border-[#1E222A] rounded-none"
+          className="w-full max-w-[440px] bg-[var(--bg-surface)] border border-[var(--border-hair)] rounded-none"
         >
-          <div className="px-8 pt-8 pb-6 border-b border-[#1E222A]">
-            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[#7D8CA3] mb-2">
+          <div className="px-8 pt-8 pb-6 border-b border-[var(--border-hair)]">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[var(--ink-muted)] mb-2">
               {mode === "signup" ? "STEP 1 · CREATE ACCOUNT" : "REGISTERED ACCESS"}
             </p>
-            <h1 className="font-display text-[32px] leading-[1.08] text-[#F5F6F8]">
+            <h1 className="font-display text-[32px] leading-[1.08] text-[var(--ink-primary)]">
               {mode === "signup" ? "Create your Hectic account" : "Sign in to Hectic"}
             </h1>
-            <p className="mt-2 text-[12px] text-[#9CA3AF]">
+            <p className="mt-2 text-[12px] text-[var(--ink-secondary)]">
               {mode === "signup"
                 ? "Create an account with a permanent email and password, or continue with Google."
                 : "Sign in with the email and password you created."}
@@ -224,7 +228,7 @@ export default function SignInPage() {
           </div>
 
           {/* Mode Tabs */}
-          <div className="grid grid-cols-2 border-b border-[#1E222A]">
+          <div className="grid grid-cols-2 border-b border-[var(--border-hair)]">
             <button
               type="button"
               onClick={() => {
@@ -233,8 +237,8 @@ export default function SignInPage() {
               }}
               className={`py-3 font-mono-tabular text-[11px] uppercase tracking-[0.08em] cursor-pointer transition-colors ${
                 mode === "signup"
-                  ? "bg-[#15181F] text-[#D4AF6A] border-b border-[#D4AF6A]"
-                  : "text-[#7D8CA3] hover:text-[#F5F6F8]"
+                  ? "bg-[var(--bg-elevated)] text-[var(--accent-text)] border-b border-[var(--accent-graphic)]"
+                  : "text-[var(--ink-muted)] hover:text-[var(--ink-primary)]"
               }`}
             >
               Create Account
@@ -245,10 +249,10 @@ export default function SignInPage() {
                 setMode("signin");
                 setError(null);
               }}
-              className={`py-3 font-mono-tabular text-[11px] uppercase tracking-[0.08em] cursor-pointer transition-colors border-l border-[#1E222A] ${
+              className={`py-3 font-mono-tabular text-[11px] uppercase tracking-[0.08em] cursor-pointer transition-colors border-l border-[var(--border-hair)] ${
                 mode === "signin"
-                  ? "bg-[#15181F] text-[#D4AF6A] border-b border-[#D4AF6A]"
-                  : "text-[#7D8CA3] hover:text-[#F5F6F8]"
+                  ? "bg-[var(--bg-elevated)] text-[var(--accent-text)] border-b border-[var(--accent-graphic)]"
+                  : "text-[var(--ink-muted)] hover:text-[var(--ink-primary)]"
               }`}
             >
               Sign In
@@ -286,7 +290,7 @@ export default function SignInPage() {
 
             <div className="flex items-center gap-3">
               <div className="h-[1px] flex-1 bg-[#1E222A]" />
-              <span className="font-mono-tabular text-[11px] uppercase text-[#7D8CA3]">
+              <span className="font-mono-tabular text-[11px] uppercase text-[var(--ink-muted)]">
                 OR EMAIL &amp; PASSWORD
               </span>
               <div className="h-[1px] flex-1 bg-[#1E222A]" />
@@ -299,7 +303,7 @@ export default function SignInPage() {
                     <div>
                       <label
                         htmlFor="signup-first-name"
-                        className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                        className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                       >
                         First Name
                       </label>
@@ -311,13 +315,13 @@ export default function SignInPage() {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="Ada"
-                        className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                        className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                       />
                     </div>
                     <div>
                       <label
                         htmlFor="signup-last-name"
-                        className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                        className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                       >
                         Last Name
                       </label>
@@ -329,7 +333,7 @@ export default function SignInPage() {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Lovelace"
-                        className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                        className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -337,7 +341,7 @@ export default function SignInPage() {
                   <div>
                     <label
                       htmlFor="signup-mobile"
-                      className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                      className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                     >
                       Mobile Number
                     </label>
@@ -349,7 +353,7 @@ export default function SignInPage() {
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
                       placeholder="+1 555 234 5678"
-                      className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                     />
                   </div>
                 </>
@@ -358,7 +362,7 @@ export default function SignInPage() {
               <div>
                 <label
                   htmlFor="signin-email"
-                  className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                  className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                 >
                   Permanent Email Address
                 </label>
@@ -369,9 +373,9 @@ export default function SignInPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="founder@company.com"
-                  className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                  className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                 />
-                <p className="mt-1 font-mono-tabular text-[10px] text-[#7D8CA3]">
+                <p className="mt-1 font-mono-tabular text-[10px] text-[var(--ink-muted)]">
                   Temporary / disposable mail domains are blocked. One password per email account.
                 </p>
               </div>
@@ -379,7 +383,7 @@ export default function SignInPage() {
               <div>
                 <label
                   htmlFor="signin-password"
-                  className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                  className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                 >
                   Password
                 </label>
@@ -391,7 +395,7 @@ export default function SignInPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimum 6 characters"
-                  className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                  className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                 />
               </div>
 
@@ -399,7 +403,7 @@ export default function SignInPage() {
                 <div>
                   <label
                     htmlFor="signup-confirm-password"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     Re-enter Password
                   </label>
@@ -411,7 +415,7 @@ export default function SignInPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter your password"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
               )}
@@ -419,7 +423,7 @@ export default function SignInPage() {
               {error && (
                 <div
                   role="alert"
-                  className="px-3.5 py-2.5 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[11px]"
+                  className="px-3.5 py-2.5 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] text-[var(--status-crimson)] font-mono-tabular text-[11px]"
                 >
                   {error}
                 </div>
@@ -428,7 +432,7 @@ export default function SignInPage() {
               {notice && (
                 <div
                   role="status"
-                  className="px-3.5 py-2.5 bg-[#0F1D19] border border-[#183D31] text-[#10B981] font-mono-tabular text-[11px]"
+                  className="px-3.5 py-2.5 bg-[var(--status-emerald-bg)] border border-[var(--status-emerald)] text-[var(--status-emerald)] font-mono-tabular text-[11px]"
                 >
                   {notice}
                 </div>
@@ -437,7 +441,7 @@ export default function SignInPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full py-2.5 bg-[#D4AF6A] text-[#07080A] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
+                className="w-full py-2.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50 transition-opacity"
               >
                 {busy
                   ? "Authenticating…"

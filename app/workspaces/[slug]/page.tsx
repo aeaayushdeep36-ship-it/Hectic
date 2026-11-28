@@ -63,7 +63,7 @@ export default async function WorkspacePage({
   };
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#07080A]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--bg-canvas)]" />}>
       <WorkspaceDashboardClient
         workspace={workspace}
         workspaces={allWorkspaces}

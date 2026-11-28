@@ -26,6 +26,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState, type Cha
 import { AuthBar } from "@/components/AuthBar";
 import { useAuth } from "@/components/AuthProvider";
 import { HecticLogo } from "@/components/HecticLogo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { WorkspaceNavContext } from "@/components/WorkspaceNavContext";
 import { getFirebaseDb } from "@/lib/firebase";
 import { contentHash } from "@/lib/hash";
@@ -83,10 +84,10 @@ function slugify(name: string): string {
 }
 
 function heatmapClass(orgs: number): string {
-  if (orgs === 0) return "bg-[#0E1014] text-[#7D8CA3]";
-  if (orgs <= 2) return "bg-[#0F1D19] text-[#F5F6F8]";
-  if (orgs === 3) return "bg-[#132B23] text-[#F5F6F8]";
-  return "bg-[#183D31] text-[#F5F6F8]";
+  if (orgs === 0) return "bg-[var(--bg-surface)] text-[var(--ink-muted)]";
+  if (orgs <= 2) return "bg-[var(--status-emerald-bg)] text-[var(--ink-primary)]";
+  if (orgs === 3) return "bg-[#132B23] text-[var(--ink-primary)]";
+  return "bg-[#183D31] text-[var(--ink-primary)]";
 }
 
 export default function UserAuditStudioPage() {
@@ -589,36 +590,39 @@ export default function UserAuditStudioPage() {
   // Unauthenticated gate
   if (!authLoading && !user) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#07080A] text-[#F5F6F8]">
-        <header className="h-16 border-b border-[#1E222A] px-8 flex items-center justify-between">
+      <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+        <header className="h-16 border-b border-[var(--border-hair)] px-8 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 no-underline">
             <HecticLogo size={28} />
-            <span className="font-display text-[24px] leading-none text-[#F5F6F8]">Hectic</span>
+            <span className="font-display text-[24px] leading-none text-[var(--ink-primary)]">Hectic</span>
           </Link>
-          <AuthBar />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <AuthBar />
+          </div>
         </header>
         <main className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-[460px] bg-[#0E1014] border border-[#1E222A] p-8 space-y-5">
-            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[#D4AF6A]">
+          <div className="w-full max-w-[460px] bg-[var(--bg-surface)] border border-[var(--border-hair)] p-8 space-y-5">
+            <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[var(--accent-text)]">
               SIGN IN REQUIRED
             </p>
-            <h1 className="font-display text-[32px] leading-[1.08] text-[#F5F6F8]">
+            <h1 className="font-display text-[32px] leading-[1.08] text-[var(--ink-primary)]">
               Create an account to start your audit
             </h1>
-            <p className="text-[13px] leading-[1.6] text-[#9CA3AF]">
+            <p className="text-[13px] leading-[1.6] text-[var(--ink-secondary)]">
               Your workspaces, interview rosters, and deterministic evidence statements are private
               to your account. Sign in or create an account first to begin.
             </p>
             <div className="flex items-center gap-4 pt-2">
               <Link
                 href="/signin"
-                className="px-5 py-2.5 bg-[#D4AF6A] text-[#07080A] text-[13px] font-medium rounded-[2px] no-underline hover:opacity-90"
+                className="px-5 py-2.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[13px] font-medium rounded-[2px] no-underline hover:opacity-90"
               >
                 Create Account / Sign In
               </Link>
               <Link
                 href="/workspaces/clean"
-                className="text-[12px] text-[#7D8CA3] hover:text-[#F5F6F8] no-underline"
+                className="text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink-primary)] no-underline"
               >
                 Explore sample demo →
               </Link>
@@ -630,21 +634,21 @@ export default function UserAuditStudioPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#07080A] text-[#F5F6F8]">
+    <div className="min-h-screen flex bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
       {/* ── Left Sidebar: User Workspaces First, Sample Demos Aside ── */}
-      <aside className="hidden md:flex w-[240px] shrink-0 flex-col border-r border-[#1E222A] bg-[#07080A]">
-        <div className="h-16 px-5 flex items-center justify-between border-b border-[#1E222A]">
+      <aside className="hidden md:flex w-[240px] shrink-0 flex-col border-r border-[var(--border-hair)] bg-[var(--bg-canvas)]">
+        <div className="h-16 px-5 flex items-center justify-between border-b border-[var(--border-hair)]">
           <Link href="/" className="flex items-center gap-2.5 no-underline">
             <HecticLogo size={24} />
-            <span className="font-display text-[20px] leading-none text-[#F5F6F8]">Hectic</span>
+            <span className="font-display text-[20px] leading-none text-[var(--ink-primary)]">Hectic</span>
           </Link>
         </div>
 
-        <div className="p-4 border-b border-[#1E222A]">
+        <div className="p-4 border-b border-[var(--border-hair)]">
           <button
             type="button"
             onClick={() => setCreatingOpen(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer"
           >
             <FolderPlus size={14} />
             New Audit Workspace
@@ -653,13 +657,13 @@ export default function UserAuditStudioPage() {
 
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           <div>
-            <p className="px-2 mb-2 font-mono-tabular text-[10px] uppercase tracking-[0.12em] text-[#7D8CA3]">
+            <p className="px-2 mb-2 font-mono-tabular text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">
               YOUR AUDITS
             </p>
             {loadingWorkspaces ? (
-              <p className="px-2 font-mono-tabular text-[11px] text-[#7D8CA3]">Loading…</p>
+              <p className="px-2 font-mono-tabular text-[11px] text-[var(--ink-muted)]">Loading…</p>
             ) : workspaces.length === 0 ? (
-              <p className="px-2 text-[12px] text-[#7D8CA3]">
+              <p className="px-2 text-[12px] text-[var(--ink-muted)]">
                 No workspaces yet. Create your first audit.
               </p>
             ) : (
@@ -674,8 +678,8 @@ export default function UserAuditStudioPage() {
                     }}
                     className={`w-full text-left px-3 py-2 text-[13px] rounded-[2px] cursor-pointer transition-colors ${
                       ws.id === activeId && !creatingOpen
-                        ? "bg-[#15181F] text-[#D4AF6A] border-l-2 border-[#D4AF6A]"
-                        : "text-[#9CA3AF] hover:text-[#F5F6F8] hover:bg-[#0E1014]"
+                        ? "bg-[var(--bg-elevated)] text-[var(--accent-text)] border-l-2 border-[var(--accent-graphic)]"
+                        : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--bg-surface)]"
                     }`}
                   >
                     <span className="block truncate">{ws.name}</span>
@@ -685,8 +689,8 @@ export default function UserAuditStudioPage() {
             )}
           </div>
 
-          <div className="pt-4 border-t border-[#1E222A]">
-            <p className="px-2 mb-2 font-mono-tabular text-[10px] uppercase tracking-[0.12em] text-[#7D8CA3]">
+          <div className="pt-4 border-t border-[var(--border-hair)]">
+            <p className="px-2 mb-2 font-mono-tabular text-[10px] uppercase tracking-[0.12em] text-[var(--ink-muted)]">
               SAMPLE DEMOS
             </p>
             <div className="space-y-1">
@@ -694,7 +698,7 @@ export default function UserAuditStudioPage() {
                 <Link
                   key={demo.slug}
                   href={`/workspaces/${demo.slug}`}
-                  className="block px-3 py-1.5 text-[12px] text-[#7D8CA3] hover:text-[#F5F6F8] no-underline truncate"
+                  className="block px-3 py-1.5 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink-primary)] no-underline truncate"
                 >
                   {demo.name}
                 </Link>
@@ -706,23 +710,24 @@ export default function UserAuditStudioPage() {
 
       {/* ── Main Studio Area ── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-[#1E222A] px-6 lg:px-10 flex items-center justify-between gap-4">
+        <header className="h-16 border-b border-[var(--border-hair)] px-6 lg:px-10 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <span className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[#D4AF6A]">
+            <span className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[var(--accent-text)]">
               USER AUDIT STUDIO
             </span>
             {activeWorkspace && !creatingOpen && (
               <>
-                <span className="text-[#262B35]">/</span>
-                <span className="text-[13px] text-[#F5F6F8] truncate">{activeWorkspace.name}</span>
+                <span className="text-[var(--border-elevated)]">/</span>
+                <span className="text-[13px] text-[var(--ink-primary)] truncate">{activeWorkspace.name}</span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <button
               type="button"
               onClick={() => setCreatingOpen(true)}
-              className="md:hidden px-3 py-1.5 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] cursor-pointer"
+              className="md:hidden px-3 py-1.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] cursor-pointer"
             >
               + New Audit
             </button>
@@ -736,15 +741,15 @@ export default function UserAuditStudioPage() {
             <motion.section
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-[#0E1014] border border-[#1E222A] p-8"
+              className="bg-[var(--bg-surface)] border border-[var(--border-hair)] p-8"
             >
-              <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[#D4AF6A] mb-2">
+              <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[var(--accent-text)] mb-2">
                 STEP 01 · CREATE YOUR AUDIT WORKSPACE
               </p>
-              <h1 className="font-display text-[34px] leading-[1.08] text-[#F5F6F8]">
+              <h1 className="font-display text-[34px] leading-[1.08] text-[var(--ink-primary)]">
                 Start a new evidence audit
               </h1>
-              <p className="mt-2 text-[13px] text-[#9CA3AF] max-w-[60ch]">
+              <p className="mt-2 text-[13px] text-[var(--ink-secondary)] max-w-[60ch]">
                 Name your workspace, then upload your interview CSV and formalise the claims you
                 want verified with deterministic math.
               </p>
@@ -753,7 +758,7 @@ export default function UserAuditStudioPage() {
                 <div>
                   <label
                     htmlFor="ws-name"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     Audit Workspace Name
                   </label>
@@ -764,13 +769,13 @@ export default function UserAuditStudioPage() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. Acme Q4 Buyer Discovery"
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="ws-context"
-                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF] mb-1.5"
+                    className="block font-mono-tabular text-[11px] uppercase tracking-[0.06em] text-[var(--ink-secondary)] mb-1.5"
                   >
                     Context Note (Optional)
                   </label>
@@ -780,17 +785,17 @@ export default function UserAuditStudioPage() {
                     value={newContext}
                     onChange={(e) => setNewContext(e.target.value)}
                     placeholder="Target segment, pricing hypothesis, or diligence scope..."
-                    className="w-full px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] placeholder:text-[#7D8CA3] focus:border-[#D4AF6A] focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent-graphic)] focus:outline-none"
                   />
                 </div>
                 {createError && (
-                  <p className="font-mono-tabular text-[11px] text-[#EF4444]">{createError}</p>
+                  <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{createError}</p>
                 )}
                 <div className="flex items-center gap-3">
                   <button
                     type="submit"
                     disabled={createBusy}
-                    className="px-5 py-2.5 bg-[#D4AF6A] text-[#07080A] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50"
                   >
                     {createBusy ? "Creating…" : "Create Workspace & Continue"}
                   </button>
@@ -798,7 +803,7 @@ export default function UserAuditStudioPage() {
                     <button
                       type="button"
                       onClick={() => setCreatingOpen(false)}
-                      className="px-4 py-2.5 border border-[#262B35] text-[12px] text-[#9CA3AF] hover:text-[#F5F6F8] rounded-[2px] cursor-pointer"
+                      className="px-4 py-2.5 border border-[var(--border-elevated)] text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] rounded-[2px] cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -812,12 +817,12 @@ export default function UserAuditStudioPage() {
           {activeWorkspace && !creatingOpen && (
             <>
               {/* Header Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1E222A] pb-6">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-hair)] pb-6">
                 <div>
-                  <h1 className="font-display text-[36px] leading-[1.06] text-[#F5F6F8]">
+                  <h1 className="font-display text-[36px] leading-[1.06] text-[var(--ink-primary)]">
                     {activeWorkspace.name}
                   </h1>
-                  <p className="mt-1.5 font-mono-tabular text-[12px] text-[#7D8CA3]">
+                  <p className="mt-1.5 font-mono-tabular text-[12px] text-[var(--ink-muted)]">
                     {loadingData
                       ? "Loading workspace…"
                       : `${evidence.length} interviews · ${orgCount} orgs · ${claims.length} claims`}
@@ -828,7 +833,7 @@ export default function UserAuditStudioPage() {
                   type="button"
                   disabled={runningAudit}
                   onClick={() => void handleRunAudit()}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-[#D4AF6A] text-[#07080A] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[13px] font-medium rounded-[2px] hover:opacity-90 cursor-pointer disabled:opacity-50"
                 >
                   <Play size={14} />
                   {runningAudit ? "Running Audit…" : "Run Deterministic Audit"}
@@ -836,7 +841,7 @@ export default function UserAuditStudioPage() {
               </div>
 
               {auditErr && (
-                <div className="px-4 py-3 bg-[#2A1215] border border-[#4C1D24] text-[#EF4444] font-mono-tabular text-[12px]">
+                <div className="px-4 py-3 bg-[var(--status-crimson-bg)] border border-[var(--status-crimson-border)] text-[var(--status-crimson)] font-mono-tabular text-[12px]">
                   {auditErr}
                 </div>
               )}
@@ -844,15 +849,15 @@ export default function UserAuditStudioPage() {
               {/* Step 02 & Step 03 Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Step 02: Interview Roster CSV Upload */}
-                <section className="lg:col-span-6 bg-[#0E1014] border border-[#1E222A] p-6 space-y-4">
+                <section className="lg:col-span-6 bg-[var(--bg-surface)] border border-[var(--border-hair)] p-6 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[#D4AF6A]">
+                    <span className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--accent-text)]">
                       02 · INTERVIEW ROSTER
                     </span>
                     <button
                       type="button"
                       onClick={loadStarterCsv}
-                      className="font-mono-tabular text-[11px] text-[#7D8CA3] hover:text-[#F5F6F8] underline cursor-pointer"
+                      className="font-mono-tabular text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink-primary)] underline cursor-pointer"
                     >
                       Load starter CSV template
                     </button>
@@ -868,8 +873,8 @@ export default function UserAuditStudioPage() {
                     onClick={() => fileRef.current?.click()}
                     className={`border border-dashed p-6 text-center cursor-pointer transition-colors ${
                       isDragging
-                        ? "border-[#D4AF6A] bg-[#15181F]"
-                        : "border-[#262B35] hover:border-[#7D8CA3]"
+                        ? "border-[var(--accent-graphic)] bg-[var(--bg-elevated)]"
+                        : "border-[var(--border-elevated)] hover:border-[#7D8CA3]"
                     }`}
                   >
                     <input
@@ -879,26 +884,26 @@ export default function UserAuditStudioPage() {
                       onChange={onFileInput}
                       className="hidden"
                     />
-                    <Upload size={18} className="mx-auto text-[#D4AF6A] mb-2" />
-                    <p className="text-[13px] text-[#F5F6F8]">
+                    <Upload size={18} className="mx-auto text-[var(--accent-text)] mb-2" />
+                    <p className="text-[13px] text-[var(--ink-primary)]">
                       Drop interview CSV here or click to browse
                     </p>
-                    <p className="mt-1 font-mono-tabular text-[11px] text-[#7D8CA3]">
+                    <p className="mt-1 font-mono-tabular text-[11px] text-[var(--ink-muted)]">
                       Columns: id, alias, interviewed_at, role, org_id, segment, channel, relationship, evidence_type, notes
                     </p>
                   </div>
 
                   {csvPreview && (
-                    <div className="p-4 bg-[#07080A] border border-[#262B35] space-y-3">
+                    <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] space-y-3">
                       <div className="flex items-center justify-between font-mono-tabular text-[11px]">
-                        <span className="text-[#F5F6F8]">{csvPreview.fileName}</span>
-                        <span className="text-[#10B981]">{csvPreview.rowCount} rows detected</span>
+                        <span className="text-[var(--ink-primary)]">{csvPreview.fileName}</span>
+                        <span className="text-[var(--status-emerald)]">{csvPreview.rowCount} rows detected</span>
                       </div>
                       <button
                         type="button"
                         disabled={importBusy}
                         onClick={() => void importCsvToWorkspace()}
-                        className="w-full py-2 bg-[#D4AF6A] text-[#07080A] text-[12px] font-medium rounded-[2px] cursor-pointer disabled:opacity-50"
+                        className="w-full py-2 bg-[var(--cta-bg)] text-[var(--cta-text)] text-[12px] font-medium rounded-[2px] cursor-pointer disabled:opacity-50"
                       >
                         {importBusy ? "Redacting PII & Importing…" : "Import & Save Roster"}
                       </button>
@@ -906,26 +911,26 @@ export default function UserAuditStudioPage() {
                   )}
 
                   {importErr && (
-                    <p className="font-mono-tabular text-[11px] text-[#EF4444]">{importErr}</p>
+                    <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{importErr}</p>
                   )}
                   {importMsg && (
-                    <p className="font-mono-tabular text-[11px] text-[#10B981]">{importMsg}</p>
+                    <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">{importMsg}</p>
                   )}
 
                   {evidence.length > 0 && (
-                    <div className="border-t border-[#1E222A] pt-4 space-y-2 max-h-[220px] overflow-y-auto">
-                      <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[#7D8CA3]">
+                    <div className="border-t border-[var(--border-hair)] pt-4 space-y-2 max-h-[220px] overflow-y-auto">
+                      <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
                         IMPORTED INTERVIEWS ({evidence.length})
                       </p>
                       {evidence.map((ev) => (
                         <div
                           key={ev.id}
-                          className="flex items-center justify-between py-1.5 border-b border-[#1E222A] font-mono-tabular text-[11px]"
+                          className="flex items-center justify-between py-1.5 border-b border-[var(--border-hair)] font-mono-tabular text-[11px]"
                         >
-                          <span className="text-[#F5F6F8] truncate">
+                          <span className="text-[var(--ink-primary)] truncate">
                             {ev.orgId} · {ev.segment} · {ev.role}
                           </span>
-                          <span className="text-[#D4AF6A] shrink-0 ml-2">L{ev.evidenceType}</span>
+                          <span className="text-[var(--accent-text)] shrink-0 ml-2">L{ev.evidenceType}</span>
                         </div>
                       ))}
                     </div>
@@ -933,8 +938,8 @@ export default function UserAuditStudioPage() {
                 </section>
 
                 {/* Step 03: Formalise & Add Claims */}
-                <section className="lg:col-span-6 bg-[#0E1014] border border-[#1E222A] p-6 space-y-4">
-                  <span className="block font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[#D4AF6A]">
+                <section className="lg:col-span-6 bg-[var(--bg-surface)] border border-[var(--border-hair)] p-6 space-y-4">
+                  <span className="block font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--accent-text)]">
                     03 · FORMALISE &amp; ADD CLAIMS
                   </span>
 
@@ -942,7 +947,7 @@ export default function UserAuditStudioPage() {
                     <div>
                       <label
                         htmlFor="claim-raw"
-                        className="block font-mono-tabular text-[11px] uppercase text-[#9CA3AF] mb-1"
+                        className="block font-mono-tabular text-[11px] uppercase text-[var(--ink-secondary)] mb-1"
                       >
                         Founder / Product Claim
                       </label>
@@ -953,13 +958,13 @@ export default function UserAuditStudioPage() {
                           value={rawClaim}
                           onChange={(e) => setRawClaim(e.target.value)}
                           placeholder="e.g. Clinic buyers are willing to pay annually after pilot"
-                          className="flex-1 px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[13px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                          className="flex-1 px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                         />
                         <button
                           type="button"
                           disabled={formalising}
                           onClick={() => void handleFormalise()}
-                          className="px-3 py-2 border border-[#D4AF6A] text-[#D4AF6A] text-[12px] rounded-[2px] hover:bg-[#15181F] cursor-pointer disabled:opacity-50 shrink-0"
+                          className="px-3 py-2 border border-[var(--accent-graphic)] text-[var(--accent-text)] text-[12px] rounded-[2px] hover:bg-[var(--bg-elevated)] cursor-pointer disabled:opacity-50 shrink-0"
                         >
                           {formalising ? "Parsing…" : "Formalise"}
                         </button>
@@ -970,7 +975,7 @@ export default function UserAuditStudioPage() {
                       <div>
                         <label
                           htmlFor="claim-pop"
-                          className="block font-mono-tabular text-[11px] uppercase text-[#9CA3AF] mb-1"
+                          className="block font-mono-tabular text-[11px] uppercase text-[var(--ink-secondary)] mb-1"
                         >
                           Target Population
                         </label>
@@ -980,13 +985,13 @@ export default function UserAuditStudioPage() {
                           value={population}
                           onChange={(e) => setPopulation(e.target.value)}
                           placeholder="e.g. Clinics"
-                          className="w-full px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                          className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                         />
                       </div>
                       <div>
                         <label
                           htmlFor="claim-pred"
-                          className="block font-mono-tabular text-[11px] uppercase text-[#9CA3AF] mb-1"
+                          className="block font-mono-tabular text-[11px] uppercase text-[var(--ink-secondary)] mb-1"
                         >
                           Predicate
                         </label>
@@ -996,7 +1001,7 @@ export default function UserAuditStudioPage() {
                           value={predicate}
                           onChange={(e) => setPredicate(e.target.value)}
                           placeholder="e.g. paid annual invoice"
-                          className="w-full px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                          className="w-full px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1005,7 +1010,7 @@ export default function UserAuditStudioPage() {
                       <div>
                         <label
                           htmlFor="claim-type"
-                          className="block font-mono-tabular text-[10px] uppercase text-[#9CA3AF] mb-1"
+                          className="block font-mono-tabular text-[10px] uppercase text-[var(--ink-secondary)] mb-1"
                         >
                           Claim Type
                         </label>
@@ -1013,7 +1018,7 @@ export default function UserAuditStudioPage() {
                           id="claim-type"
                           value={claimType}
                           onChange={(e) => setClaimType(e.target.value as Claim["claimType"])}
-                          className="w-full px-2.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
                         >
                           <option value="theme">Theme</option>
                           <option value="prevalence">Prevalence</option>
@@ -1022,7 +1027,7 @@ export default function UserAuditStudioPage() {
                       <div>
                         <label
                           htmlFor="claim-level"
-                          className="block font-mono-tabular text-[10px] uppercase text-[#9CA3AF] mb-1"
+                          className="block font-mono-tabular text-[10px] uppercase text-[var(--ink-secondary)] mb-1"
                         >
                           Claimed Level
                         </label>
@@ -1030,7 +1035,7 @@ export default function UserAuditStudioPage() {
                           id="claim-level"
                           value={claimedLevel}
                           onChange={(e) => setClaimedLevel(Number(e.target.value) as EvidenceLevel)}
-                          className="w-full px-2.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
                         >
                           {([1, 2, 3, 4, 5, 6] as EvidenceLevel[]).map((lvl) => (
                             <option key={lvl} value={lvl}>
@@ -1042,7 +1047,7 @@ export default function UserAuditStudioPage() {
                       <div>
                         <label
                           htmlFor="claim-kind"
-                          className="block font-mono-tabular text-[10px] uppercase text-[#9CA3AF] mb-1"
+                          className="block font-mono-tabular text-[10px] uppercase text-[var(--ink-secondary)] mb-1"
                         >
                           Kind
                         </label>
@@ -1050,7 +1055,7 @@ export default function UserAuditStudioPage() {
                           id="claim-kind"
                           value={kind}
                           onChange={(e) => setKind(e.target.value as Claim["kind"])}
-                          className="w-full px-2.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                          className="w-full px-2.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
                         >
                           <option value="pain">Pain</option>
                           <option value="willingness_to_pay">Willingness to pay</option>
@@ -1071,7 +1076,7 @@ export default function UserAuditStudioPage() {
                           value={observedK}
                           onChange={(e) => setObservedK(e.target.value)}
                           placeholder="Observed k (successes)"
-                          className="px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                          className="px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
                         />
                         <input
                           type="number"
@@ -1079,48 +1084,48 @@ export default function UserAuditStudioPage() {
                           value={observedN}
                           onChange={(e) => setObservedN(e.target.value)}
                           placeholder="Observed n (total)"
-                          className="px-3 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8]"
+                          className="px-3 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)]"
                         />
                       </div>
                     )}
 
                     {claimErr && (
-                      <p className="font-mono-tabular text-[11px] text-[#EF4444]">{claimErr}</p>
+                      <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{claimErr}</p>
                     )}
                     {claimMsg && (
-                      <p className="font-mono-tabular text-[11px] text-[#10B981]">{claimMsg}</p>
+                      <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">{claimMsg}</p>
                     )}
 
                     <button
                       type="submit"
                       disabled={savingClaim}
-                      className="w-full py-2 bg-[#15181F] border border-[#262B35] text-[#F5F6F8] hover:border-[#D4AF6A] text-[12px] font-medium rounded-[2px] cursor-pointer"
+                      className="w-full py-2 bg-[var(--bg-elevated)] border border-[var(--border-elevated)] text-[var(--ink-primary)] hover:border-[var(--accent-graphic)] text-[12px] font-medium rounded-[2px] cursor-pointer"
                     >
                       {savingClaim ? "Saving…" : "Add Claim to Audit"}
                     </button>
                   </form>
 
                   {claims.length > 0 && (
-                    <div className="border-t border-[#1E222A] pt-4 space-y-2 max-h-[200px] overflow-y-auto">
-                      <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[#7D8CA3]">
+                    <div className="border-t border-[var(--border-hair)] pt-4 space-y-2 max-h-[200px] overflow-y-auto">
+                      <p className="font-mono-tabular text-[10px] uppercase tracking-[0.1em] text-[var(--ink-muted)]">
                         CLAIMS ({claims.length})
                       </p>
                       {claims.map((cl) => (
                         <div
                           key={cl.id}
-                          className="flex items-center justify-between gap-2 py-1.5 border-b border-[#1E222A] text-[12px]"
+                          className="flex items-center justify-between gap-2 py-1.5 border-b border-[var(--border-hair)] text-[12px]"
                         >
                           <div className="min-w-0">
-                            <span className="font-mono-tabular text-[10px] text-[#D4AF6A] mr-2">
+                            <span className="font-mono-tabular text-[10px] text-[var(--accent-text)] mr-2">
                               {cl.claimType.toUpperCase()} · L{cl.claimedLevel}
                             </span>
-                            <span className="text-[#F5F6F8] truncate">{cl.rawText}</span>
+                            <span className="text-[var(--ink-primary)] truncate">{cl.rawText}</span>
                           </div>
                           <button
                             type="button"
                             onClick={() => void handleRemoveClaim(cl.id)}
                             aria-label="Remove claim"
-                            className="text-[#7D8CA3] hover:text-[#EF4444] cursor-pointer shrink-0"
+                            className="text-[var(--ink-muted)] hover:text-[var(--status-crimson)] cursor-pointer shrink-0"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1133,8 +1138,8 @@ export default function UserAuditStudioPage() {
 
               {/* Evidence Ladder Summary */}
               {evidence.length > 0 && (
-                <section className="bg-[#0E1014] border border-[#1E222A] p-6">
-                  <h2 className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[#7D8CA3] mb-4">
+                <section className="bg-[var(--bg-surface)] border border-[var(--border-hair)] p-6">
+                  <h2 className="font-mono-tabular text-[11px] uppercase tracking-[0.1em] text-[var(--ink-muted)] mb-4">
                     EVIDENCE LADDER DISTRIBUTION
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -1144,11 +1149,11 @@ export default function UserAuditStudioPage() {
                       return (
                         <div key={level} className="space-y-1.5">
                           <div className="flex items-center justify-between font-mono-tabular text-[11px]">
-                            <span className="text-[#9CA3AF]">{label}</span>
-                            <span className="text-[#F5F6F8]">{count}</span>
+                            <span className="text-[var(--ink-secondary)]">{label}</span>
+                            <span className="text-[var(--ink-primary)]">{count}</span>
                           </div>
                           <div className="h-1 bg-[#1E222A]">
-                            <div className="h-full bg-[#D4AF6A]" style={{ width: `${pct}%` }} />
+                            <div className="h-full bg-[var(--accent-graphic)]" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       );
@@ -1159,23 +1164,23 @@ export default function UserAuditStudioPage() {
 
               {/* Step 04: Deterministic Audit Results & Statement */}
               {auditResult && (
-                <section id="runs" className="bg-[#0E1014] border border-[#1E222A] p-8 space-y-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1E222A] pb-5">
+                <section id="runs" className="bg-[var(--bg-surface)] border border-[var(--border-hair)] p-8 space-y-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-hair)] pb-5">
                     <div>
-                      <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[#10B981]">
+                      <p className="font-mono-tabular text-[11px] uppercase tracking-[0.12em] text-[var(--status-emerald)]">
                         04 · DETERMINISTIC EVIDENCE STATEMENT
                       </p>
-                      <h2 className="font-display text-[28px] text-[#F5F6F8] mt-1">
+                      <h2 className="font-display text-[28px] text-[var(--ink-primary)] mt-1">
                         Audit Verdicts &amp; Cryptographic Digest
                       </h2>
-                      <p className="font-mono-tabular text-[11px] text-[#7D8CA3] mt-1">
+                      <p className="font-mono-tabular text-[11px] text-[var(--ink-muted)] mt-1">
                         ENGINE {auditResult.engineVersion} · SHA-256 {auditResult.findingHash}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => window.print()}
-                      className="flex items-center gap-2 px-4 py-2 border border-[#262B35] text-[12px] text-[#F5F6F8] hover:border-[#D4AF6A] rounded-[2px] cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-2 border border-[var(--border-elevated)] text-[12px] text-[var(--ink-primary)] hover:border-[var(--accent-graphic)] rounded-[2px] cursor-pointer"
                     >
                       <Printer size={14} />
                       Print / Export PDF
@@ -1191,22 +1196,22 @@ export default function UserAuditStudioPage() {
                         f.coverage.matrix.map((c) => [`${c.segment}::${c.role}`, c.orgs]),
                       );
                       return (
-                        <div key={f.claimId} className="bg-[#07080A] border border-[#1E222A] p-6 space-y-4">
+                        <div key={f.claimId} className="bg-[var(--bg-canvas)] border border-[var(--border-hair)] p-6 space-y-4">
                           <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                              <span className="font-mono-tabular text-[11px] uppercase text-[#7D8CA3]">
+                              <span className="font-mono-tabular text-[11px] uppercase text-[var(--ink-muted)]">
                                 {claim?.claimType.toUpperCase()} · L{claim?.claimedLevel}
                               </span>
-                              <h3 className="text-[16px] font-medium text-[#F5F6F8] mt-1">
+                              <h3 className="text-[16px] font-medium text-[var(--ink-primary)] mt-1">
                                 {claim?.rawText ?? f.claimId}
                               </h3>
-                              <p className="text-[13px] text-[#9CA3AF] mt-1">{f.explanation}</p>
+                              <p className="text-[13px] text-[var(--ink-secondary)] mt-1">{f.explanation}</p>
                             </div>
                             <span
                               className={`inline-flex items-center gap-1.5 px-3 py-1 font-mono-tabular text-[11px] rounded-[2px] border ${
                                 isSupported
-                                  ? "bg-[#0F1D19] border-[#183D31] text-[#10B981]"
-                                  : "bg-[#2A1215] border-[#4C1D24] text-[#EF4444]"
+                                  ? "bg-[var(--status-emerald-bg)] border-[var(--status-emerald)] text-[var(--status-emerald)]"
+                                  : "bg-[var(--status-crimson-bg)] border-[var(--status-crimson-border)] text-[var(--status-crimson)]"
                               }`}
                             >
                               {isSupported ? <CheckCircle2 size={13} /> : <ShieldAlert size={13} />}
@@ -1215,7 +1220,7 @@ export default function UserAuditStudioPage() {
                           </div>
 
                           {f.verdict.interval && (
-                            <p className="font-mono-tabular text-[12px] text-[#D4AF6A]">
+                            <p className="font-mono-tabular text-[12px] text-[var(--accent-text)]">
                               Wilson 95% CI: [{f.verdict.interval[0].toFixed(2)},{" "}
                               {f.verdict.interval[1].toFixed(2)}] · Width{" "}
                               {f.verdict.interval[2].toFixed(2)}
@@ -1226,7 +1231,7 @@ export default function UserAuditStudioPage() {
                             <div className="overflow-x-auto">
                               <table className="w-full border-collapse font-mono-tabular text-[11px]">
                                 <thead>
-                                  <tr className="border-b border-[#1E222A] text-[#7D8CA3]">
+                                  <tr className="border-b border-[var(--border-hair)] text-[var(--ink-muted)]">
                                     <th className="py-2 pr-4 text-left font-normal">Segment</th>
                                     {ROLE_COLUMNS.map((r) => (
                                       <th key={r.key} className="py-2 px-2 text-center font-normal">
@@ -1237,8 +1242,8 @@ export default function UserAuditStudioPage() {
                                 </thead>
                                 <tbody>
                                   {segments.map((seg) => (
-                                    <tr key={seg} className="border-b border-[#1E222A]">
-                                      <td className="py-2 pr-4 text-[#F5F6F8]">{seg}</td>
+                                    <tr key={seg} className="border-b border-[var(--border-hair)]">
+                                      <td className="py-2 pr-4 text-[var(--ink-primary)]">{seg}</td>
                                       {ROLE_COLUMNS.map((r) => {
                                         const orgs = cellMap.get(`${seg}::${r.key}`) ?? 0;
                                         return (
@@ -1262,8 +1267,8 @@ export default function UserAuditStudioPage() {
                   </div>
 
                   {/* Falsifier Validation */}
-                  <form onSubmit={(e) => void handleCheckFalsifier(e)} className="pt-4 border-t border-[#1E222A] space-y-3">
-                    <div className="flex items-center gap-2 font-mono-tabular text-[11px] uppercase text-[#7D8CA3]">
+                  <form onSubmit={(e) => void handleCheckFalsifier(e)} className="pt-4 border-t border-[var(--border-hair)] space-y-3">
+                    <div className="flex items-center gap-2 font-mono-tabular text-[11px] uppercase text-[var(--ink-muted)]">
                       <FileText size={13} />
                       <span>FALSIFIER RULE CHECK (REQUIRED FOR BLOCKED CLAIMS)</span>
                     </div>
@@ -1273,20 +1278,20 @@ export default function UserAuditStudioPage() {
                         value={falsifierText}
                         onChange={(e) => setFalsifierText(e.target.value)}
                         placeholder="e.g. If fewer than 3 of 10 clinics prepay within 14 days, downgrade claim."
-                        className="flex-1 px-3.5 py-2 bg-[#07080A] border border-[#262B35] rounded-[2px] text-[12px] text-[#F5F6F8] focus:border-[#D4AF6A] focus:outline-none"
+                        className="flex-1 px-3.5 py-2 bg-[var(--bg-canvas)] border border-[var(--border-elevated)] rounded-[2px] text-[12px] text-[var(--ink-primary)] focus:border-[var(--accent-graphic)] focus:outline-none"
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2 border border-[#D4AF6A] text-[#D4AF6A] text-[12px] rounded-[2px] cursor-pointer shrink-0"
+                        className="px-4 py-2 border border-[var(--accent-graphic)] text-[var(--accent-text)] text-[12px] rounded-[2px] cursor-pointer shrink-0"
                       >
                         Validate Falsifier
                       </button>
                     </div>
                     {falsifierErr && (
-                      <p className="font-mono-tabular text-[11px] text-[#EF4444]">{falsifierErr}</p>
+                      <p className="font-mono-tabular text-[11px] text-[var(--status-crimson)]">{falsifierErr}</p>
                     )}
                     {falsifierResult && (
-                      <p className="font-mono-tabular text-[11px] text-[#10B981]">
+                      <p className="font-mono-tabular text-[11px] text-[var(--status-emerald)]">
                         {falsifierResult}
                       </p>
                     )}
